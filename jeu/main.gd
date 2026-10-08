@@ -47,6 +47,8 @@ func _on_state(s: String) -> void:
 		var delays := [2.0]
 		if s == "board":
 			delays = [1.0, 6.0, 12.0]
+			if OS.get_environment("BOARD_DELAYS") != "":
+				delays = Array(OS.get_environment("BOARD_DELAYS").split(",")).map(func(x): return float(x))
 		elif s == "minigame":
 			delays = [2.0, 9.0, 13.0, 18.0]
 			if OS.get_environment("SHOT_DELAYS") != "":

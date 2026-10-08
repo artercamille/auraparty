@@ -32,7 +32,8 @@ func _draw_results(ci: Control) -> void:
 	var h := 120.0 + rows * 62.0
 	var panel := Rect2(Vector2(250, 360 - h / 2.0 - 20), Vector2(780, h + 40))
 	ci.draw_style_box(UI.box(UI.WHITE, UI.DARK, 6, 28), panel)
-	UI.text(ci, Vector2(640, panel.position.y + 52), str(info["name"]), 46, UI.YELLOW, 12)
+	var duel := str(Net.mg_data.get("mode", "")) == "duel"
+	UI.text(ci, Vector2(640, panel.position.y + 52), ("DUEL - " if duel else "") + str(info["name"]), 46, Color("#c79bff") if duel else UI.YELLOW, 12)
 	var y := panel.position.y + 104
 	for i in rows:
 		var r: Dictionary = res[i]
@@ -60,7 +61,7 @@ func _draw_results(ci: Control) -> void:
 		ci.draw_set_transform(row.position + Vector2(600, 27), 0.0, Vector2(0.3, 0.3))
 		ci.draw_texture(tex_coin, Vector2(-64, -64))
 		ci.draw_set_transform(Vector2.ZERO)
-		ci.draw_string(UI.font(true), row.position + Vector2(622, 37), "+%d" % int(r["reward"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 26, UI.DARK)
+		ci.draw_string(UI.font(true), row.position + Vector2(622, 37), "%+d" % int(r["reward"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 26, UI.RED if int(r["reward"]) < 0 else UI.DARK)
 		if int(r.get("star", 0)) > 0:
 			var sp := row.position + Vector2(556, 27)
 			ci.draw_set_transform(sp, sin(t * 4.0) * 0.2, Vector2(0.36, 0.36) * (1.0 + 0.08 * sin(t * 6.0)))

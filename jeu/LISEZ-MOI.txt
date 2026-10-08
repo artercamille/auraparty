@@ -1,4 +1,4 @@
-AURA PARTY - v0.12 (plateau + 8 mini-jeux)
+AURA PARTY - v0.13 (la grande île + 8 mini-jeux)
 ==========================================
 Jusqu'à 8 joueurs, chacun sur son PC.
 Tout le monde doit avoir CETTE version du jeu (sinon la connexion est refusée).
@@ -22,11 +22,31 @@ POUR JOUER
    de tours (5, 10, 15 ou 20) puis clique sur "Lancer la partie !".
 
 RÈGLES (comme Mario Party)
-- Chacun commence avec 10 pièces.
-- À ton tour, appuie sur Espace pour frapper le bloc-dé (1 à 10).
-- Case bleue : +3 pièces. Case rouge : -3 pièces.
+- Chacun commence avec 10 pièces au village (case DÉPART).
+- À ton tour : Lancer le dé (Espace), utiliser un Objet, ou regarder la Carte.
+  Tab = carte de l'île à tout moment (avec la légende des cases).
+- Aux carrefours, choisis ta route avec ← → puis Espace (le pont du château
+  coûte 5 pièces de péage).
 - En passant sur l'étoile avec 20 pièces, tu l'achètes automatiquement.
-- Si tu ne lances pas ton dé, il part tout seul au bout de 15 secondes.
+  Elle part ensuite ailleurs sur l'île.
+- Les cases :
+  bleue +3 pièces / rouge -3 pièces
+  « ? » verte : événement de la zone (fête au village, écureuil voleur,
+     pêche miraculeuse, roi fantôme, éruption du volcan, coup de soleil...)
+  « ! » orange : carte chance (jackpot, échange de pièces ou de place,
+     téléportation, coup de vent sur l'étoile...)
+  cadeau : un objet gratuit / VS : duel 1 contre 1 (10 pièces en jeu)
+  tête de mort : piège, -10 pièces qui tombent dans la banque
+  banque : en passant tu déposes 5 pièces, en t'arrêtant dessus tu
+     ramasses toute la banque !
+  boutique : on peut acheter des objets en passant ou en s'arrêtant
+  tuyau : téléportation à l'autre tuyau de l'île
+- Passer par le DÉPART rapporte 5 pièces.
+- Objets (3 max dans ton sac) : Champignon (+3 au dé), Double dé, Triple dé,
+  Dé pipé (tu choisis 1 à 10), Champi poison (le prochain dé d'un joueur
+  ne fera que 1 à 3), Cloche fantôme (vole 10 pièces), Échangeur (échange
+  ta place avec un joueur), Tuyau doré (va direct à l'étoile).
+- Si tu ne fais rien, le jeu choisit pour toi au bout de quelques secondes.
 - Quand tout le monde a joué : mini-jeu au hasard ! Chacun appuie sur Espace
   quand il est prêt. Les meilleurs gagnent des pièces (1er +8, 2e +5, 3e +3,
   4e +2, puis +1). Le gagnant du mini-jeu joue en premier au tour suivant.
@@ -35,7 +55,7 @@ RÈGLES (comme Mario Party)
   pièces gagnées) et Pas de chance (le plus de cases rouges).
 - Le plus d'étoiles gagne, puis le plus de pièces.
 - Éliminé ou arrivé dans un mini-jeu ? Tu regardes les autres (← → pour
-  changer de joueur).
+  changer de joueur). Pendant un duel, les autres regardent.
 - Dans le salon, l'hôte peut exclure un joueur.
 
 LES MINI-JEUX

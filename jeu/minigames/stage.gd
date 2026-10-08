@@ -238,7 +238,7 @@ func _process(delta: float) -> void:
 	match state:
 		"intro":
 			# chacun appuie sur Espace quand il est prêt ; l'hôte donne le départ
-			if not my_ready and t > 0.6:
+			if not my_ready and t > 0.6 and me != null:
 				var bot_ready := me != null and me.is_bot and t > 1.0
 				if bot_ready or Input.is_action_just_pressed("jump") or Input.is_action_just_pressed("push"):
 					my_ready = true
@@ -274,13 +274,16 @@ func _process(delta: float) -> void:
 		"over":
 			if me:
 				me.set_meta("blocked", true)
-	if cam and me:
+	if cam:
 		var target: Node2D = me
-		if follow_cam and (my_out or spectating):
-			target = _spec_target()
+		if follow_cam and (my_out or spectating or me == null):
+			var st := _spec_target()
+			if st != null:
+				target = st
 			if Input.is_action_just_pressed("left") or Input.is_action_just_pressed("right"):
 				_spec_cycle(1 if Input.is_action_just_pressed("right") else -1)
-		cam.position = target.position + cam_offset
+		if target != null:
+			cam.position = target.position + cam_offset
 	for sp in springs:
 		sp["t"] = maxf(0.0, float(sp["t"]) - delta)
 		(sp["sprite"] as Sprite2D).texture = load("res://assets/tiles/spring.png") if float(sp["t"]) > 0.17 else load("res://assets/tiles/spring_out.png")
@@ -498,11 +501,13 @@ func _draw_hud() -> void:
 		if state == "count":
 			UI.text(hud, Vector2(640, 610), str(3 - int(t)), int(80 * pulse), UI.WHITE, 16)
 		else:
-			draw_ready_row(hud, my_ready, ready_ids, nodes.keys(), t)
+			draw_ready_row(hud, my_ready, ready_ids, nodes.keys(), t, me == null)
+		if str(Net.mg_data.get("mode", "")) == "duel":
+			draw_duel_banner(hud)
 	elif go_flash > 0.0:
 		var s := 1.0 + (0.8 - go_flash) * 0.6
 		UI.text(hud, center, "GO !", int(110 * s), Color(UI.YELLOW, minf(1.0, go_flash * 2.0)), 18)
-	if follow_cam and (my_out or spectating) and state == "play" and _spec_candidates().size() > 0:
+	if follow_cam and (my_out or spectating or me == null) and state == "play" and _spec_candidates().size() > 0:
 		var who := Net.name_of(spec_id)
 		var sm := "Tu regardes %s   (← → pour changer)" % who
 		var sw := UI.text_width(sm, 20) + 40.0
@@ -519,10 +524,12 @@ func _draw_hud() -> void:
 
 
 ## Ligne « Appuie sur ESPACE quand tu es prêt » + têtes cochées (aussi utilisé par le kart).
-static func draw_ready_row(h: CanvasItem, mine: bool, ready: Array, all_ids: Array, tt: float) -> void:
+static func draw_ready_row(h: CanvasItem, mine: bool, ready: Array, all_ids: Array, tt: float, watch := false) -> void:
 	var ids := all_ids.duplicate()
 	ids.sort()
-	if not mine:
+	if watch:
+		UI.text(h, Vector2(640, 590), "C'est un duel : tu regardes !", 28, UI.WHITE, 9)
+	elif not mine:
 		var k := 1.0 + 0.06 * sin(tt * 6.0)
 		UI.text(h, Vector2(640, 590), "Appuie sur ESPACE quand tu es prêt !", int(30 * k), UI.YELLOW, 9)
 	else:
@@ -542,3 +549,15 @@ static func draw_ready_row(h: CanvasItem, mine: bool, ready: Array, all_ids: Arr
 			h.draw_circle(c + Vector2(15, 14), 10, UI.DARK)
 			h.draw_circle(c + Vector2(15, 14), 8, UI.GREEN)
 			h.draw_polyline(PackedVector2Array([c + Vector2(10, 14), c + Vector2(14, 18), c + Vector2(20, 10)]), UI.WHITE, 2.5)
+
+
+## Bandeau « DUEL : A contre B » en haut de l'écran.
+static func draw_duel_banner(h: CanvasItem) -> void:
+	var ids: Array = Net.mg_data.get("players", [])
+	if ids.size() < 2:
+		return
+	var txt := "DUEL : %s contre %s  -  %d pièces en jeu" % [Net.name_of(ids[0]), Net.name_of(ids[1]), int(Net.mg_data.get("stake", 0))]
+	var w := UI.text_width(txt, 26) + 60.0
+	var r := Rect2(Vector2(640 - w / 2.0, 70), Vector2(w, 50))
+	h.draw_style_box(UI.box(Color("#8a4fd8"), UI.DARK, 4, 16), r)
+	UI.text(h, r.get_center(), txt, 26, UI.WHITE, 6)

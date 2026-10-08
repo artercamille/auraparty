@@ -13,6 +13,7 @@ config/windows_native_icon="res://icon.ico"
 [autoload]
 
 Net="*res://net.gd"
+Game="*res://game.gd"
 Sfx="*res://sfx.gd"
 
 [display]

@@ -3,11 +3,11 @@
 # Aura PARTY
 
 Un party game 2D façon Mario Party, jusqu'à **8 joueurs en ligne**, chacun sur son PC Windows.
-Un plateau sur une île volante, des étoiles à acheter, et 8 mini-jeux pour se trahir entre potes.
+Une grande île volante avec des carrefours, des objets, une boutique, des duels, des étoiles à acheter, et 8 mini-jeux pour se trahir entre potes.
 
 ## ⬇️ Télécharger
 
-### **[Télécharger Aura PARTY v0.12 pour Windows](https://github.com/artercamille/auraparty/raw/main/telecharger/AuraParty.zip)**
+### **[Télécharger Aura PARTY v0.13 pour Windows](https://github.com/artercamille/auraparty/raw/main/telecharger/AuraParty.zip)**
 
 Dézippe le fichier, puis lance `AuraParty.exe`.
 Si Windows affiche « Windows a protégé votre ordinateur » : *Informations complémentaires* → *Exécuter quand même*.
@@ -27,8 +27,11 @@ Dans le salon, l'hôte peut aussi lancer directement un mini-jeu pour le tester,
 
 ## ⭐ Règles
 
-- Chacun commence avec 10 pièces. On frappe le bloc-dé (1 à 10) pour avancer.
-- Case bleue **+3 pièces**, case rouge **−3 pièces**. En passant sur l'étoile avec 20 pièces, on l'achète.
+- Chacun commence avec 10 pièces au **village**. À ton tour : lancer le dé (1 à 10), utiliser un objet, ou regarder la carte (**Tab**).
+- L'île a 6 zones (village, forêt, lac, château, volcan, plage) et des **carrefours** : à toi de choisir ta route (le pont du château coûte 5 pièces).
+- En passant sur l'**étoile** avec 20 pièces, on l'achète. Elle s'envole ensuite ailleurs.
+- Les cases : bleue **+3**, rouge **−3**, **?** événement de la zone, **!** carte chance, cadeau (objet gratuit), **VS** duel 1 contre 1, piège (−10 pièces dans la banque), banque, boutique, tuyau (téléportation).
+- 8 objets (3 max dans le sac) : champignon, double dé, triple dé, dé pipé, champi poison, cloche fantôme, échangeur, tuyau doré.
 - Après chaque tour de table : un mini-jeu au hasard. Les meilleurs gagnent des pièces, et le gagnant joue en premier au tour suivant.
 - Le dernier mini-jeu rapporte une **étoile** au gagnant. À la fin, 3 **étoiles bonus** sont distribuées : Roi des mini-jeux, Pluie de pièces, Pas de chance.
 - Le plus d'étoiles gagne, puis le plus de pièces.
@@ -46,15 +49,15 @@ Dans le salon, l'hôte peut aussi lancer directement un mini-jeu pour le tester,
 | Quiz sous le chapiteau ! | Retiens les ballons, puis saute sur l'estrade de la bonne réponse. |
 | Grand Prix Aura ! | Course de karts vue de dessus, 3 tours, objets et turbos. |
 
-**Commandes** : bouger Q/D ou flèches · sauter Espace (double saut) · pousser Maj/X/E/clic · plein écran F11.
+**Commandes** : plateau : Espace pour valider, ← → pour choisir, Tab pour la carte · mini-jeux : bouger Q/D ou flèches · sauter Espace (double saut) · pousser Maj/X/E/clic · plein écran F11.
 Kart : Z/↑/Espace pour accélérer, S/↓ pour freiner, Q/D pour tourner, Maj/X/clic pour l'objet.
 
 ## 📸 Captures
 
 <p align="center">
-<img src="docs/accueil.png" width="48%"> <img src="docs/plateau.png" width="48%">
-<img src="docs/kart.png" width="48%"> <img src="docs/buches.png" width="48%">
-<img src="docs/quiz.png" width="48%">
+<img src="docs/plateau.png" width="48%"> <img src="docs/village.png" width="48%">
+<img src="docs/accueil.png" width="48%"> <img src="docs/kart.png" width="48%">
+<img src="docs/buches.png" width="48%"> <img src="docs/quiz.png" width="48%">
 </p>
 
 ## 🛠️ Le code

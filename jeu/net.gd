@@ -6,9 +6,6 @@ signal players_changed
 signal state_changed(state: String)
 signal toast(msg: String)
 # plateau
-signal turn_started(id: int)
-signal turn_result(data: Dictionary)
-signal announce(text: String)
 # mini-jeux
 signal remote_state(id: int, pos: Vector2, vel: Vector2, st: int)
 signal got_hit(kind: int, dir: Vector2, from_id: int)
@@ -20,7 +17,7 @@ signal mg_go
 signal mg_msg(from_id: int, data: Dictionary)   # reçu par l'hôte
 signal mg_state(data: Dictionary)               # envoyé par l'hôte à tous
 
-const VERSION := "0.12"
+const VERSION := "0.13"
 const PORT := 7777
 const MAX_PLAYERS := 8
 const COLOR_IDS := ["rouge", "orange", "jaune", "vert", "turquoise", "bleu", "violet", "rose"]
@@ -57,7 +54,6 @@ var order: Array = []
 var round_num := 1
 var total_rounds := 10
 var star_pos := 20
-var current_turn := 0
 var mg_data: Dictionary = {}
 var mg_results: Array = []
 var final_ranking: Array = []
@@ -66,8 +62,6 @@ var final_ranking: Array = []
 var _gen := 0
 var _kick_msg := ""
 var _ping_acc := 0.0
-var _turn_idx := 0
-var _waiting_roll := false
 var _mg_id := 0
 var _mg_running := false
 var _mg_out: Dictionary = {}     # id -> [temps tenu, comment]
@@ -75,12 +69,11 @@ var _mg_final: Dictionary = {}   # id -> [score, texte] fourni par le mini-jeu
 var _mg_ending := false
 var _last_mg := ""
 var practice := false   # mini-jeu lancé depuis le salon (sans plateau)
-var _turn_serial := 0
 var _last_order: Array = []
 var bonus_awards: Array = []
 var mg_ready_ids: Array = []
 var _mg_go_sent := false
-var _dice_rng := RandomNumberGenerator.new()
+var mg_parts: Array = []   # joueurs qui participent au mini-jeu en cours (tous, ou les 2 du duel)
 
 
 func _ready() -> void:
@@ -94,7 +87,7 @@ func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
 	if "--checkall" in args:
 		for f in ["res://main.gd", "res://ui.gd", "res://screens/menu.gd", "res://screens/lobby.gd",
-				"res://board/board.gd", "res://board/layout.gd", "res://minigames/stage.gd", "res://minigames/blocks.gd",
+				"res://game.gd", "res://board/board.gd", "res://board/map.gd", "res://board/items.gd", "res://board/island.gd", "res://minigames/stage.gd", "res://minigames/blocks.gd",
 				"res://minigames/paint.gd", "res://minigames/keys.gd", "res://minigames/parcours.gd", "res://minigames/rock.gd", "res://minigames/logs.gd", "res://minigames/quiz.gd", "res://minigames/kart.gd",
 				"res://arena/player.gd", "res://arena/fx.gd", "res://screens/backdrop.gd",
 				"res://screens/mg_results.gd", "res://screens/final.gd"]:
@@ -116,10 +109,11 @@ func _ready() -> void:
 
 
 func _debug_data() -> void:
-	players = {1: {"name": "Camille", "color": 2, "coins": 25, "stars": 2, "pos": 3, "ping": 0},
-		2: {"name": "Lucas", "color": 0, "coins": 12, "stars": 1, "pos": 8, "ping": 40},
-		3: {"name": "Inès", "color": 5, "coins": 30, "stars": 1, "pos": 12, "ping": 80},
-		4: {"name": "Tom", "color": 6, "coins": 4, "stars": 0, "pos": 20, "ping": 60}}
+	players = {1: {"name": "Camille", "color": 2, "coins": 25, "stars": 2, "pos": 9, "ping": 0, "items": ["double", "boo"]},
+		2: {"name": "Lucas", "color": 0, "coins": 12, "stars": 1, "pos": 9, "ping": 40, "items": ["mushroom"]},
+		3: {"name": "Inès", "color": 5, "coins": 30, "stars": 1, "pos": 14, "ping": 80, "items": []},
+		4: {"name": "Tom", "color": 6, "coins": 4, "stars": 0, "pos": 0, "ping": 60, "items": ["pipe", "poison", "swap"]}}
+	order = [1, 2, 3, 4]
 	mg_data = {"type": "blocks", "seed": 7, "players": [1, 2, 3, 4]}
 	mg_results = [{"id": 1, "name": "Camille", "color": 2, "rank": 0, "label": "Survivant !", "reward": 10},
 		{"id": 2, "name": "Lucas", "color": 0, "rank": 1, "label": "Tenu 41.2 s", "reward": 6},
@@ -285,7 +279,7 @@ func leave(go_menu := true) -> void:
 	players.clear()
 	order.clear()
 	_mg_running = false
-	_waiting_roll = false
+	Game.stop()
 	if go_menu:
 		_set_phase_local("menu")
 
@@ -314,14 +308,13 @@ func _on_peer_disconnected(id: int) -> void:
 	var idx := order.find(id)
 	if idx != -1:
 		order.remove_at(idx)
-		if idx < _turn_idx:
-			_turn_idx -= 1
+		if idx < Game.turn_idx:
+			Game.turn_idx -= 1
 	_broadcast_players()
 	_toast.rpc("%s a quitté la partie." % n)
 	_check_all_ready()
-	if phase == "board" and _waiting_roll and current_turn == id:
-		_waiting_roll = false
-		_start_turn()
+	if phase == "board":
+		Game.player_left(id)
 	elif phase == "minigame" and _mg_running:
 		_check_mg_end()
 
@@ -472,19 +465,15 @@ func start_game(rounds: int) -> void:
 	for id in players:
 		players[id]["coins"] = start_coins
 		players[id]["stars"] = 0
-		players[id]["pos"] = 0
 		players[id]["mg_wins"] = 0
 		players[id]["coins_won"] = 0
 		players[id]["reds"] = 0
 	_last_order = []
-	star_pos = randi_range(12, BoardLayout.count() - 10)
-	if autotest != "" and OS.get_environment("STAR_AT") != "":
-		star_pos = int(OS.get_environment("STAR_AT"))
-	_turn_idx = 0
 	_last_mg = ""
+	Game.reset()
 	_broadcast_players()
 	_set_phase.rpc("board")
-	_later(3.0, _start_turn)
+	_later(3.0, Game.start_round)
 
 
 ## Salon -> un mini-jeu précis, sans plateau (pour tester). Retour au salon après les résultats.
@@ -501,132 +490,41 @@ func back_to_lobby() -> void:
 		return
 	_gen += 1
 	_mg_running = false
-	_waiting_roll = false
+	Game.stop()
 	order.clear()
 	_broadcast_players()
 	_set_phase.rpc("lobby")
 
 
-func _start_turn() -> void:
-	if phase != "board":
-		return
-	if _turn_idx >= order.size():
-		_announce.rpc("Dernier mini-jeu : le gagnant remporte une ÉTOILE !" if (round_num >= total_rounds and not practice) else "Place au mini-jeu !")
-		_later(3.2 if round_num >= total_rounds else 2.4, _start_minigame)
-		return
-	current_turn = order[_turn_idx]
-	_waiting_roll = true
-	_turn_serial += 1
-	_turn_started.rpc(current_turn)
-	# si le joueur ne lance pas son dé, il part tout seul
-	var serial := _turn_serial
-	var who := current_turn
-	var g := _gen
-	await get_tree().create_timer(ROLL_TIMEOUT).timeout
-	if g == _gen and serial == _turn_serial and _waiting_roll and current_turn == who and phase == "board":
-		_do_roll(who)
-
-
-@rpc("authority", "call_local", "reliable")
-func _announce(text: String) -> void:
-	announce.emit(text)
-
-
-@rpc("authority", "call_local", "reliable")
-func _turn_started(id: int) -> void:
-	current_turn = id
-	turn_started.emit(id)
-	if autotest != "" and id == my_id():
-		await get_tree().create_timer(1.0).timeout
-		roll_dice()
-
-
-func roll_dice() -> void:
-	if is_host():
-		_do_roll(1)
-	else:
-		_request_roll.rpc_id(1)
-
-
-@rpc("any_peer", "call_remote", "reliable")
-func _request_roll() -> void:
-	if is_host():
-		_do_roll(multiplayer.get_remote_sender_id())
-
-
-func _do_roll(id: int) -> void:
-	if phase != "board" or not _waiting_roll or id != current_turn or not players.has(id):
-		return
-	_waiting_roll = false
-	var p: Dictionary = players[id]
-	var n := BoardLayout.count()
-	_dice_rng.randomize()
-	var roll := _dice_rng.randi_range(1, DICE_MAX)
-	var path := []
-	var events := []
-	var pos := int(p["pos"])
-	for s in roll:
-		pos = (pos + 1) % n
-		path.append(pos)
-		if pos == star_pos:
-			if int(p["coins"]) >= STAR_COST:
-				p["coins"] = int(p["coins"]) - STAR_COST
-				p["stars"] = int(p["stars"]) + 1
-				star_pos = _new_star_pos(pos)
-				events.append({"step": s, "kind": "buy", "star": star_pos})
-			else:
-				events.append({"step": s, "kind": "poor"})
-	p["pos"] = pos
-	var delta := 0
-	match BoardLayout.type_at(pos):
-		"R":
-			delta = -mini(3, int(p["coins"]))
-			p["reds"] = int(p.get("reds", 0)) + 1
-		_:
-			delta = 3
-			p["coins_won"] = int(p.get("coins_won", 0)) + 3
-	p["coins"] = int(p["coins"]) + delta
-	_turn_result.rpc({"id": id, "roll": roll, "path": path, "events": events, "delta": delta,
-		"players": players, "star": star_pos})
-	var dur := 2.0 + 0.3 * roll + 2.4 * events.size() + 1.8
-	var g := _gen
-	await get_tree().create_timer(dur).timeout
-	if g != _gen or phase != "board":
-		return
-	var i := order.find(id)
-	if i != -1:
-		_turn_idx = i + 1
-	_start_turn()
-
-
-@rpc("authority", "call_local", "reliable")
-func _turn_result(d: Dictionary) -> void:
-	if not is_host():
-		players = d["players"]
-		star_pos = int(d["star"])
-	turn_result.emit(d)
-
-
-func _new_star_pos(cur: int) -> int:
-	var n := BoardLayout.count()
-	var options := []
-	for k in range(10, 19):
-		var i := (cur + k) % n
-		if i != 0:
-			options.append(i)
-	return options.pick_random()
-
-
 # ---------------------------------------------------------------- mini-jeux
-func _start_minigame(force := "") -> void:
+## Fin du tour de table : mini-jeu pour tout le monde.
+func start_round_minigame() -> void:
+	if is_host() and phase == "board":
+		_start_minigame()
+
+
+## Duel 1 contre 1 sur le plateau : le gagnant prend `stake` pièces au perdant.
+func start_duel(a: int, b: int, stake: int) -> void:
+	if not is_host() or phase != "board":
+		return
+	var types := MINIGAMES.keys()
+	types.erase("kart")   # trop long pour un duel
+	if types.size() > 1:
+		types.erase(_last_mg)
+	_start_minigame(types.pick_random(), [a, b], "duel", stake)
+
+
+func _start_minigame(force := "", parts: Array = [], mode := "round", stake := 0) -> void:
 	var types := MINIGAMES.keys()
 	if types.size() > 1:
 		types.erase(_last_mg)
 	var t: String = types.pick_random()
 	if force != "":
 		t = force
-	if autotest != "" and OS.get_environment("MG") != "":
+	if autotest != "" and OS.get_environment("MG") != "" and mode != "duel":
 		t = OS.get_environment("MG")
+	if autotest != "" and OS.get_environment("DUEL_MG") != "" and mode == "duel":
+		t = OS.get_environment("DUEL_MG")
 	_last_mg = t
 	_mg_id += 1
 	var my_mg := _mg_id
@@ -636,7 +534,8 @@ func _start_minigame(force := "") -> void:
 	_mg_ending = false
 	mg_ready_ids = []
 	_mg_go_sent = false
-	_begin_minigame.rpc({"type": t, "seed": randi(), "players": players.keys(), "practice": practice})
+	mg_parts = parts.duplicate() if parts.size() > 0 else players.keys()
+	_begin_minigame.rpc({"type": t, "seed": randi(), "players": mg_parts, "practice": practice, "mode": mode, "stake": stake})
 	# départ quand tout le monde est prêt, ou au bout de READY_MAX secondes
 	_later(READY_MAX, func(): if my_mg == _mg_id: _send_go())
 	var g := _gen
@@ -645,10 +544,20 @@ func _start_minigame(force := "") -> void:
 		_finish_minigame()
 
 
+## Les participants encore connectés.
+func mg_alive_parts() -> Array:
+	var out := []
+	for id in mg_parts:
+		if players.has(id):
+			out.append(id)
+	return out
+
+
 @rpc("authority", "call_local", "reliable")
 func _begin_minigame(d: Dictionary) -> void:
 	mg_ready_ids = []
 	mg_data = d
+	mg_parts = d.get("players", [])
 	_set_phase_local("minigame")
 
 
@@ -667,7 +576,7 @@ func _ready_up() -> void:
 
 
 func _on_ready(id: int) -> void:
-	if not _mg_running or _mg_go_sent or mg_ready_ids.has(id):
+	if not _mg_running or _mg_go_sent or mg_ready_ids.has(id) or not mg_parts.has(id):
 		return
 	mg_ready_ids.append(id)
 	_ready_state.rpc(mg_ready_ids)
@@ -677,7 +586,7 @@ func _on_ready(id: int) -> void:
 func _check_all_ready() -> void:
 	if not is_host() or not _mg_running or _mg_go_sent:
 		return
-	for pid in players:
+	for pid in mg_alive_parts():
 		if not mg_ready_ids.has(pid):
 			return
 	_send_go()
@@ -746,7 +655,7 @@ func _report_out(held: float, how: String) -> void:
 
 
 func _on_out(id: int, held: float, how: String) -> void:
-	if not _mg_running or _mg_out.has(id) or not players.has(id):
+	if not _mg_running or _mg_out.has(id) or not players.has(id) or not mg_parts.has(id):
 		return
 	_mg_out[id] = [held, how]
 	_out_announce.rpc(id, how)
@@ -780,10 +689,11 @@ func _check_mg_end() -> void:
 	if not _mg_running or _mg_ending:
 		return
 	var alive := 0
-	for id in players:
+	var parts := mg_alive_parts()
+	for id in parts:
 		if not _mg_out.has(id):
 			alive += 1
-	if alive == 0 or (players.size() >= 2 and alive <= 1):
+	if alive == 0 or (mg_parts.size() >= 2 and alive <= 1):
 		_mg_ending = true
 		_mg_end_soon.rpc()
 		_later(2.2, _finish_minigame)
@@ -798,22 +708,34 @@ func _finish_minigame() -> void:
 	if not _mg_running:
 		return
 	_mg_running = false
+	var duel := str(mg_data.get("mode", "round")) == "duel"
+	var stake := int(mg_data.get("stake", 0))
 	var max_t := float(MINIGAMES[str(mg_data.get("type", "blocks"))]["max"])
 	var score := func(id) -> float:
 		if not _mg_final.is_empty():
 			return float(_mg_final[id][0]) if _mg_final.has(id) else -1.0e9
 		return float(_mg_out[id][0]) if _mg_out.has(id) else max_t + 1000.0
-	var ids := players.keys()
+	var ids := mg_alive_parts()
 	ids.sort_custom(func(a, b): return score.call(a) > score.call(b))
 	var results := []
 	var rank := 0
+	var tie := duel and ids.size() == 2 and absf(score.call(ids[0]) - score.call(ids[1])) <= 0.05
 	for i in ids.size():
 		var id: int = ids[i]
 		if i > 0 and absf(score.call(id) - score.call(ids[i - 1])) > 0.05:
 			rank = i
 		var reward: int = REWARDS[mini(rank, REWARDS.size() - 1)]
 		var star_bonus := 0
-		if not practice:
+		if duel:
+			reward = 0
+			if not tie and ids.size() == 2:
+				var loser: int = ids[1]
+				var real := mini(stake, int(players[loser]["coins"]))
+				reward = real if i == 0 else -real
+			players[id]["coins"] = maxi(0, int(players[id]["coins"]) + reward)
+			if reward > 0:
+				players[id]["coins_won"] = int(players[id].get("coins_won", 0)) + reward
+		elif not practice:
 			players[id]["coins"] = int(players[id]["coins"]) + reward
 			players[id]["coins_won"] = int(players[id].get("coins_won", 0)) + reward
 			if rank == 0:
@@ -827,7 +749,8 @@ func _finish_minigame() -> void:
 		elif _mg_out.has(id):
 			label = "Tenu %.1f s" % float(_mg_out[id][0])
 		results.append({"id": id, "name": name_of(id), "color": color_idx(id), "rank": rank, "label": label, "reward": reward, "star": star_bonus})
-	_last_order = ids.duplicate()
+	if not duel:
+		_last_order = ids.duplicate()
 	_broadcast_players()
 	_show_mg_results.rpc(results)
 	_later(7.5, _after_minigame)
@@ -845,6 +768,11 @@ func _after_minigame() -> void:
 		_broadcast_players()
 		_set_phase.rpc("lobby")
 		return
+	if str(mg_data.get("mode", "round")) == "duel":
+		_broadcast_players()
+		_set_phase.rpc("board")
+		Game.on_duel_finished()
+		return
 	round_num += 1
 	if round_num > total_rounds:
 		_end_game()
@@ -858,10 +786,9 @@ func _after_minigame() -> void:
 		if players.has(id) and not new_order.has(id):
 			new_order.append(id)
 	order = new_order
-	_turn_idx = 0
 	_broadcast_players()
 	_set_phase.rpc("board")
-	_later(2.5, _start_turn)
+	_later(2.5, Game.start_round)
 
 
 func _end_game() -> void:
