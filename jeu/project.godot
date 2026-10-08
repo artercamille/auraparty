@@ -1,0 +1,44 @@
+; Aura PARTY - Godot 4.3
+
+config_version=5
+
+[application]
+
+config/name="Aura PARTY"
+run/main_scene="res://main.tscn"
+config/features=PackedStringArray("4.3", "GL Compatibility")
+config/icon="res://icon.png"
+config/windows_native_icon="res://icon.ico"
+
+[autoload]
+
+Net="*res://net.gd"
+Sfx="*res://sfx.gd"
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/size/window_width_override=1600
+window/size/window_height_override=900
+window/stretch/mode="canvas_items"
+window/stretch/aspect="keep"
+
+[importer_defaults]
+
+texture={
+"compress/lossy_quality": 0.9,
+"compress/mode": 1,
+"mipmaps/generate": true
+}
+
+[physics]
+
+common/physics_ticks_per_second=120
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/canvas_textures/default_texture_filter=3
+environment/defaults/default_clear_color=Color(0.207843, 0.207843, 0.254902, 1)

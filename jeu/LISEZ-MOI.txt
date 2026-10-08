@@ -1,0 +1,75 @@
+AURA PARTY - v0.12 (plateau + 8 mini-jeux)
+==========================================
+Jusqu'à 8 joueurs, chacun sur son PC.
+Tout le monde doit avoir CETTE version du jeu (sinon la connexion est refusée).
+Dernière version : https://github.com/artercamille/auraparty
+
+AVANT DE JOUER (une seule fois)
+1. Installez tous Radmin VPN (gratuit) : https://www.radmin-vpn.com/fr/
+2. Une personne crée un réseau dans Radmin VPN, les autres le rejoignent.
+
+POUR JOUER
+1. Lancez AuraParty.exe.
+   Si Windows affiche "Windows a protégé votre ordinateur" :
+   cliquez sur "Informations complémentaires" puis "Exécuter quand même".
+2. Au tout premier lancement, choisis ton pseudo (modifiable en cliquant
+   sur ton nom en haut à gauche). L'hôte clique sur "Créer une partie".
+   Si Windows demande l'accès au réseau : cliquez sur "Autoriser".
+3. L'hôte clique sur "Copier" à côté de son IP (elle commence par 26.)
+   et la colle sur Discord.
+4. Les autres collent cette IP et cliquent sur "Rejoindre".
+5. Dans le salon, chacun peut changer de couleur. L'hôte choisit le nombre
+   de tours (5, 10, 15 ou 20) puis clique sur "Lancer la partie !".
+
+RÈGLES (comme Mario Party)
+- Chacun commence avec 10 pièces.
+- À ton tour, appuie sur Espace pour frapper le bloc-dé (1 à 10).
+- Case bleue : +3 pièces. Case rouge : -3 pièces.
+- En passant sur l'étoile avec 20 pièces, tu l'achètes automatiquement.
+- Si tu ne lances pas ton dé, il part tout seul au bout de 15 secondes.
+- Quand tout le monde a joué : mini-jeu au hasard ! Chacun appuie sur Espace
+  quand il est prêt. Les meilleurs gagnent des pièces (1er +8, 2e +5, 3e +3,
+  4e +2, puis +1). Le gagnant du mini-jeu joue en premier au tour suivant.
+- Dernier mini-jeu de la partie : le gagnant remporte une ÉTOILE !
+- À la fin, 3 étoiles bonus : Roi des mini-jeux, Pluie de pièces (le plus de
+  pièces gagnées) et Pas de chance (le plus de cases rouges).
+- Le plus d'étoiles gagne, puis le plus de pièces.
+- Éliminé ou arrivé dans un mini-jeu ? Tu regardes les autres (← → pour
+  changer de joueur).
+- Dans le salon, l'hôte peut exclure un joueur.
+
+LES MINI-JEUX
+- Gare aux blocs ! : des blocs s'écrasent du ciel, regardez leur ombre.
+  Poussez les autres dessous. Le dernier debout gagne.
+- Coup de tampon ! : sautez et retombez pour peindre le sol à votre couleur.
+  Bas en l'air = piqué et tampon plus large. Grande arène avec mini-carte.
+- La bonne clé ! : 5 portes, 3 clés devant chacune, une seule l'ouvre
+  (différente pour chaque joueur). Le premier arrivé gagne.
+- Le grand parcours ! : course de plateformes avec pics, scies et
+  plateformes mobiles. Les drapeaux sauvegardent. Premier arrivé gagne.
+- Le rocher fou ! : fuyez le rocher géant qui accélère. La piste devient de
+  plus en plus dure (caisses, trous, pics, ponts, pierres de gué, scies).
+  Poussez les autres vers lui. Le dernier en vie gagne.
+- Défilé de bûches ! : des bûches roulent sur un pont suspendu. Sautez
+  par-dessus ou rebondissez sur la souris qui court dessus. Les bûches à
+  piques cassent les planches qui rougissent. Le dernier sur le pont gagne.
+- Quiz sous le chapiteau ! : des ballons montrent des images un court instant
+  (à compter, à retenir, bonneteau). Sautez sur l'estrade de la bonne réponse :
+  la première estrade touchée compte. Les plus rapides gagnent plus de points.
+- Grand Prix Aura ! : course de karts vue de dessus, 3 tours. Cubes « ? » =
+  objets (banane, carapace, champignon turbo). Tourner longtemps à fond charge
+  un turbo. Commandes du kart : Z/↑/Espace accélérer, S/↓ freiner, Q/D tourner,
+  Maj/X/clic utiliser l'objet. Premier arrivé gagne.
+
+TESTER UN MINI-JEU : dans le salon, l'hôte clique sur « Tester un mini-jeu
+(sans plateau) » et choisit le jeu. Retour au salon après les résultats.
+
+COMMANDES (clavier ou manette)
+- Bouger : Q / D ou flèches (stick ou croix)
+- Sauter : Espace (bouton A). Double saut en l'air !
+- Pousser : Maj, X, E ou clic gauche (bouton X ou B)
+- Sauter sur la tête d'un pote : il est écrasé et tu rebondis.
+- Plein écran : F11
+
+Graphismes et sons : Kenney (kenney.nl), licence CC0.
+Police : Fredoka (licence SIL Open Font).
