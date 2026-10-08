@@ -61,6 +61,12 @@ var tex_coin: Texture2D = load("res://assets/tiles/coin_gold.png")
 var tex_block: Texture2D = load("res://assets/tiles/block_exclamation.png")
 var tex_block_hit: Texture2D = load("res://assets/tiles/block_exclamation_active.png")
 var _debug_shot := false
+var dice_hits := 0
+var sparks: Array = []            # particules (pack Kenney Particle)
+var _ptex := {}
+var emotes: Dictionary = {}       # id -> [nom, début]
+var _emote_cd := 0.0
+const EMOTE_KEYS := {KEY_1: "faceHappy", KEY_2: "laugh", KEY_3: "faceAngry", KEY_4: "faceSad", KEY_5: "heart", KEY_6: "idea"}
 
 
 func _ready() -> void:
@@ -115,6 +121,11 @@ func _ready() -> void:
 		cam.position = vis.get(turn_id, BoardMap.SIZE / 2.0)
 	cam_target = cam.position
 	Game.event.connect(_on_event)
+	Game.emote_shown.connect(show_emote)
+	for n in ["faceHappy", "laugh", "faceAngry", "faceSad", "heart", "idea", "exclamation", "exclamations", "stars", "drops", "cash", "anger"]:
+		_emote_tex(n)
+	for n in ["star_04", "star_06", "spark_03", "magic_02", "twirl_01", "light_02", "flare_01"]:
+		_ptex[n] = load("res://assets/particles/%s.png" % n)
 	Net.players_changed.connect(_on_players_changed)
 	if not Game.ask.is_empty():
 		_on_event(Game.ask)
@@ -127,6 +138,10 @@ func _ready() -> void:
 func _debug_event() -> void:
 	for ev in OS.get_environment("BOARD_EVENT").split("|"):
 		await get_tree().create_timer(0.8).timeout
+		if ev.begins_with("emote:"):
+			var parts := ev.split(":")
+			show_emote(int(parts[1]), parts[2])
+			continue
 		var d = JSON.parse_string(ev)
 		if d is Dictionary:
 			d["players"] = Net.players
@@ -144,14 +159,16 @@ func _token_target(id: int) -> Vector2:
 		return base
 	var same := []
 	for o in space_of:
-		if space_of[o] == s:
+		if space_of[o] == s and not (o == turn_id and phase != "idle"):
 			same.append(o)
 	same.sort()
-	if same.size() <= 1:
+	var centered: bool = turn_id != 0 and phase != "idle" and int(space_of.get(turn_id, -1)) == s
+	if same.size() <= 1 and not centered:
 		return base
 	var k := same.find(id)
-	var a := TAU * k / same.size() - PI / 2.0
-	return base + Vector2(cos(a) * 34.0, sin(a) * 16.0)
+	var a := TAU * k / maxi(1, same.size()) + (0.6 if centered else -PI / 2.0)
+	var rad := Vector2(58.0, 26.0) if centered else Vector2(34.0, 16.0)
+	return base + Vector2(cos(a) * rad.x, sin(a) * rad.y)
 
 
 func _hop(id: int, dur: float, h: float) -> void:
@@ -278,6 +295,35 @@ func _draw_world() -> void:
 			board_fx.draw_circle(np, 32.0, UI.DARK)
 			board_fx.draw_circle(np, 27.0, UI.WHITE)
 			UI.text(board_fx, np, str(steps_left), 36, UI.BLUE, 0)
+	# particules
+	for spk in sparks:
+		var tx2: Texture2D = _ptex.get(str(spk["tex"]))
+		if tx2 == null:
+			continue
+		var k4 := (t - float(spk["t0"])) / float(spk["life"])
+		var c4: Color = spk["c"]
+		c4.a = 1.0 - k4 * k4
+		var sc4 := float(spk["s"]) * (1.0 - k4 * 0.4)
+		board_fx.draw_set_transform(spk["p"], float(spk["r"]), Vector2(sc4, sc4))
+		board_fx.draw_texture(tx2, -tx2.get_size() / 2.0, c4)
+		board_fx.draw_set_transform(Vector2.ZERO)
+	# bulles d'émotes
+	for eid in emotes:
+		if not vis.has(eid):
+			continue
+		var age := t - float(emotes[eid][1])
+		var tx := _emote_tex(str(emotes[eid][0]))
+		if tx == null:
+			continue
+		var pop := minf(1.0, age * 7.0)
+		var sc := (0.8 + 0.3 * (1.0 - pop) * sin(age * 30.0)) * m * pop
+		if age > 1.9:
+			sc *= maxf(0.0, 1.0 - (age - 1.9) * 3.3)
+		var side := 82.0 if (eid == turn_id and phase in ["action", "dice", "moving"]) else 0.0
+		var ep: Vector2 = vis[eid] + Vector2(side * m, (-150.0 if side == 0.0 else -110.0) * m + _hop_offset(eid))
+		board_fx.draw_set_transform(ep, sin(age * 3.0) * 0.08, Vector2(sc, sc))
+		board_fx.draw_texture(tx, -tx.get_size() / 2.0)
+		board_fx.draw_set_transform(Vector2.ZERO)
 	# petits gains de pièces
 	for pp in popups:
 		var k3: float = (t - float(pp["t"])) / 1.4
@@ -289,6 +335,15 @@ func _draw_world() -> void:
 		for z in [["FORÊT", Vector2(760, 1720)], ["LAC", Vector2(820, 760)], ["CHÂTEAU", Vector2(1520, 380)], ["VOLCAN", Vector2(3080, 980)],
 				["PLAGE", Vector2(3120, 1820)], ["VILLAGE", Vector2(2000, 2450)]]:
 			UI.text(board_fx, z[1], z[0], 84, Color(1, 1, 1, 0.85), 18)
+
+
+var _etex := {}
+
+
+func _emote_tex(n: String) -> Texture2D:
+	if not _etex.has(n):
+		_etex[n] = load("res://assets/emotes/%s.png" % n)
+	return _etex[n]
 
 
 func warp_spin(id: int) -> float:
@@ -334,7 +389,7 @@ func _on_event(d: Dictionary) -> void:
 			map_view = false
 			if id == me:
 				_show_banner("À toi de jouer !", Net.color_of(id), 1.8)
-				Sfx.play("select", -2.0)
+				Sfx.play("jingle_turn", 0.0, 0.0)
 			else:
 				_show_banner("Au tour de %s" % Net.name_of(id), Net.color_of(id), 1.8)
 		"ask":
@@ -349,7 +404,9 @@ func _on_event(d: Dictionary) -> void:
 				sel = 0
 				if what == "branch":
 					map_view = false
-				Sfx.play("select", -6.0)
+				Sfx.play("ui_open", -6.0, 0.0)
+			if what == "action":
+				Sfx.play("dice_shuffle", -10.0)
 		"item":
 			_close_menu()
 			var it := str(d.get("item", ""))
@@ -363,7 +420,8 @@ func _on_event(d: Dictionary) -> void:
 				"mushroom":
 					spin_bonus += 3
 			panel = {"kind": "item", "item": it, "title": Items.item_name(it), "text": str(d.get("text", "")), "t0": t, "dur": 2.0, "col": Net.color_of(id)}
-			Sfx.play("gem", -4.0)
+			Sfx.play("jingle_item", -2.0, 0.0)
+			show_emote(id, "exclamation")
 		"roll":
 			_close_menu()
 			turn_id = id
@@ -373,25 +431,39 @@ func _on_event(d: Dictionary) -> void:
 			dice_total = int(d.get("total", 1))
 			dice_t0 = t
 			_hop(id, 0.3, 60.0)
-			Sfx.play("bump", -2.0)
+			dice_hits = 0
+			Sfx.play("dice_throw", 0.0)
 			if d.get("poison", false):
 				_show_banner("Empoisonné ! Dé de 1 à 3...", Color("#a064f0"), 1.6)
 		"step":
 			phase = "moving"
 			steps_left = int(d.get("left", 0))
 			_hop(id, 0.26, 26.0)
-			Sfx.play("jump", -16.0, 0.12)
+			Sfx.play("step1" if steps_left % 2 == 0 else "step2", -2.0, 0.1)
 		"coins":
 			var delta := int(d.get("delta", 0))
 			if vis.has(id):
 				popups.append({"p": vis[id], "txt": ("+%d" % delta) if delta >= 0 else str(delta), "c": UI.YELLOW if delta >= 0 else UI.RED, "t": t})
-			Sfx.play("coin" if delta >= 0 else "hurt", -3.0)
+			if delta > 0:
+				Sfx.play("coin", -3.0)
+				if vis.has(id):
+					burst(vis[id] + Vector2(0, -40), "spark_03", mini(14, 3 + delta), UI.YELLOW, 220.0)
+				if delta >= 5:
+					Sfx.play("chips", -6.0)
+			elif delta < 0:
+				Sfx.play("hurt", -4.0)
+				if delta <= -5:
+					show_emote(id, "faceSad")
 			if str(d.get("text", "")) != "":
 				_show_banner(str(d["text"]), UI.YELLOW if delta >= 0 else UI.RED, 1.6)
 		"star":
 			if d.get("bought", false):
 				_show_banner("%s achète une ÉTOILE !" % Net.name_of(id), UI.YELLOW, 2.6)
-				Sfx.play("gem", 0.0)
+				Sfx.play("jingle_star", 2.0, 0.0)
+				show_emote(id, "stars")
+				if vis.has(id):
+					burst(vis[id] + Vector2(0, -60), "star_06", 18, UI.YELLOW, 420.0)
+					burst(vis[id] + Vector2(0, -60), "light_02", 4, Color(1, 0.9, 0.4), 120.0)
 				if vis.has(id):
 					popups.append({"p": vis[id], "txt": "+1 étoile", "c": UI.YELLOW, "t": t})
 				_hop(id, 0.5, 90.0)
@@ -405,33 +477,55 @@ func _on_event(d: Dictionary) -> void:
 				return
 			else:
 				_show_banner("Il faut %d pièces pour l'étoile..." % Game.STAR_COST, UI.GREY, 1.6)
+				Sfx.play("ui_error", -4.0, 0.0)
+				show_emote(id, "drops")
 		"msg":
 			panel = {"kind": "msg", "title": str(d.get("title", "")), "text": str(d.get("text", "")), "item": str(d.get("item", "")),
 				"t0": t, "dur": 3.2, "col": UI.RED if d.get("bad", false) else UI.BLUE}
-			Sfx.play("hurt" if d.get("bad", false) else "select", -4.0)
+			if d.get("bad", false):
+				Sfx.play("jingle_bad", 0.0, 0.0)
+				show_emote(id, "faceAngry")
+			elif str(d.get("item", "")) != "":
+				Sfx.play("jingle_item", -2.0, 0.0)
+				show_emote(id, "heart")
+			else:
+				Sfx.play("ui_question", -4.0, 0.0)
+				_msg_feeling(id, str(d.get("text", "")))
 		"card":
 			panel = {"kind": "card", "title": str(d.get("title", "")), "text": str(d.get("text", "")), "result": str(d.get("result", "")), "t0": t, "dur": 4.0}
-			Sfx.play("select", -2.0)
+			Sfx.play("card_slide", 0.0)
+			_card_sounds(id, str(d.get("result", "")))
 		"teleport":
 			if str(d.get("text", "")) != "":
 				_show_banner(str(d["text"]), UI.GREEN, 2.0)
-			Sfx.play("spawn", -4.0)
+			Sfx.play("spawn", -2.0)
+			if vis.has(id):
+				burst(vis[id] + Vector2(0, -40), "twirl_01", 6, Color(0.6, 1.0, 0.7), 160.0)
+			burst(BoardMap.pos(int(d.get("node", 0))) + Vector2(0, -40), "magic_02", 10, Color(0.6, 1.0, 0.7), 200.0)
 		"bought":
 			var it2 := str(d.get("item", ""))
 			if vis.has(id):
 				popups.append({"p": vis[id], "txt": Items.item_name(it2), "c": UI.GREEN, "t": t})
-			Sfx.play("coin", -2.0)
+			Sfx.play("chips_handle", -2.0)
 		"shop_done":
 			if menu == "shop":
 				_close_menu()
 		"duel":
 			var target := int(d.get("target", 0))
 			panel = {"kind": "duel", "a": id, "b": target, "stake": int(d.get("stake", 0)), "t0": t, "dur": 3.0}
-			Sfx.play("gem", 0.0)
+			Sfx.play("jingle_duel", 2.0, 0.0)
+			if vis.has(id):
+				burst(vis[id] + Vector2(0, -50), "flare_01", 6, Color("#c79bff"), 200.0)
+			show_emote(id, "anger")
+			show_emote(target, "exclamations")
 		"announce":
 			_show_banner(str(d.get("text", "")), UI.YELLOW, 3.0)
 			phase = "idle"
 			turn_id = 0
+			if Net.round_num >= Net.total_rounds:
+				Sfx.voice("final_round")
+			else:
+				Sfx.play("bell", -4.0, 0.0)
 		"end":
 			phase = "idle"
 			steps_left = 0
@@ -469,6 +563,46 @@ func _teleport_later(pid: int) -> void:
 		vis[pid] = _token_target(pid)
 
 
+## Gerbe de particules (étoiles, étincelles, magie).
+func burst(p: Vector2, kind: String, n: int, col := Color.WHITE, speed := 260.0) -> void:
+	for i in n:
+		var a := randf() * TAU
+		var v := Vector2(cos(a), sin(a) * 0.7) * randf_range(speed * 0.4, speed) + Vector2(0, -speed * 0.4)
+		sparks.append({"tex": kind, "p": p, "v": v, "t0": t, "life": randf_range(0.6, 1.1), "r": randf() * TAU, "s": randf_range(0.35, 0.7), "c": col})
+
+
+## Bulle d'émote au-dessus d'un pion.
+func show_emote(id: int, name: String) -> void:
+	emotes[id] = [name, t]
+	if id != Net.my_id() and name in ["faceHappy", "laugh", "faceAngry", "faceSad", "heart", "idea"]:
+		Sfx.play("ui_drop", -8.0)
+
+
+func _msg_feeling(id: int, text: String) -> void:
+	if "+" in text or "gagne" in text or "Trésor" in text or "miraculeuse" in text or "Fête" in text:
+		Sfx.play("jingle_good", -2.0, 0.0)
+		show_emote(id, "faceHappy")
+	elif "vole" in text or "perd" in text or "-" in text or "soleil" in text or "ÉRUPTION" in text:
+		Sfx.play("jingle_bad", -2.0, 0.0)
+		show_emote(id, "faceSad")
+
+
+func _card_sounds(id: int, result: String) -> void:
+	await get_tree().create_timer(0.7).timeout
+	if not is_inside_tree():
+		return
+	Sfx.play("card_place", 0.0)
+	await get_tree().create_timer(0.8).timeout
+	if not is_inside_tree():
+		return
+	if result.begins_with("+") or "Pile" in result or "remercient" in result:
+		Sfx.play("jingle_good", -2.0, 0.0)
+		show_emote(id, "faceHappy" if not result.begins_with("+") else "cash")
+	elif result.begins_with("-") or "Face" in result:
+		Sfx.play("jingle_bad", -2.0, 0.0)
+		show_emote(id, "faceSad")
+
+
 func _show_banner(txt: String, col: Color, dur := 2.4) -> void:
 	banner = txt
 	banner_col = col
@@ -498,7 +632,7 @@ func _others() -> Array:
 func _activate(a: String) -> void:
 	if a == "":
 		return
-	Sfx.play("select", -4.0)
+	Sfx.play("ui_ok", -4.0, 0.0)
 	if a == "map":
 		map_view = not map_view
 		return
@@ -563,6 +697,11 @@ func _use(k: String, target: int, value: int) -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo and EMOTE_KEYS.has((event as InputEventKey).physical_keycode):
+		if _emote_cd <= 0.0 and Net.players.has(Net.my_id()):
+			_emote_cd = 1.0
+			Game.send_emote(EMOTE_KEYS[(event as InputEventKey).physical_keycode])
+		return
 	if event is InputEventKey and event.pressed and not event.echo and (event as InputEventKey).physical_keycode == KEY_TAB:
 		map_view = not map_view
 		get_viewport().set_input_as_handled()
@@ -577,6 +716,8 @@ func _input(event: InputEvent) -> void:
 		if b >= 0 and bool(buttons[b]["on"]):
 			_activate(str(buttons[b]["a"]))
 			get_viewport().set_input_as_handled()
+		elif b >= 0:
+			Sfx.play("ui_error", -6.0, 0.0)
 		return
 	if menu == "" or buttons.is_empty():
 		return
@@ -594,7 +735,7 @@ func _input(event: InputEvent) -> void:
 			custom_val = clampi(custom_val + signi(nav), 1, 10)
 		else:
 			sel = clampi(sel + nav, 0, buttons.size() - 1) if absi(nav) == 4 else posmod(sel + nav, buttons.size())
-		Sfx.play("select", -12.0)
+		Sfx.play("ui_move", -8.0, 0.0)
 		get_viewport().set_input_as_handled()
 		return
 	var go := false
@@ -615,6 +756,8 @@ func _input(event: InputEvent) -> void:
 			_activate("ok")
 		elif sel >= 0 and sel < buttons.size() and bool(buttons[sel]["on"]):
 			_activate(str(buttons[sel]["a"]))
+		elif sel >= 0 and sel < buttons.size():
+			Sfx.play("ui_error", -6.0, 0.0)
 		get_viewport().set_input_as_handled()
 
 
@@ -630,6 +773,19 @@ func _btn_at(p: Vector2) -> int:
 # ------------------------------------------------------------------ boucle
 func _process(delta: float) -> void:
 	t += delta
+	_emote_cd -= delta
+	if phase == "dice":
+		while dice_hits < dice_vals.size() and t >= dice_t0 + 0.25 + 0.35 * dice_hits:
+			dice_hits += 1
+			Sfx.play("die_hit", -2.0)
+	for eid in emotes.keys():
+		if t - float(emotes[eid][1]) > 2.2:
+			emotes.erase(eid)
+	for sp in sparks:
+		sp["p"] = (sp["p"] as Vector2) + (sp["v"] as Vector2) * delta
+		sp["v"] = (sp["v"] as Vector2) * (1.0 - 2.2 * delta) + Vector2(0, 260.0 * delta)
+		sp["r"] = float(sp["r"]) + delta * 4.0
+	sparks = sparks.filter(func(sp): return t - float(sp["t0"]) < float(sp["life"]))
 	banner_t -= delta
 	if banner_t <= 0.0:
 		banner = ""
@@ -758,6 +914,7 @@ func _draw_hud() -> void:
 	if sel >= buttons.size():
 		sel = maxi(0, buttons.size() - 1)
 	UI.text(hud, Vector2(84, 98), "Tab : carte", 17, UI.WHITE, 5)
+	UI.text(hud, Vector2(84, 122), "1 à 6 : émotes", 17, UI.WHITE, 5)
 
 
 func _draw_cards() -> void:

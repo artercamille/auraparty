@@ -1,4 +1,4 @@
-AURA PARTY - v0.13 (la grande île + 8 mini-jeux)
+AURA PARTY - v0.14 (la grande île + 8 mini-jeux, nouveaux graphismes et musique)
 ==========================================
 Jusqu'à 8 joueurs, chacun sur son PC.
 Tout le monde doit avoir CETTE version du jeu (sinon la connexion est refusée).
@@ -84,12 +84,19 @@ LES MINI-JEUX
 TESTER UN MINI-JEU : dans le salon, l'hôte clique sur « Tester un mini-jeu
 (sans plateau) » et choisit le jeu. Retour au salon après les résultats.
 
+SUR LE PLATEAU
+- Espace : valider · ← → : choisir · Tab : carte de l'île
+- Touches 1 à 6 : envoyer une émote à tes potes (content, mort de rire,
+  énervé, triste, cœur, idée)
+
 COMMANDES (clavier ou manette)
 - Bouger : Q / D ou flèches (stick ou croix)
 - Sauter : Espace (bouton A). Double saut en l'air !
 - Pousser : Maj, X, E ou clic gauche (bouton X ou B)
 - Sauter sur la tête d'un pote : il est écrasé et tu rebondis.
 - Plein écran : F11
+- Couper / remettre la musique : M
 
 Graphismes et sons : Kenney (kenney.nl), licence CC0.
+Musiques : FreePD (freepd.com), domaine public.
 Police : Fredoka (licence SIL Open Font).

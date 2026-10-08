@@ -4,6 +4,7 @@ extends Node
 ## et le plateau les met en scène. Les joueurs répondent aux questions avec send_request().
 
 signal event(d: Dictionary)
+signal emote_shown(id: int, name: String)
 
 const ACTION_TIMEOUT := 15.0
 const CHOICE_TIMEOUT := 12.0
@@ -105,6 +106,20 @@ func _ask_and_wait(id: int, what: String, payload: Dictionary, timeout: float, f
 	var a = _ans
 	_ans = null
 	return a
+
+
+## Émotes envoyées par les joueurs sur le plateau (touches 1 à 6).
+func send_emote(name: String) -> void:
+	_emote.rpc(name)
+
+
+@rpc("any_peer", "call_local", "unreliable")
+func _emote(name: String) -> void:
+	var from := multiplayer.get_remote_sender_id()
+	if from == 0:
+		from = Net.my_id()
+	if Net.players.has(from):
+		emote_shown.emit(from, name)
 
 
 # ------------------------------------------------------------------ partie

@@ -59,15 +59,16 @@ func _process(delta: float) -> void:
 			"drum":
 				Sfx.play("whoosh", -2.0)
 			"win":
-				Sfx.play("gem", 0.0)
+				Sfx.play("jingle_star", 0.0, 0.0)
+				Sfx.voice("congratulations")
 				buttons.visible = true
 	if ph == "award":
 		var k := int(t / AWARD_T)
 		var local := t - k * AWARD_T
 		if local - delta < 1.0 and local >= 1.0:
-			Sfx.play("gem", -4.0)
+			Sfx.play("jingle_good", -2.0, 0.0)
 	if ph == "drum" and int(t * 8.0) != int((t - delta) * 8.0):
-		Sfx.play("bump", -14.0, 0.2)
+		Sfx.play("die_hit", -10.0, 0.2)
 	if ph == "win":
 		next_burst -= delta
 		if next_burst <= 0.0:

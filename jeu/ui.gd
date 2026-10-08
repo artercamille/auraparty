@@ -111,7 +111,7 @@ static func btn(text: String, cb: Callable, color := BLUE, size := 26) -> Button
 	b.add_theme_stylebox_override("normal", button_box(color))
 	b.add_theme_stylebox_override("hover", button_box(color.lightened(0.12)))
 	b.add_theme_stylebox_override("pressed", button_box(color.darkened(0.08), true))
-	b.pressed.connect(func(): Sfx.play("select", -6.0); cb.call())
+	b.pressed.connect(func(): Sfx.play("ui_ok", -4.0, 0.03); cb.call())
 	b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	return b
 

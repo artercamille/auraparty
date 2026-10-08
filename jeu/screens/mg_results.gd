@@ -42,7 +42,7 @@ func _draw_results(ci: Control) -> void:
 			break
 		if played_sfx <= i:
 			played_sfx = i + 1
-			Sfx.play("coin", -8.0, 0.1)
+			Sfx.play("chip", -4.0, 0.1)
 		var rank := int(r["rank"])
 		var x0 := 290.0 + (1.0 - appear) * 50.0
 		var row := Rect2(Vector2(x0, y), Vector2(700, 54))

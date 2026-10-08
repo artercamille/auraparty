@@ -83,7 +83,15 @@ var host_prog: Dictionary = {}
 var host_first_t := -1.0
 
 
+var _ktex := {}
+
+
 func _ready() -> void:
+	# textures chargées avant le dessin (sinon elles sortent blanches)
+	for n in ["tires_red", "tires_white", "barrier_red_race", "barrier_white_race", "arrow_yellow", "tribune_full", "tribune_overhang_red",
+			"tent_red_large", "tent_blue_large", "cone_straight", "barrel_red", "barrel_blue", "barrel_red_down", "tree_large", "tree_small",
+			"rock1", "rock2", "rock3"]:
+		_ktex[n] = load("res://assets/kart/%s.png" % n)
 	rng.seed = int(Net.mg_data.get("seed", 1))
 	_build_track()
 	world = Node2D.new()
@@ -154,6 +162,7 @@ func _ready() -> void:
 func _on_ending() -> void:
 	state = "over"
 	t = 0.0
+	Sfx.play("bell", -2.0, 0.0)
 
 
 func _on_players_changed() -> void:
@@ -336,14 +345,14 @@ func _process(delta: float) -> void:
 			if go_received:
 				state = "count"
 				t = 0.0
-				Sfx.play("select", -4.0)
+				Sfx.voice("3")
 		"count":
 			if int(t) != int(t - delta) and t < 3.0:
-				Sfx.play("select", -4.0)
+				Sfx.voice(str(3 - int(t)))
 			if t >= 3.0:
 				state = "race"
 				t = 0.0
-				Sfx.play("spawn", -2.0)
+				Sfx.voice("go")
 		"race":
 			race_t += delta
 			if Net.is_host():
@@ -768,6 +777,21 @@ func _draw_ground() -> void:
 	_tires(g, outer_wall)
 	for poly in _offset(pts, -WALL):
 		_tires(g, poly)
+	# panneaux « RACE » le long de la ligne droite des stands et chevrons dans les virages
+	for k in 7:
+		var sb := 260.0 + k * 230.0
+		var cb := _point_at(sb)
+		var db := _dir_at(sb)
+		var nb := db.orthogonal()
+		_ksprite(g, "barrier_red_race" if k % 2 == 0 else "barrier_white_race", cb + nb * (WALL + 40.0), db.angle(), 1.0)
+	for i in range(0, pts.size(), 6):
+		var a0 := _dir_at(cum[i])
+		var a1 := _dir_at(cum[i] + 160.0)
+		var turn := a0.angle_to(a1)
+		if absf(turn) > 0.28:
+			var side := -signf(turn)
+			var cp := pts[i] + a0.orthogonal() * side * (HALF + 48.0)
+			_ksprite(g, "arrow_yellow", cp, a0.angle() + PI / 2.0 * (1.0 if side > 0.0 else -1.0) + PI, 0.42)
 	# décor : arbres dehors, tribune, lac dans la boucle
 	var r := RandomNumberGenerator.new()
 	r.seed = 77
@@ -795,63 +819,75 @@ func _draw_ground() -> void:
 			placed.append(p)
 	placed.sort_custom(func(a, b): return a.y < b.y)
 	# lac au milieu
-	_blob(g, Vector2(2300, 1800), Vector2(260, 150), Color("#2f8fd8"), Color("#4fb6f2"))
+	_blob(g, Vector2(2300, 1800), Vector2(260, 150), Color("#3aa3e8"), Color("#5cc0f4"))
 	_grandstand(g, Vector2(1900, 2900))
 	for p in placed:
 		_tree(g, p, r.randf_range(0.9, 1.3), r.randi() % 3)
 
 
 func _tires(g: CanvasItem, poly: PackedVector2Array) -> void:
+	var red: Texture2D = _ktex["tires_red"]
+	var white: Texture2D = _ktex["tires_white"]
 	var acc := 0.0
+	var next := 0.0
+	var n := 0
 	for i in poly.size():
 		var a := poly[i]
 		var b := poly[(i + 1) % poly.size()]
 		var seg := a.distance_to(b)
-		var dpos := 0.0
-		while dpos < seg:
-			if int((acc + dpos) / 34.0) != int((acc + dpos - 1.0) / 34.0) or (acc + dpos) == 0.0:
-				var p := a.lerp(b, dpos / maxf(seg, 0.001))
-				var col := Color("#f04650") if int((acc + dpos) / 34.0) % 6 < 3 else Color("#ffffff")
-				g.draw_circle(p, 18.0, UI.DARK)
-				g.draw_circle(p, 14.0, Color("#2b2c35"))
-				g.draw_circle(p, 8.0, col)
-			dpos += 1.0
+		while next <= acc + seg:
+			var p := a.lerp(b, (next - acc) / maxf(seg, 0.001))
+			var tx := red if (n / 3) % 2 == 0 else white
+			g.draw_set_transform(p, 0.0, Vector2(0.68, 0.68))
+			g.draw_texture(tx, -tx.get_size() / 2.0)
+			g.draw_set_transform(Vector2.ZERO)
+			next += 36.0
+			n += 1
 		acc += seg
 
 
 func _blob(g: CanvasItem, c: Vector2, r: Vector2, col: Color, col2: Color) -> void:
 	g.draw_set_transform(c, 0.0, Vector2(1.0, r.y / r.x))
-	g.draw_circle(Vector2.ZERO, r.x + 10.0, UI.DARK)
+	g.draw_circle(Vector2.ZERO, r.x + 10.0, Color("#2c7cc0"))
 	g.draw_circle(Vector2.ZERO, r.x, col)
 	g.draw_circle(Vector2(-r.x * 0.2, -r.x * 0.15), r.x * 0.55, col2)
 	g.draw_set_transform(Vector2.ZERO)
 
 
 func _grandstand(g: CanvasItem, c: Vector2) -> void:
-	g.draw_rect(Rect2(c + Vector2(-420, -110), Vector2(840, 220)), UI.DARK)
-	g.draw_rect(Rect2(c + Vector2(-412, -102), Vector2(824, 204)), Color("#8a8fa8"))
-	for row in 4:
-		for k in 40:
-			var p := c + Vector2(-395 + k * 20.5, -80 + row * 50)
-			var cols := [Color("#f04650"), Color("#4b87f5"), Color("#facd2d"), Color("#5fcd55"), Color("#ff78c3"), Color("#ff8c28")]
-			g.draw_circle(p, 8.0, cols[(k * 7 + row * 3) % cols.size()])
-	g.draw_rect(Rect2(c + Vector2(-420, -150), Vector2(840, 44)), UI.DARK)
-	g.draw_rect(Rect2(c + Vector2(-414, -144), Vector2(828, 32)), Color("#f04650"))
-	UI.text(g, c + Vector2(0, -128), "GRAND PRIX AURA", 30, UI.WHITE, 6)
+	for k in 2:
+		_ksprite(g, "tribune_full", c + Vector2(-226 + k * 452, 0), 0.0, 1.0)
+	_ksprite(g, "tribune_overhang_red", c + Vector2(-226, -150), 0.0, 1.0)
+	_ksprite(g, "tribune_overhang_red", c + Vector2(226, -150), 0.0, 1.0)
+	for k in 4:
+		_ksprite(g, "tent_red_large" if k % 2 == 0 else "tent_blue_large", c + Vector2(-600 + k * 400 if k < 2 else -600 + k * 400 + 400, 230), 0.0, 0.62)
+	for k in 6:
+		_ksprite(g, ["cone_straight", "barrel_red", "barrel_blue", "tires_white", "cone_straight", "barrel_red_down"][k], c + Vector2(-560 + k * 225, 360 + (k % 2) * 40), k * 0.7, 0.8)
+	g.draw_style_box(UI.box(Color("#f04650"), UI.DARK, 4, 12), Rect2(c + Vector2(-260, -250), Vector2(520, 56)))
+	UI.text(g, c + Vector2(0, -222), "GRAND PRIX AURA", 32, UI.WHITE, 6)
+
+
+## Sprite du pack Racing, centré en p.
+func _ksprite(g: CanvasItem, name: String, p: Vector2, ang: float, s: float) -> void:
+	var tx: Texture2D = _ktex.get(name)
+	if tx == null:
+		return
+	g.draw_set_transform(p, ang, Vector2(s, s))
+	g.draw_texture(tx, -tx.get_size() / 2.0)
+	g.draw_set_transform(Vector2.ZERO)
 
 
 func _tree(g: CanvasItem, p: Vector2, s: float, kind: int) -> void:
-	g.draw_set_transform(p + Vector2(10, 14) * s, 0.0, Vector2(1.0, 0.6))
-	g.draw_circle(Vector2.ZERO, 40.0 * s, Color(0, 0, 0, 0.18))
+	g.draw_set_transform(p + Vector2(14, 18) * s, 0.0, Vector2(1.0, 0.75))
+	g.draw_circle(Vector2.ZERO, 62.0 * s, Color(0, 0, 0, 0.16))
 	g.draw_set_transform(Vector2.ZERO)
-	var cols := [[Color("#2f9e48"), Color("#47bd5d")], [Color("#2b8c4a"), Color("#3faa5a")], [Color("#3caf4f"), Color("#5cd06a")]]
-	var c: Array = cols[kind]
-	g.draw_circle(p, 44.0 * s, UI.DARK)
-	g.draw_circle(p, 39.0 * s, c[0])
-	g.draw_circle(p + Vector2(-10, -12) * s, 22.0 * s, c[1])
-	if kind == 0:
-		for k in 3:
-			g.draw_circle(p + Vector2(-16 + k * 15, 8 - (k % 2) * 16) * s, 5.0 * s, Color("#f04650"))
+	match kind:
+		0:
+			_ksprite(g, "tree_large", p, s * 0.7, 0.62 * s)
+		1:
+			_ksprite(g, "tree_small", p, s, 0.8 * s)
+		_:
+			_ksprite(g, ["rock1", "rock2", "rock3"][int(absf(p.x)) % 3], p, s * 2.0, 0.7 * s)
 
 
 # ------------------------------------------------------------------ dessin dynamique

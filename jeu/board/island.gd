@@ -60,6 +60,7 @@ func _ready() -> void:
 		l.z_index = layers.size() - 2
 		add_child(l)
 		layers[n] = l
+	(layers["ground"] as Node2D).texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
 	(layers["back"] as Node2D).draw.connect(_draw_back)
 	(layers["clouds"] as Node2D).draw.connect(_draw_clouds)
 	(layers["ground"] as Node2D).draw.connect(_draw_ground)
@@ -79,6 +80,7 @@ func _ready() -> void:
 	for s in [s1, s2, s3]:
 		streams.append(BoardMap.smooth(s, 10))
 	isles = [[Vector2(-330, 520), 190.0], [Vector2(4330, 820), 210.0], [Vector2(4270, 2280), 150.0], [Vector2(-280, 2050), 160.0], [Vector2(2000, -330), 140.0]]
+	_preload_textures()
 	_add_statue_sprite()
 	_build_grid()
 	_place_props()
@@ -280,6 +282,96 @@ func zone_at(p: Vector2) -> String:
 
 
 # ------------------------------------------------------------------ placement du décor
+# familles de sprites (packs Kenney « Background Elements » et « Foliage ») et hauteur visée
+const SPR := {
+	"tree": ["deco/tree", "deco/treeLong", "deco/foliage_007", "deco/foliage_008", "deco/foliage_009", "deco/foliage_010", "deco/foliage_011", "deco/foliage_039", "deco/foliage_041"],
+	"tree_autumn": ["deco/treeOrange", "deco/treeLongOrange", "deco/foliage_013", "deco/foliage_014", "deco/foliage_016", "deco/foliage_045", "deco/foliage_047"],
+	"pine": ["deco/treePine", "deco/foliage_005", "deco/foliage_006", "deco/foliage_037", "deco/foliage_012"],
+	"small_tree": ["deco/treeSmall_green1", "deco/treeSmall_green2", "deco/treeSmall_green3", "deco/treeSmall_greenAlt1", "deco/treeSmall_greenAlt2", "deco/treeSmall_greenAlt3"],
+	"small_autumn": ["deco/treeSmall_orange1", "deco/treeSmall_orange2", "deco/treeSmall_orange3"],
+	"palm": ["deco/treePalm"],
+	"dead": ["deco/treeDead", "deco/foliage_023", "deco/foliage_024", "deco/foliage_025"],
+	"bush": ["deco/bush1", "deco/bushAlt1", "deco/foliage_050", "deco/foliage_051", "deco/foliage_052", "deco/foliage_053"],
+	"grass": ["deco/bush2", "deco/bush3", "deco/bush4", "deco/bushAlt2", "deco/bushAlt3", "deco/foliage_019", "deco/foliage_020", "deco/foliage_021"],
+	"grass_orange": ["deco/bushOrange1", "deco/bushOrange2"],
+	"flower": ["deco/foliage_001", "deco/foliage_002", "deco/foliage_003", "deco/foliage_004"],
+	"rock": ["deco/foliage_054", "deco/foliage_055", "deco/foliage_056", "deco/foliage_057", "deco/foliage_058", "deco/foliage_059"],
+	"house": ["deco/house1", "deco/house2", "deco/houseAlt1", "deco/houseAlt2"],
+	"house_small": ["deco/houseSmall1", "deco/houseSmall2", "deco/houseSmallAlt1", "deco/houseSmallAlt2"],
+}
+const SPR_H := {"tree": 180.0, "tree_autumn": 180.0, "pine": 210.0, "small_tree": 95.0, "small_autumn": 95.0, "palm": 215.0,
+	"dead": 160.0, "bush": 52.0, "grass": 44.0, "grass_orange": 44.0, "flower": 34.0, "rock": 48.0, "house": 205.0, "house_small": 95.0}
+const TALL := ["tree", "tree_autumn", "pine", "palm", "dead", "small_tree", "small_autumn", "house"]
+const ZONE_MIX := {
+	"foret": [["tree", 26], ["pine", 22], ["tree_autumn", 12], ["mushroom", 12], ["bush", 9], ["flower", 9], ["grass", 10]],
+	"lac": [["tree", 25], ["bush", 18], ["flower", 22], ["rock", 15], ["grass", 20]],
+	"nord": [["pine", 45], ["rock", 25], ["small_tree", 15], ["grass", 15]],
+	"village": [["flower", 30], ["bush", 25], ["small_tree", 25], ["fence", 10], ["grass", 10]],
+	"chateau": [["bush", 35], ["small_tree", 30], ["flower", 35]],
+	"volcan": [["dead", 30], ["vrock", 45], ["grass_orange", 15], ["small_autumn", 10]],
+	"plage": [["palm", 40], ["shell", 20], ["starfish", 15], ["rock", 10], ["grass", 15]],
+	"prairie": [["tree", 22], ["small_tree", 14], ["bush", 18], ["flower", 22], ["rock", 9], ["grass", 15]],
+}
+
+var _tc := {}
+
+
+## Les textures doivent être chargées AVANT le dessin (sinon elles sortent blanches dans les couches dessinées une seule fois).
+func _preload_textures() -> void:
+	for fam in SPR:
+		for n in SPR[fam]:
+			_t(n)
+	for n in ["deco/castleSmallAlt", "deco/towerAlt", "deco/towerSmallAlt", "deco/castleWallAlt", "deco/fence", "deco/cloud1", "deco/cloud2",
+			"deco/cloud3", "deco/cloud5", "deco/cloud7", "tiles/flag_red_a", "tiles/flag_blue_a", "tiles/coin_gold", "deco/tex_tile_68", "deco/tex_tile_73"]:
+		_t(n)
+	for w in ["Beige", "Gray"]:
+		for part in ["", "TopLeft", "TopMid", "TopRight", "MidLeft", "MidRight", "BottomLeft", "BottomMid", "BottomRight"]:
+			_t("buildings/house%s%s" % [w, part])
+	for r in ["Red", "Grey"]:
+		for part in ["TopLeft", "TopMid", "TopRight"]:
+			_t("buildings/roof%s%s" % [r, part])
+	for n in ["windowCheckered", "signHangingCoin", "awningRed", "windowLow", "doorKnob", "windowLowCheckered", "windowHighTop", "clock",
+			"windowHighBottom", "doorTop", "doorLock"]:
+		_t("buildings/" + n)
+	for k in SPACE_ICON:
+		_icon(str(SPACE_ICON[k]))
+
+
+func _t(n: String) -> Texture2D:
+	if not _tc.has(n):
+		_tc[n] = load("res://assets/%s.png" % n)
+	return _tc[n]
+
+
+## Ajoute un sprite au décor (pied du sprite en p), avec une taille visée.
+func _add_spr(p: Vector2, fam: String, name := "", hmul := 1.0, mod := Color.WHITE, flip := -1) -> bool:
+	var list: Array = SPR.get(fam, [])
+	if name == "":
+		if list.is_empty():
+			return false
+		name = list[rng.randi() % list.size()]
+	var tx := _t(name)
+	if tx == null:
+		return false
+	var sz := tx.get_size()
+	var sc: float = float(SPR_H.get(fam, 100.0)) * hmul * rng.randf_range(0.88, 1.12) / sz.y
+	var fl := rng.randf() < 0.5 if flip < 0 else flip == 1
+	props.append([p, "spr", sc, fl, name, sz.x * sc * 0.42, mod])
+	return true
+
+
+func _pick(mix: Array) -> String:
+	var total := 0.0
+	for m in mix:
+		total += float(m[1])
+	var r := rng.randf() * total
+	for m in mix:
+		r -= float(m[1])
+		if r <= 0.0:
+			return str(m[0])
+	return str(mix[0][0])
+
+
 func _place_props() -> void:
 	# monuments
 	props.append([CASTLE, "castle", 1.0, false])
@@ -293,10 +385,11 @@ func _place_props() -> void:
 	props.append([Vector2(1880, 1480), "windmill", 1.15, false])
 	props.append([Vector2(LAKE_C.x + 90, LAKE_C.y + 20), "boat", 1.0, false])
 	props.append([Vector2(LAGOON_C.x - 120, LAGOON_C.y + 60), "boat", 0.8, true])
-	for h in [[Vector2(1450, 2540), 1.05, "#f04650"], [Vector2(2000, 2080), 1.15, "#4b87f5"], [Vector2(2190, 2110), 1.0, "#ff9a2e"],
-			[Vector2(2380, 2140), 1.1, "#8a4fd8"], [Vector2(1985, 2575), 1.1, "#3fbf5a"], [Vector2(2215, 2585), 1.05, "#f04650"],
-			[Vector2(2445, 2565), 1.0, "#4b87f5"], [Vector2(1280, 2490), 1.0, "#ff6fb5"]]:
-		props.append([h[0], "house", h[1], false, Color(h[2])])
+	var houses := ["deco/houseAlt1", "deco/house1", "deco/houseAlt2", "deco/house2", "deco/houseAlt1", "deco/house2", "deco/houseAlt2", "deco/house1"]
+	var hp := [Vector2(1450, 2560), Vector2(2000, 2090), Vector2(2190, 2115), Vector2(2380, 2150), Vector2(1985, 2595), Vector2(2215, 2600),
+		Vector2(2445, 2585), Vector2(1280, 2505)]
+	for i in hp.size():
+		_add_spr(hp[i], "house", houses[i], 0.95 if i % 3 == 0 else 1.0, Color.WHITE, i % 2)
 	for lp in [Vector2(1860, 2160), Vector2(2080, 2180), Vector2(1560, 2340), Vector2(2330, 2240)]:
 		props.append([lp, "lamp", 1.0, false])
 	for b in [Vector2(1845, 2560), Vector2(1575, 2585)]:
@@ -307,14 +400,14 @@ func _place_props() -> void:
 		props.append([u, "umbrella", 1.0, rng.randf() < 0.5])
 	for r in [Vector2(LAKE_C.x - 300, LAKE_C.y + 40), Vector2(LAKE_C.x + 260, LAKE_C.y + 150), Vector2(LAKE_C.x - 180, LAKE_C.y + 200),
 			Vector2(LAKE_C.x + 290, LAKE_C.y - 90), Vector2(POND_C.x + 150, POND_C.y + 30), Vector2(POND_C.x - 140, POND_C.y - 20)]:
-		props.append([r, "reeds", 1.0, false])
+		_add_spr(r, "grass", "", 1.3)
 
-	var want := {"foret": 150, "lac": 34, "nord": 40, "village": 24, "chateau": 18, "volcan": 46, "plage": 46, "prairie": 120}
+	var want := {"foret": 170, "lac": 40, "nord": 46, "village": 26, "chateau": 20, "volcan": 50, "plage": 50, "prairie": 140}
 	var count := {}
 	for k in want:
 		count[k] = 0
 	var tries := 0
-	while tries < 26000:
+	while tries < 30000:
 		tries += 1
 		var p := Vector2(rng.randf_range(40, BoardMap.SIZE.x - 40), rng.randf_range(40, BoardMap.SIZE.y - 40))
 		if not Geometry2D.is_point_in_polygon(p, inner) or not _free(p):
@@ -322,39 +415,42 @@ func _place_props() -> void:
 		var z := zone_at(p)
 		if int(count[z]) >= int(want[z]):
 			continue
-		var kind := ""
-		match z:
-			"foret":
-				kind = ["tree", "tree", "pine", "pine", "tree", "mushroom", "bush", "flowers", "mushroom_small"][rng.randi() % 9]
-			"lac":
-				kind = ["tree", "bush", "flowers", "rock", "pine", "flowers"][rng.randi() % 6]
-			"nord":
-				kind = ["pine", "pine", "rock", "pine", "bush"][rng.randi() % 5]
-			"village":
-				kind = ["flowers", "bush", "flowers", "tree", "fence"][rng.randi() % 5]
-			"chateau":
-				kind = ["hedge", "hedge", "flowers", "bush", "tree"][rng.randi() % 5]
-			"volcan":
-				kind = ["vrock", "vrock", "dead_tree", "vrock", "dead_tree", "vrock_small"][rng.randi() % 6]
-			"plage":
-				kind = ["palm", "palm", "shell", "starfish", "palm", "rock", "shell"][rng.randi() % 7]
-			_:
-				kind = ["tree", "bush", "flowers", "flowers", "bush", "rock", "tree", "flowers"][rng.randi() % 8]
+		var kind := _pick(ZONE_MIX[z])
 		# les grands décors ne doivent pas cacher les chemins avec leur feuillage
-		if kind in ["tree", "pine", "palm", "dead_tree", "mushroom"]:
-			if not _free(p + Vector2(0, -70)) or not _free(p + Vector2(0, -140)) or not _free(p + Vector2(-50, -100)) or not _free(p + Vector2(50, -100)):
+		var h: float = float(SPR_H.get(kind, 60.0))
+		if kind == "mushroom":
+			h = 110.0
+		if h > 80.0:
+			var bad := false
+			for k in [0.35, 0.7, 1.0]:
+				if not _free(p + Vector2(0, -h * k)):
+					bad = true
+			if not _free(p + Vector2(-45, -h * 0.6)) or not _free(p + Vector2(45, -h * 0.6)):
+				bad = true
+			if bad:
 				continue
-		var min_d := 64.0 if kind in ["flowers", "shell", "starfish", "vrock_small", "mushroom_small"] else 105.0
-		if z == "foret" and kind in ["tree", "pine"]:
-			min_d = 88.0
+		var small := kind in ["flower", "shell", "starfish", "grass", "grass_orange", "rock"]
+		var min_d := 58.0 if small else 100.0
+		if z == "foret" and kind in ["tree", "pine", "tree_autumn"]:
+			min_d = 82.0
 		var ok := true
 		for q in props:
 			if (q[0] as Vector2).distance_to(p) < min_d:
 				ok = false
 				break
-		if ok:
-			props.append([p, kind, rng.randf_range(0.85, 1.2), rng.randf() < 0.5])
-			count[z] = int(count[z]) + 1
+		if not ok:
+			continue
+		match kind:
+			"mushroom", "shell", "starfish", "fence":
+				props.append([p, kind, rng.randf_range(0.85, 1.2), rng.randf() < 0.5])
+			"vrock":
+				_add_spr(p, "rock", "", rng.randf_range(0.9, 1.5), Color("#8a7266"))
+			"flower":
+				for f in 3:
+					_add_spr(p + Vector2(f * 18 - 18, (f % 2) * 8), "flower", "", rng.randf_range(0.8, 1.1))
+			_:
+				_add_spr(p, kind)
+		count[z] = int(count[z]) + 1
 	props.sort_custom(func(a, b): return (a[0] as Vector2).y < (b[0] as Vector2).y)
 
 
@@ -371,8 +467,10 @@ func _draw_back() -> void:
 
 
 func _cloud(ci: CanvasItem, c: Vector2, s: float, col: Color) -> void:
-	for b in [[-60, 10, 44], [-20, -14, 58], [34, -6, 50], [72, 12, 36], [8, 18, 50]]:
-		ci.draw_circle(c + Vector2(b[0], b[1]) * s, b[2] * s, col)
+	var tx := _t("deco/cloud%d" % [1, 2, 3, 5, 7][int(absf(c.x * 0.37 + c.y * 0.11)) % 5])
+	if tx:
+		var sz := tx.get_size() * s * 0.9
+		ci.draw_texture_rect(tx, Rect2(c - sz / 2.0, sz), false, col)
 
 
 func _draw_clouds() -> void:
@@ -457,6 +555,7 @@ func _draw_ground() -> void:
 	_poly(ci, _offset(forest, -30.0), Color("#3fa94e"), OUT, 0.0)
 	_poly(ci, sand, Color("#efd08a"), OUT, 0.0)
 	_poly(ci, _offset(sand, -26.0), Color("#f6dc9e"), OUT, 0.0)
+	_tex_poly(ci, _offset(sand, -26.0), "deco/tex_tile_68", Color(1, 0.97, 0.9, 0.9), 1.6)
 	_poly(ci, ash, Color("#9c8270"), OUT, 0.0)
 	_poly(ci, _offset(ash, -30.0), Color("#8a7060"), OUT, 0.0)
 	_speckles(ci)
@@ -464,8 +563,9 @@ func _draw_ground() -> void:
 	for f in _fields():
 		_field(ci, f)
 	# château : colline, douves
-	_poly(ci, _ell(CASTLE + Vector2(0, -90), Vector2(345, 245)), Color("#46a3e0"), OUT, 6.0)
-	_poly(ci, _ell(CASTLE + Vector2(0, -90), Vector2(300, 205)), Color("#6ad06b"), OUT, 6.0)
+	_poly(ci, _ell(CASTLE + Vector2(0, -90), Vector2(345, 245)), Color("#46a3e0"), Color("#2c7cc0"), 6.0)
+	_tex_poly(ci, _ell(CASTLE + Vector2(0, -90), Vector2(342, 242)), "deco/tex_tile_73", Color(0.75, 0.9, 1.0, 0.8), 1.4)
+	_poly(ci, _ell(CASTLE + Vector2(0, -90), Vector2(300, 205)), Color("#6ad06b"), Color("#4caf50"), 6.0)
 	_poly(ci, _ell(CASTLE + Vector2(0, -95), Vector2(250, 165)), Color("#d8d2c6"), Color("#b8b0a2"), 6.0)
 	# volcan : coulée et bassin de lave
 	ci.draw_polyline(PackedVector2Array([VOLCANO + Vector2(-110, -60), Vector2(2880, 1010), LAVA_C]), OUT, 54.0, true)
@@ -473,19 +573,20 @@ func _draw_ground() -> void:
 	_poly(ci, _ell(LAVA_C, Vector2(105, 62)), Color("#e8531f"), OUT, 7.0)
 	# eau : lac, étang, lagon (sable autour)
 	_poly(ci, _ell(LAKE_C, LAKE_R + Vector2(34, 30)), Color("#f2dfb0"), Color("#d9bf86"), 5.0)
-	_poly(ci, _ell(LAKE_C, LAKE_R), Color("#3aa3e8"), OUT, 7.0)
-	_poly(ci, _ell(LAKE_C + Vector2(0, -6), LAKE_R - Vector2(36, 30)), Color("#5cc0f4"), OUT, 0.0)
+	_poly(ci, _ell(LAKE_C, LAKE_R), Color("#3aa3e8"), Color("#2c7cc0"), 7.0)
+	_tex_poly(ci, _ell(LAKE_C, LAKE_R - Vector2(4, 4)), "deco/tex_tile_73", Color(0.8, 0.93, 1.0, 0.95), 1.6)
 	_poly(ci, _ell(POND_C, POND_R + Vector2(24, 20)), Color("#7a9a4a"), OUT, 0.0)
-	_poly(ci, _ell(POND_C, POND_R), Color("#3aa3e8"), OUT, 6.0)
+	_poly(ci, _ell(POND_C, POND_R), Color("#3aa3e8"), Color("#2c7cc0"), 6.0)
+	_tex_poly(ci, _ell(POND_C, POND_R - Vector2(4, 4)), "deco/tex_tile_73", Color(0.8, 0.93, 1.0, 0.95), 1.4)
 	_poly(ci, _ell(LAGOON_C, LAGOON_R + Vector2(56, 46)), Color("#fbe7b4"), Color("#e8c98a"), 4.0)
-	_poly(ci, _ell(LAGOON_C, LAGOON_R), Color("#25c4d8"), OUT, 7.0)
-	_poly(ci, _ell(LAGOON_C + Vector2(0, -8), LAGOON_R - Vector2(50, 40)), Color("#5fe0e6"), OUT, 0.0)
+	_poly(ci, _ell(LAGOON_C, LAGOON_R), Color("#25c4d8"), Color("#1a95a8"), 7.0)
+	_tex_poly(ci, _ell(LAGOON_C, LAGOON_R - Vector2(4, 4)), "deco/tex_tile_73", Color(0.75, 1.0, 0.98, 0.95), 1.6)
 	# ruisseaux
 	for s in streams:
 		var sl: PackedVector2Array = s
-		ci.draw_polyline(sl, OUT, 70.0, true)
-		ci.draw_polyline(sl, Color("#3aa3e8"), 58.0, true)
-		ci.draw_polyline(sl, Color("#5cc0f4"), 34.0, true)
+		ci.draw_polyline(sl, Color("#2c7cc0"), 70.0, true)
+		ci.draw_polyline(sl, Color("#4fb4f0"), 58.0, true)
+		ci.draw_polyline(sl, Color("#8fd6fb"), 22.0, true)
 	# places
 	_plaza(ci, Vector2(1953, 2290), Vector2(200, 112))
 	_plaza(ci, STATUE + Vector2(0, -10), Vector2(170, 96))
@@ -496,6 +597,18 @@ func _draw_ground() -> void:
 	# cases
 	for i in BoardMap.count():
 		draw_space(ci, BoardMap.pos(i), BoardMap.kind(i))
+
+
+## Polygone rempli avec une texture qui se répète (eau, sable).
+func _tex_poly(ci: CanvasItem, poly: PackedVector2Array, tex: String, mod: Color, scale := 1.0) -> void:
+	var tx := _t(tex)
+	if tx == null or poly.size() < 3:
+		return
+	var uv := PackedVector2Array()
+	var ts := tx.get_size() * scale
+	for q in poly:
+		uv.append(q / ts)
+	ci.draw_colored_polygon(poly, mod, uv, tx)
 
 
 func _speckles(ci: CanvasItem) -> void:
@@ -547,7 +660,7 @@ func _plaza(ci: CanvasItem, c: Vector2, r: Vector2) -> void:
 
 func _path(ci: CanvasItem, line: PackedVector2Array, zone: String) -> void:
 	var st: Array = PATH_STYLE.get(zone, PATH_STYLE["foret"])
-	ci.draw_polyline(line, OUT, 90.0, true)
+	ci.draw_polyline(line, (st[0] as Color).darkened(0.45), 90.0, true)
 	ci.draw_polyline(line, st[0], 80.0, true)
 	ci.draw_polyline(line, st[1], 66.0, true)
 	ci.draw_polyline(line, st[2], 30.0, true)
@@ -631,66 +744,39 @@ static func draw_space(ci: CanvasItem, p: Vector2, ty: String, r := 34.0, flat :
 	ci.draw_arc(p, r - 4.0 * s, PI * 1.08, PI * 1.62, 12, Color(1, 1, 1, 0.7), 5.0 * s)
 	ci.draw_circle(p + Vector2(-r * 0.42, -r * 0.5), 4.0 * s, Color(1, 1, 1, 0.85))
 	var w := Color.WHITE
+	if SPACE_ICON.has(ty):
+		var tx := _icon(str(SPACE_ICON[ty]))
+		if tx:
+			var isz := r * 1.32
+			var rr := Rect2(p - Vector2(isz, isz) / 2.0 + Vector2(0, -1) * s, Vector2(isz, isz))
+			ci.draw_texture_rect(tx, Rect2(rr.position + Vector2(0, 3) * s, rr.size), false, Color(0, 0, 0, 0.3))
+			ci.draw_texture_rect(tx, rr, false, Color("#fff6d8") if ty == "K" else w)
+		return
 	match ty:
 		"B", "R":
 			var bars := [Rect2(-17, -6, 34, 12)]
 			if ty == "B":
 				bars.append(Rect2(-6, -17, 12, 34))
-			for rr in bars:
-				var q := Rect2(p + (rr as Rect2).position * s, (rr as Rect2).size * s)
-				ci.draw_style_box(UI.box(OUT, OUT, 0, int(8 * s)), q.grow(3.5 * s))
-			for rr in bars:
-				var q2 := Rect2(p + (rr as Rect2).position * s, (rr as Rect2).size * s)
+			for rr2 in bars:
+				var q := Rect2(p + (rr2 as Rect2).position * s + Vector2(0, 3) * s, (rr2 as Rect2).size * s)
+				ci.draw_style_box(UI.box(Color(0, 0, 0, 0.28), Color(0, 0, 0, 0), 0, int(6 * s)), q)
+			for rr2 in bars:
+				var q2 := Rect2(p + (rr2 as Rect2).position * s, (rr2 as Rect2).size * s)
 				ci.draw_style_box(UI.box(w, w, 0, int(6 * s)), q2)
-		"E":
-			UI.text(ci, p + Vector2(0, 1) * s, "?", int(40 * s), w, int(8 * s))
-		"C":
-			var cr := Rect2(p + Vector2(-13, -18) * s, Vector2(26, 36) * s)
-			ci.draw_set_transform(p, 0.18, Vector2.ONE)
-			ci.draw_style_box(UI.box(w, OUT, maxi(2, int(3 * s)), int(5 * s)), Rect2(cr.position - p, cr.size))
-			ci.draw_set_transform(Vector2.ZERO)
-			UI.text(ci, p + Vector2(1, 0) * s, "!", int(26 * s), Color("#ff7b1c"), 0)
-		"I":
-			var b := Rect2(p + Vector2(-15, -8) * s, Vector2(30, 24) * s)
-			ci.draw_style_box(UI.box(w, OUT, maxi(2, int(3 * s)), int(3 * s)), b)
-			ci.draw_style_box(UI.box(Color("#ff5a8a"), OUT, maxi(2, int(3 * s)), int(3 * s)), Rect2(p + Vector2(-18, -16) * s, Vector2(36, 11) * s))
-			ci.draw_rect(Rect2(p + Vector2(-3.5, -15) * s, Vector2(7, 30) * s), Color("#ff5a8a"))
-			ci.draw_circle(p + Vector2(-7, -20) * s, 6.0 * s, Color("#ff5a8a"))
-			ci.draw_circle(p + Vector2(7, -20) * s, 6.0 * s, Color("#ff5a8a"))
-		"D":
-			UI.text(ci, p + Vector2(0, 1) * s, "VS", int(26 * s), Color("#ffe27a"), int(7 * s))
-		"T":
-			# tête de mort
-			ci.draw_circle(p + Vector2(0, -4) * s, 15.0 * s, w)
-			ci.draw_rect(Rect2(p + Vector2(-9, 6) * s, Vector2(18, 10) * s), w)
-			ci.draw_circle(p + Vector2(-6, -5) * s, 4.5 * s, OUT)
-			ci.draw_circle(p + Vector2(6, -5) * s, 4.5 * s, OUT)
-			ci.draw_line(p + Vector2(-3, 9) * s, p + Vector2(-3, 16) * s, OUT, 2.0 * s)
-			ci.draw_line(p + Vector2(3, 9) * s, p + Vector2(3, 16) * s, OUT, 2.0 * s)
-		"K":
-			for k in 3:
-				var c := p + Vector2(0, 10 - k * 9) * s
-				_e(ci, c, Vector2(16, 7) * s + Vector2(2, 2), OUT)
-				_e(ci, c, Vector2(16, 7) * s, Color("#ffe27a") if k == 2 else Color("#f5c518"))
-			UI.text(ci, p + Vector2(0, -8) * s, "$", int(12 * s), Color("#b37a00"), 0)
-		"H":
-			var bag := Rect2(p + Vector2(-14, -8) * s, Vector2(28, 26) * s)
-			ci.draw_arc(p + Vector2(0, -8) * s, 9.0 * s, PI, TAU, 10, OUT, 6.0 * s)
-			ci.draw_arc(p + Vector2(0, -8) * s, 9.0 * s, PI, TAU, 10, w, 3.0 * s)
-			ci.draw_style_box(UI.box(w, OUT, maxi(2, int(3 * s)), int(5 * s)), bag)
-			UI.text(ci, p + Vector2(0, 6) * s, "€", int(16 * s), Color("#ff3d96"), 0)
 		"P":
 			ci.draw_rect(Rect2(p + Vector2(-11, -4) * s, Vector2(22, 20) * s), OUT)
 			ci.draw_rect(Rect2(p + Vector2(-8, -4) * s, Vector2(16, 18) * s), Color("#7be36b"))
 			ci.draw_style_box(UI.box(Color("#9cf08c"), OUT, maxi(2, int(3 * s)), int(4 * s)), Rect2(p + Vector2(-16, -16) * s, Vector2(32, 13) * s))
-		"S":
-			ci.draw_line(p + Vector2(-9, 18) * s, p + Vector2(-9, -20) * s, OUT, 7.0 * s)
-			ci.draw_line(p + Vector2(-9, 18) * s, p + Vector2(-9, -20) * s, w, 3.5 * s)
-			var flag := PackedVector2Array([p + Vector2(-8, -20) * s, p + Vector2(18, -12) * s, p + Vector2(-8, -3) * s])
-			ci.draw_colored_polygon(flag, Color("#facd2d"))
-			var fl := flag.duplicate()
-			fl.append(flag[0])
-			ci.draw_polyline(fl, OUT, 3.0 * s)
+
+
+const SPACE_ICON := {"E": "hexagon_question", "C": "cards_fan", "I": "pouch_add", "D": "sword", "T": "skull", "K": "tokens_stack", "H": "hand_token", "S": "flag_triangle"}
+static var _icons := {}
+
+
+static func _icon(n: String) -> Texture2D:
+	if not _icons.has(n):
+		_icons[n] = load("res://assets/icons/%s.png" % n)
+	return _icons[n]
 
 
 static func _e(ci: CanvasItem, c: Vector2, r: Vector2, col: Color) -> void:
@@ -776,40 +862,16 @@ func _draw_props() -> void:
 		var s: float = pr[2]
 		var fl: bool = pr[3]
 		match str(pr[1]):
-			"palm":
-				_palm(ci, p, s, -1.0 if fl else 1.0)
-			"bush":
-				_bush(ci, p, s)
-			"flowers":
-				_flowers(ci, p, s)
-			"rock":
-				_rock(ci, p, s, Color("#a9b2c3"))
-			"vrock":
-				_rock(ci, p, s * 1.2, Color("#5c4e4a"), true)
-			"vrock_small":
-				_rock(ci, p, s * 0.7, Color("#5c4e4a"), true)
+			"spr":
+				_spr(ci, str(pr[4]), p, s, fl, pr[6], float(pr[5]))
 			"shell":
 				_shell(ci, p, s)
 			"starfish":
 				_starfish(ci, p, s)
-			"tree":
-				_tree(ci, p, s)
-			"pine":
-				_pine(ci, p, s)
 			"mushroom":
 				_mushroom(ci, p, s)
-			"mushroom_small":
-				_mushroom(ci, p, s * 0.55)
-			"dead_tree":
-				_dead_tree(ci, p, s)
-			"hedge":
-				_hedge(ci, p, s)
 			"fence":
-				_fence(ci, p, s)
-			"reeds":
-				_reeds(ci, p, s)
-			"house":
-				_house(ci, p, s, pr[4] if pr.size() > 4 else Color("#f04650"))
+				_spr(ci, "deco/fence", p, 0.42 * s, fl, Color.WHITE, 30.0)
 			"lamp":
 				_lamp(ci, p, s)
 			"crate":
@@ -838,6 +900,19 @@ func _draw_props() -> void:
 				_start_arch(ci, p)
 			"lighthouse":
 				_lighthouse(ci, p)
+
+
+## Dessine un sprite posé au sol (pied en p).
+func _spr(ci: CanvasItem, name: String, p: Vector2, s: float, flip := false, mod := Color.WHITE, shadow := 0.0) -> void:
+	var tx := _t(name)
+	if tx == null:
+		return
+	if shadow > 0.0:
+		_ellipse(ci, p + Vector2(0, -2), Vector2(shadow, shadow * 0.3), Color(0, 0, 0, 0.16))
+	var sz := tx.get_size()
+	ci.draw_set_transform(p, 0.0, Vector2(-s if flip else s, s))
+	ci.draw_texture(tx, Vector2(-sz.x / 2.0, -sz.y), mod)
+	ci.draw_set_transform(Vector2.ZERO)
 
 
 func _shadow(ci: CanvasItem, p: Vector2, w: float) -> void:
@@ -1038,12 +1113,7 @@ func _crate(ci: CanvasItem, p: Vector2, s: float) -> void:
 
 
 func _banner(ci: CanvasItem, p: Vector2, s: float) -> void:
-	_shadow(ci, p, 16.0)
-	ci.draw_line(p, p + Vector2(0, -130), OUT, 8.0)
-	ci.draw_line(p, p + Vector2(0, -130), Color("#c9a061"), 4.0)
-	var f := PackedVector2Array([p + Vector2(3, -128), p + Vector2(46, -118), p + Vector2(3, -100)])
-	_poly(ci, f, Color("#8a4fd8"), OUT, 3.5)
-	ci.draw_circle(p + Vector2(0, -134), 6.0, Color("#facd2d"))
+	_spr(ci, "tiles/flag_blue_a", p, 0.55 * s, false, Color.WHITE, 12.0)
 
 
 func _umbrella(ci: CanvasItem, p: Vector2, s: float, fl: bool) -> void:
@@ -1088,63 +1158,33 @@ func _windmill(ci: CanvasItem, p: Vector2, s: float) -> void:
 
 
 func _castle(ci: CanvasItem, p: Vector2) -> void:
-	var stone := Color("#e9e4dc")
-	var shade := Color("#cfc8bc")
-	var roof := Color("#7b4fd8")
-	_ellipse(ci, p + Vector2(0, -6), Vector2(250, 40), Color(0, 0, 0, 0.18))
-	# tours arrière
-	for x in [-150.0, 150.0]:
-		_tower(ci, p + Vector2(x, -150), 54.0, 230.0, stone, shade, roof)
-	# donjon
-	var keep := Rect2(p + Vector2(-110, -330), Vector2(220, 260))
-	ci.draw_style_box(UI.box(stone, OUT, 6, 4), keep)
-	ci.draw_rect(Rect2(keep.position + Vector2(6, 6), Vector2(30, keep.size.y - 12)), shade)
-	for k in 6:
-		ci.draw_style_box(UI.box(stone, OUT, 5, 3), Rect2(keep.position + Vector2(-4 + k * 40, -26), Vector2(28, 30)))
-	_tower(ci, p + Vector2(0, -330), 50.0, 120.0, stone, shade, roof)
-	for k in 3:
-		_window(ci, keep.position + Vector2(40 + k * 70, 60))
-	# rempart avant
-	var wall := Rect2(p + Vector2(-230, -110), Vector2(460, 110))
-	ci.draw_style_box(UI.box(stone, OUT, 6, 4), wall)
-	for k in 12:
-		ci.draw_style_box(UI.box(stone, OUT, 5, 3), Rect2(wall.position + Vector2(-2 + k * 39, -22), Vector2(26, 26)))
+	_ellipse(ci, p + Vector2(0, -8), Vector2(285, 46), Color(0, 0, 0, 0.16))
+	_spr(ci, "deco/towerAlt", p + Vector2(-178, -64), 0.82)
+	_spr(ci, "deco/towerAlt", p + Vector2(178, -64), 0.82, true)
+	_spr(ci, "deco/castleSmallAlt", p + Vector2(0, -52), 1.95)
 	for k in 5:
-		ci.draw_line(wall.position + Vector2(10, 30 + k * 18), wall.position + Vector2(wall.size.x - 10, 30 + k * 18), Color(shade, 0.7), 2.0)
-	# porte
+		_spr(ci, "deco/castleWallAlt", p + Vector2(-192 + k * 96, 0), 0.8)
+	_spr(ci, "deco/towerSmallAlt", p + Vector2(-262, 8), 0.9)
+	_spr(ci, "deco/towerSmallAlt", p + Vector2(262, 8), 0.9, true)
+	# grande porte
 	var door := PackedVector2Array()
 	for k in 13:
-		var a := PI + k * PI / 12.0
-		door.append(p + Vector2(cos(a) * 44.0, sin(a) * 44.0 - 50.0))
-	door.append(p + Vector2(44, 0))
-	door.append(p + Vector2(-44, 0))
-	_poly(ci, door, Color("#5a3a26"), OUT, 6.0)
+		var a2 := PI + k * PI / 12.0
+		door.append(p + Vector2(cos(a2) * 40.0, sin(a2) * 40.0 - 44.0))
+	door.append(p + Vector2(40, 0))
+	door.append(p + Vector2(-40, 0))
+	ci.draw_colored_polygon(door, Color("#7a4a2a"))
 	for k in 4:
-		ci.draw_line(p + Vector2(-33 + k * 22, -84), p + Vector2(-33 + k * 22, -4), Color("#3e2718"), 4.0)
-	# tours avant
-	for x in [-230.0, 230.0]:
-		_tower(ci, p + Vector2(x, 0), 58.0, 190.0, stone, shade, roof)
-	# drapeau principal
-	var fp := p + Vector2(0, -560)
-	ci.draw_line(fp, fp + Vector2(0, 70), OUT, 6.0)
-	var flag := PackedVector2Array([fp, fp + Vector2(56 + sin(t * 3.0) * 4.0, 12), fp + Vector2(0, 26)])
-	_poly(ci, flag, Color("#facd2d"), OUT, 4.0)
+		ci.draw_line(p + Vector2(-30 + k * 20, -78), p + Vector2(-30 + k * 20, -2), Color("#5e3820"), 4.0)
+	_spr(ci, "tiles/flag_red_a", p + Vector2(0, -372), 0.6)
 
 
 func _tower(ci: CanvasItem, base: Vector2, r: float, h: float, stone: Color, shade: Color, roof: Color) -> void:
 	var body := Rect2(base + Vector2(-r, -h), Vector2(r * 2.0, h))
 	ci.draw_style_box(UI.box(stone, OUT, 6, 4), body)
 	ci.draw_rect(Rect2(body.position + Vector2(6, 6), Vector2(r * 0.5, h - 12)), shade)
-	_window(ci, base + Vector2(-9, -h * 0.62))
 	var cone := PackedVector2Array([base + Vector2(-r - 14, -h + 4), base + Vector2(r + 14, -h + 4), base + Vector2(0, -h - r * 2.0)])
 	_poly(ci, cone, roof, OUT, 6.0)
-	ci.draw_line(base + Vector2(-r * 0.4, -h - 6), base + Vector2(-4, -h - r * 1.7), roof.lightened(0.3), 5.0)
-	ci.draw_circle(base + Vector2(0, -h - r * 2.0), 7.0, Color("#facd2d"))
-
-
-func _window(ci: CanvasItem, p: Vector2) -> void:
-	ci.draw_style_box(UI.box(Color("#3a5ea8"), OUT, 4, 9), Rect2(p, Vector2(20, 32)))
-	ci.draw_rect(Rect2(p + Vector2(4, 5), Vector2(5, 10)), Color(1, 1, 1, 0.5))
 
 
 func _volcano(ci: CanvasItem, p: Vector2) -> void:
@@ -1211,51 +1251,51 @@ func _sign(ci: CanvasItem, c: Vector2, txt: String, col: Color, size := 22) -> v
 	UI.text(ci, c, txt, size, Color.WHITE, 5)
 
 
+## Une façade de maison construite avec les tuiles « Platformer Art Buildings » (70 px).
+func _facade(ci: CanvasItem, base: Vector2, w: int, walls: String, roof: String, rows: Array, sc := 1.0) -> void:
+	var n := rows.size()
+	var tw := 70.0 * sc
+	var x0 := base.x - w * tw / 2.0
+	var y0 := base.y - (n + 1) * tw
+	_ellipse(ci, base + Vector2(0, -4), Vector2(w * tw * 0.6, 26), Color(0, 0, 0, 0.16))
+	for x in w:
+		_tile(ci, "roof%sTopMid" % roof, Vector2(x0 + x * tw, y0), sc)
+	_tile(ci, "roof%sTopLeft" % roof, Vector2(x0 - 11.0 * sc, y0), sc)
+	_tile(ci, "roof%sTopRight" % roof, Vector2(x0 + w * tw - 59.0 * sc, y0), sc)
+	for y in n:
+		var row: Array = rows[y]
+		for x in w:
+			var v := "Top" if y == 0 else ("Bottom" if y == n - 1 else "")
+			var hz := "Left" if x == 0 else ("Right" if x == w - 1 else "")
+			var nm := "house" + walls
+			if v != "":
+				nm += v + (hz if hz != "" else "Mid")
+			elif hz != "":
+				nm += "Mid" + hz
+			var pos := Vector2(x0 + x * tw, y0 + (y + 1) * tw)
+			_tile(ci, nm, pos, sc)
+			if x < row.size():
+				for o in str(row[x]).split("+"):
+					if o != "":
+						_tile(ci, o, pos, sc)
+
+
+func _tile(ci: CanvasItem, name: String, pos: Vector2, sc: float) -> void:
+	var tx := _t("buildings/" + name)
+	if tx:
+		ci.draw_texture_rect(tx, Rect2(pos, Vector2(70, 70) * sc), false)
+
+
 func _shop(ci: CanvasItem, p: Vector2) -> void:
-	_ellipse(ci, p + Vector2(0, -4), Vector2(140, 30), Color(0, 0, 0, 0.18))
-	var body := Rect2(p + Vector2(-120, -110), Vector2(240, 110))
-	ci.draw_style_box(UI.box(Color("#fff1d6"), OUT, 6, 6), body)
-	var counter := Rect2(p + Vector2(-110, -50), Vector2(220, 50))
-	ci.draw_style_box(UI.box(Color("#c98a4e"), OUT, 5, 4), counter)
-	for k in 4:
-		ci.draw_line(counter.position + Vector2(10 + k * 66, 8), counter.position + Vector2(10 + k * 66, 44), Color("#a86f3d"), 4.0)
-	# marchandises
-	Items.draw_icon(ci, "mushroom", p + Vector2(-70, -72), 0.8)
-	Items.draw_icon(ci, "double", p + Vector2(-20, -72), 0.7)
-	Items.draw_icon(ci, "boo", p + Vector2(30, -72), 0.7)
-	Items.draw_icon(ci, "pipe", p + Vector2(76, -72), 0.7)
-	# auvent rayé
-	var aw := PackedVector2Array([p + Vector2(-140, -110), p + Vector2(140, -110), p + Vector2(120, -170), p + Vector2(-120, -170)])
-	_poly(ci, aw, Color.WHITE, OUT, 6.0)
-	for k in 6:
-		if k % 2 == 0:
-			var a0 := aw[0].lerp(aw[1], k / 6.0)
-			var a1 := aw[0].lerp(aw[1], (k + 1) / 6.0)
-			var b1 := aw[3].lerp(aw[2], (k + 1) / 6.0)
-			var b0 := aw[3].lerp(aw[2], k / 6.0)
-			ci.draw_colored_polygon(PackedVector2Array([a0, a1, b1, b0]), Color("#ff6fb5"))
-	for k in 7:
-		ci.draw_circle(p + Vector2(-140 + k * 280.0 / 6.0, -108), 12.0, Color("#ff6fb5") if k % 2 == 0 else Color.WHITE)
-	ci.draw_polyline(_closed(aw), OUT, 6.0)
-	_sign(ci, p + Vector2(0, -196), "BOUTIQUE", Color("#ff3d96"), 24)
+	_facade(ci, p, 4, "Beige", "Red", [["windowCheckered", "signHangingCoin", "", "windowCheckered"], ["awningRed", "awningRed", "awningRed", "awningRed"],
+		["windowLow", "doorKnob", "windowLowCheckered", "windowLow"]], 0.8)
+	_sign(ci, p + Vector2(0, -200), "BOUTIQUE", Color("#ff3d96"), 24)
 
 
 func _bank(ci: CanvasItem, p: Vector2) -> void:
-	_ellipse(ci, p + Vector2(0, -4), Vector2(130, 28), Color(0, 0, 0, 0.18))
-	ci.draw_style_box(UI.box(Color("#e9e4dc"), OUT, 5, 4), Rect2(p + Vector2(-120, -22), Vector2(240, 22)))
-	var body := Rect2(p + Vector2(-104, -130), Vector2(208, 110))
-	ci.draw_style_box(UI.box(Color("#f6f1e6"), OUT, 6, 4), body)
-	for k in 4:
-		var x := -78.0 + k * 52.0
-		ci.draw_rect(Rect2(p + Vector2(x - 11, -126), Vector2(22, 104)), Color("#ddd6c8"))
-		ci.draw_line(p + Vector2(x - 11, -126), p + Vector2(x - 11, -22), OUT, 3.0)
-		ci.draw_line(p + Vector2(x + 11, -126), p + Vector2(x + 11, -22), OUT, 3.0)
-	var ped := PackedVector2Array([p + Vector2(-124, -128), p + Vector2(124, -128), p + Vector2(0, -196)])
-	_poly(ci, ped, Color("#f2b705"), OUT, 6.0)
-	ci.draw_circle(p + Vector2(0, -150), 18.0, OUT)
-	ci.draw_circle(p + Vector2(0, -150), 14.0, Color("#ffe27a"))
-	UI.text(ci, p + Vector2(0, -150), "$", 20, Color("#b37a00"), 0)
-	_sign(ci, p + Vector2(0, -60), "BANQUE", Color("#d69a00"), 22)
+	_facade(ci, p, 3, "Gray", "Grey", [["windowHighTop", "clock", "windowHighTop"], ["windowHighBottom", "doorTop", "windowHighBottom"],
+		["", "doorLock", ""]], 0.9)
+	_sign(ci, p + Vector2(0, -232), "BANQUE", Color("#d69a00"), 22)
 
 
 func _toll(ci: CanvasItem, p: Vector2) -> void:
@@ -1266,7 +1306,7 @@ func _toll(ci: CanvasItem, p: Vector2) -> void:
 	ci.draw_style_box(UI.box(Color("#fff1d6"), OUT, 5, 10), r)
 	UI.text(ci, r.position + Vector2(56, 16), "PÉAGE", 16, Color("#8a5530"), 0)
 	ci.draw_set_transform(r.position + Vector2(36, 40), 0.0, Vector2(0.18, 0.18))
-	ci.draw_texture(load("res://assets/tiles/coin_gold.png"), Vector2(-64, -64))
+	ci.draw_texture(_t("tiles/coin_gold"), Vector2(-64, -64))
 	ci.draw_set_transform(Vector2.ZERO)
 	UI.text(ci, r.position + Vector2(70, 40), "5", 22, OUT, 0)
 

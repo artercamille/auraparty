@@ -130,6 +130,7 @@ func _on_got_hit(kind: int, dir: Vector2, from_id: int) -> void:
 func _on_ending() -> void:
 	state = "over"
 	t = 0.0
+	Sfx.play("bell", -2.0, 0.0)
 
 
 # --- à redéfinir
@@ -247,16 +248,17 @@ func _process(delta: float) -> void:
 			if go_received:
 				state = "count"
 				t = 0.0
+				Sfx.voice("3")
 		"count":
-			if int(t) != int(t - delta):
-				Sfx.play("select", -8.0)
+			if int(t) != int(t - delta) and t < 3.0:
+				Sfx.voice(str(3 - int(t)))
 			if t >= 3.0:
 				state = "play"
 				t = 0.0
 				go_flash = 0.8
 				if me:
 					me.set_meta("blocked", false)
-				Sfx.play("spawn", -2.0)
+				Sfx.voice("go")
 				_on_start()
 		"play":
 			play_t += delta

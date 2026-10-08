@@ -87,7 +87,7 @@ func _ready() -> void:
 	var quit := UI.btn("Quitter", func(): get_tree().quit(), UI.RED, 18)
 	add_child(quit)
 	quit.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT, Control.PRESET_MODE_MINSIZE, 16)
-	var ver := UI.lbl("v%s" % Net.VERSION, 16, UI.WHITE, HORIZONTAL_ALIGNMENT_LEFT, 6, true)
+	var ver := UI.lbl("v%s   ·   M : couper la musique   ·   F11 : plein écran" % Net.VERSION, 16, UI.WHITE, HORIZONTAL_ALIGNMENT_LEFT, 6, true)
 	ver.position = Vector2(20, 690)
 	add_child(ver)
 	if my_name == "" and Net.autotest == "":
