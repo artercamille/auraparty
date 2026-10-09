@@ -1,4 +1,4 @@
-AURA PARTY - v0.14 (la grande île + 8 mini-jeux, nouveaux graphismes et musique)
+AURA PARTY - v0.15 (10 mini-jeux : Mini-triathlon et Fusées en folie !)
 ==========================================
 Jusqu'à 8 joueurs, chacun sur son PC.
 Tout le monde doit avoir CETTE version du jeu (sinon la connexion est refusée).
@@ -80,6 +80,13 @@ LES MINI-JEUX
   objets (banane, carapace, champignon turbo). Tourner longtemps à fond charge
   un turbo. Commandes du kart : Z/↑/Espace accélérer, S/↓ freiner, Q/D tourner,
   Maj/X/clic utiliser l'objet. Premier arrivé gagne.
+- Mini-triathlon ! : trois épreuves à la suite, chacun dans son couloir.
+  Pagaie : Q et D (ou ← →) en alternance. Vélo : Z et S (ou ↑ ↓) en
+  alternance. Haies : tu cours tout seul, Espace pour sauter. Deux fois la
+  même touche = tu ralentis. Premier arrivé gagne.
+- Fusées en folie ! : course de fusées jusqu'à la Lune. Q/D (← →) pour
+  slalomer entre les astéroïdes et les soucoupes, Z/↑ pour accélérer,
+  S/↓ pour freiner. Les étoiles donnent un turbo. Premier arrivé gagne.
 
 TESTER UN MINI-JEU : dans le salon, l'hôte clique sur « Tester un mini-jeu
 (sans plateau) » et choisit le jeu. Retour au salon après les résultats.

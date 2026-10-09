@@ -321,7 +321,7 @@ func _preload_textures() -> void:
 	for fam in SPR:
 		for n in SPR[fam]:
 			_t(n)
-	for n in ["deco/castleSmallAlt", "deco/towerAlt", "deco/towerSmallAlt", "deco/castleWallAlt", "deco/fence", "deco/cloud1", "deco/cloud2",
+	for n in ["deco/shop", "deco/bank", "deco/castleSmallAlt", "deco/towerAlt", "deco/towerSmallAlt", "deco/castleWallAlt", "deco/fence", "deco/cloud1", "deco/cloud2",
 			"deco/cloud3", "deco/cloud5", "deco/cloud7", "tiles/flag_red_a", "tiles/flag_blue_a", "tiles/coin_gold", "deco/tex_tile_68", "deco/tex_tile_73"]:
 		_t(n)
 	for w in ["Beige", "Gray"]:
@@ -1287,15 +1287,13 @@ func _tile(ci: CanvasItem, name: String, pos: Vector2, sc: float) -> void:
 
 
 func _shop(ci: CanvasItem, p: Vector2) -> void:
-	_facade(ci, p, 4, "Beige", "Red", [["windowCheckered", "signHangingCoin", "", "windowCheckered"], ["awningRed", "awningRed", "awningRed", "awningRed"],
-		["windowLow", "doorKnob", "windowLowCheckered", "windowLow"]], 0.8)
-	_sign(ci, p + Vector2(0, -200), "BOUTIQUE", Color("#ff3d96"), 24)
+	_spr(ci, "deco/shop", p + Vector2(0, 6), 0.8, false, Color.WHITE, 120.0)
+	_sign(ci, p + Vector2(0, -206), "BOUTIQUE", Color("#ff3d96"), 24)
 
 
 func _bank(ci: CanvasItem, p: Vector2) -> void:
-	_facade(ci, p, 3, "Gray", "Grey", [["windowHighTop", "clock", "windowHighTop"], ["windowHighBottom", "doorTop", "windowHighBottom"],
-		["", "doorLock", ""]], 0.9)
-	_sign(ci, p + Vector2(0, -232), "BANQUE", Color("#d69a00"), 22)
+	_spr(ci, "deco/bank", p + Vector2(0, 6), 0.9, false, Color.WHITE, 100.0)
+	_sign(ci, p + Vector2(0, -238), "BANQUE", Color("#d69a00"), 22)
 
 
 func _toll(ci: CanvasItem, p: Vector2) -> void:

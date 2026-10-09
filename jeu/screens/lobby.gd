@@ -149,7 +149,7 @@ func _open_picker() -> void:
 	for key in Net.MINIGAMES:
 		var k: String = key
 		var b := UI.btn(str(Net.MINIGAMES[k]["name"]), func(): over.queue_free(); Net.start_practice(k), cols[i % cols.size()], 24)
-		b.custom_minimum_size = Vector2(380, 64)
+		b.custom_minimum_size = Vector2(380, 56)
 		grid2.add_child(b)
 		i += 1
 	var close_row := HBoxContainer.new()
