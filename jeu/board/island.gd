@@ -2,7 +2,7 @@ extends Node2D
 ## Le décor de la grande île volante : village, forêt, lac, château, volcan et plage.
 ## Presque tout est dessiné une seule fois ; l'eau, la lave, la fumée et les nuages bougent.
 
-const OUT := UI.DARK
+const OUT := Color(0.16, 0.2, 0.12, 0.16)   # bord très doux (style pastel, sans contour)
 const LAKE_C := Vector2(820, 750)
 const LAKE_R := Vector2(300, 225)
 const CASTLE := Vector2(1520, 800)      # pied du château
@@ -27,9 +27,9 @@ const PATH_STYLE := {
 }
 
 const SPACE_COL := {
-	"B": Color("#4b87f5"), "R": Color("#f04650"), "E": Color("#3fbf5a"), "C": Color("#ff9a2e"),
+	"B": Color("#4b87f5"), "R": Color("#f04650"), "E": Color("#84cb33"), "C": Color("#ff9a2e"),
 	"I": Color("#22b8cf"), "D": Color("#8a4fd8"), "T": Color("#3a3446"), "K": Color("#f2b705"),
-	"H": Color("#ff6fb5"), "P": Color("#2fa44a"), "S": Color("#ffffff"),
+	"H": Color("#ff6fb5"), "P": Color("#6dae23"), "S": Color("#ffffff"),
 }
 
 var rng := RandomNumberGenerator.new()
@@ -527,8 +527,8 @@ func _sky_island(ci: CanvasItem, top: PackedVector2Array, sc: float, big := true
 		var x := lerpf(xmin, xmax, k / float(n))
 		var y0 := float(by[k]) + cliff_h + depth * pow(sin(k / float(n) * PI), 0.7) * 0.3
 		var ln := 50.0 + fmod(k * 37.0, 110.0) * sc
-		ci.draw_line(Vector2(x, y0), Vector2(x + 6.0, y0 + ln), Color("#3c9a46"), 6.0 * sc + 1.0)
-		ci.draw_circle(Vector2(x + 6.0, y0 + ln), 8.0 * sc + 2.0, Color("#4fb85a"))
+		ci.draw_line(Vector2(x, y0), Vector2(x + 6.0, y0 + ln), Color("#72a334"), 6.0 * sc + 1.0)
+		ci.draw_circle(Vector2(x + 6.0, y0 + ln), 8.0 * sc + 2.0, Color("#8cc446"))
 	var cliff := PackedVector2Array()
 	for p in top:
 		cliff.append(p + Vector2(0, cliff_h))
@@ -539,20 +539,20 @@ func _sky_island(ci: CanvasItem, top: PackedVector2Array, sc: float, big := true
 			bl.append(p + Vector2(0, cliff_h * (0.42 + k * 0.28)))
 		bl.append(bl[0])
 		ci.draw_polyline(bl, Color("#c27a48"), 5.0, true)
-	_poly(ci, top, Color("#5fcf62"), OUT, 8.0)
+	_poly(ci, top, Color("#a3db57"), OUT, 8.0)
 	if not big:
 		return
 	var hi := _offset(top, -18.0)
 	if hi.size() > 2:
-		ci.draw_polyline(_closed(hi), Color("#79df76"), 10.0, true)
+		ci.draw_polyline(_closed(hi), Color("#baec70"), 10.0, true)
 
 
 func _draw_ground() -> void:
 	var ci: Node2D = layers["ground"]
 	_sky_island(ci, coast, 1.0)
 	# zones
-	_poly(ci, forest, Color("#46b555"), OUT, 0.0)
-	_poly(ci, _offset(forest, -30.0), Color("#3fa94e"), OUT, 0.0)
+	_poly(ci, forest, Color("#84c03c"), OUT, 0.0)
+	_poly(ci, _offset(forest, -30.0), Color("#7ab336"), OUT, 0.0)
 	_poly(ci, sand, Color("#efd08a"), OUT, 0.0)
 	_poly(ci, _offset(sand, -26.0), Color("#f6dc9e"), OUT, 0.0)
 	_tex_poly(ci, _offset(sand, -26.0), "deco/tex_tile_68", Color(1, 0.97, 0.9, 0.9), 1.6)
@@ -565,7 +565,7 @@ func _draw_ground() -> void:
 	# château : colline, douves
 	_poly(ci, _ell(CASTLE + Vector2(0, -90), Vector2(345, 245)), Color("#46a3e0"), Color("#2c7cc0"), 6.0)
 	_tex_poly(ci, _ell(CASTLE + Vector2(0, -90), Vector2(342, 242)), "deco/tex_tile_73", Color(0.75, 0.9, 1.0, 0.8), 1.4)
-	_poly(ci, _ell(CASTLE + Vector2(0, -90), Vector2(300, 205)), Color("#6ad06b"), Color("#4caf50"), 6.0)
+	_poly(ci, _ell(CASTLE + Vector2(0, -90), Vector2(300, 205)), Color("#aadc63"), Color("#88ba44"), 6.0)
 	_poly(ci, _ell(CASTLE + Vector2(0, -95), Vector2(250, 165)), Color("#d8d2c6"), Color("#b8b0a2"), 6.0)
 	# volcan : coulée et bassin de lave
 	ci.draw_polyline(PackedVector2Array([VOLCANO + Vector2(-110, -60), Vector2(2880, 1010), LAVA_C]), OUT, 54.0, true)
@@ -575,7 +575,7 @@ func _draw_ground() -> void:
 	_poly(ci, _ell(LAKE_C, LAKE_R + Vector2(34, 30)), Color("#f2dfb0"), Color("#d9bf86"), 5.0)
 	_poly(ci, _ell(LAKE_C, LAKE_R), Color("#3aa3e8"), Color("#2c7cc0"), 7.0)
 	_tex_poly(ci, _ell(LAKE_C, LAKE_R - Vector2(4, 4)), "deco/tex_tile_73", Color(0.8, 0.93, 1.0, 0.95), 1.6)
-	_poly(ci, _ell(POND_C, POND_R + Vector2(24, 20)), Color("#7a9a4a"), OUT, 0.0)
+	_poly(ci, _ell(POND_C, POND_R + Vector2(24, 20)), Color("#79a03e"), OUT, 0.0)
 	_poly(ci, _ell(POND_C, POND_R), Color("#3aa3e8"), Color("#2c7cc0"), 6.0)
 	_tex_poly(ci, _ell(POND_C, POND_R - Vector2(4, 4)), "deco/tex_tile_73", Color(0.8, 0.93, 1.0, 0.95), 1.4)
 	_poly(ci, _ell(LAGOON_C, LAGOON_R + Vector2(56, 46)), Color("#fbe7b4"), Color("#e8c98a"), 4.0)
@@ -625,7 +625,7 @@ func _speckles(ci: CanvasItem) -> void:
 			"volcan":
 				ci.draw_circle(p, r.randf_range(3, 6), Color("#6f5a4d"))
 			_:
-				var col := Color("#3d9a49") if z == "foret" else Color("#4cb653")
+				var col := Color("#72a335") if z == "foret" else Color("#8ac143")
 				ci.draw_arc(p, 7, PI * 1.1, PI * 1.9, 6, col, 3.0)
 				ci.draw_arc(p + Vector2(10, 2), 6, PI * 1.1, PI * 1.9, 6, col, 3.0)
 
@@ -643,8 +643,8 @@ func _field(ci: CanvasItem, f: Rect2) -> void:
 		var n := int(a.distance_to(b) / 34.0)
 		for j in n:
 			var q := a.lerp(b, (j + 0.5) / n) + Vector2(0, -6)
-			ci.draw_circle(q, 9.0, Color("#3caf4f"))
-			ci.draw_circle(q + Vector2(-2, -3), 4.0, Color("#6fd970"))
+			ci.draw_circle(q, 9.0, Color("#7cba31"))
+			ci.draw_circle(q + Vector2(-2, -3), 4.0, Color("#b1e669"))
 
 
 func _plaza(ci: CanvasItem, c: Vector2, r: Vector2) -> void:
@@ -728,16 +728,16 @@ static func draw_space(ci: CanvasItem, p: Vector2, ty: String, r := 34.0, flat :
 	var col: Color = SPACE_COL.get(ty, SPACE_COL["B"])
 	var s := r / 34.0
 	if ty == "S":
-		col = Color("#5fcd55")
+		col = Color("#a1d94b")
 	if not flat:
 		_e(ci, p + Vector2(0, 15) * s, Vector2(r + 16.0 * s, (r + 16.0 * s) * 0.55), Color(0, 0, 0, 0.2))
-		_e(ci, p + Vector2(0, 9) * s, Vector2(r + 14.0 * s, r + 11.0 * s), OUT)
+		_e(ci, p + Vector2(0, 9) * s, Vector2(r + 14.0 * s, r + 11.0 * s), Color("#8f877b"))
 		_e(ci, p + Vector2(0, 9) * s, Vector2(r + 10.0 * s, r + 7.0 * s), Color("#a79f92"))
-		_e(ci, p + Vector2(0, 4) * s, Vector2(r + 14.0 * s, r + 11.0 * s), OUT)
+		_e(ci, p + Vector2(0, 4) * s, Vector2(r + 14.0 * s, r + 11.0 * s), Color("#8f877b"))
 		_e(ci, p + Vector2(0, 4) * s, Vector2(r + 10.0 * s, r + 7.0 * s), Color("#ece6da"))
-		ci.draw_circle(p + Vector2(0, 7) * s, r + 4.0 * s, OUT)
+		ci.draw_circle(p + Vector2(0, 7) * s, r + 4.0 * s, col.darkened(0.45))
 		ci.draw_circle(p + Vector2(0, 7) * s, r, col.darkened(0.35))
-	ci.draw_circle(p, r + 4.0 * s, OUT)
+	ci.draw_circle(p, r + 4.0 * s, col.darkened(0.28))
 	ci.draw_circle(p, r, col)
 	ci.draw_circle(p + Vector2(0, -3) * s, r - 5.0 * s, col.lightened(0.12))
 	ci.draw_circle(p + Vector2(0, -6) * s, r - 14.0 * s, col.lightened(0.2))
@@ -765,8 +765,8 @@ static func draw_space(ci: CanvasItem, p: Vector2, ty: String, r := 34.0, flat :
 				ci.draw_style_box(UI.box(w, w, 0, int(6 * s)), q2)
 		"P":
 			ci.draw_rect(Rect2(p + Vector2(-11, -4) * s, Vector2(22, 20) * s), OUT)
-			ci.draw_rect(Rect2(p + Vector2(-8, -4) * s, Vector2(16, 18) * s), Color("#7be36b"))
-			ci.draw_style_box(UI.box(Color("#9cf08c"), OUT, maxi(2, int(3 * s)), int(4 * s)), Rect2(p + Vector2(-16, -16) * s, Vector2(32, 13) * s))
+			ci.draw_rect(Rect2(p + Vector2(-8, -4) * s, Vector2(16, 18) * s), Color("#baf162"))
+			ci.draw_style_box(UI.box(Color("#d1ff88"), OUT, maxi(2, int(3 * s)), int(4 * s)), Rect2(p + Vector2(-16, -16) * s, Vector2(32, 13) * s))
 
 
 const SPACE_ICON := {"E": "hexagon_question", "C": "cards_fan", "I": "pouch_add", "D": "sword", "T": "skull", "K": "tokens_stack", "H": "hand_token", "S": "flag_triangle"}
@@ -945,7 +945,7 @@ func _palm(ci: CanvasItem, p: Vector2, s: float, lean: float) -> void:
 			leaf.append(c + nn * w)
 			side.insert(0, c - nn * w)
 		leaf.append_array(side)
-		_poly(ci, leaf, Color("#3fbf5a") if k % 2 == 0 else Color("#4fd068"), OUT, 4.0)
+		_poly(ci, leaf, Color("#84cb33") if k % 2 == 0 else Color("#95dc43"), OUT, 4.0)
 	for k in 3:
 		ci.draw_circle(top + Vector2(-10 + k * 10, 8) * s, 9.0 * s, OUT)
 		ci.draw_circle(top + Vector2(-10 + k * 10, 8) * s, 6.5 * s, Color("#8e5a31"))
@@ -956,15 +956,15 @@ func _bush(ci: CanvasItem, p: Vector2, s: float) -> void:
 	for b in [[-22, -20, 22], [0, -32, 28], [24, -20, 22]]:
 		ci.draw_circle(p + Vector2(b[0], b[1]) * s, (b[2] + 4) * s, OUT)
 	for b in [[-22, -20, 22], [0, -32, 28], [24, -20, 22]]:
-		ci.draw_circle(p + Vector2(b[0], b[1]) * s, b[2] * s, Color("#3caf4f"))
-	ci.draw_circle(p + Vector2(-6, -40) * s, 9.0 * s, Color("#5cd06a"))
+		ci.draw_circle(p + Vector2(b[0], b[1]) * s, b[2] * s, Color("#7cba31"))
+	ci.draw_circle(p + Vector2(-6, -40) * s, 9.0 * s, Color("#9fdc53"))
 
 
 func _hedge(ci: CanvasItem, p: Vector2, s: float) -> void:
 	_shadow(ci, p, 46.0 * s)
 	var r := Rect2(p + Vector2(-44, -44) * s, Vector2(88, 44) * s)
-	ci.draw_style_box(UI.box(Color("#2f9e48"), OUT, 4, int(16 * s)), r)
-	ci.draw_style_box(UI.box(Color("#47bd5d"), Color(0, 0, 0, 0), 0, int(10 * s)), Rect2(r.position + Vector2(8, 6) * s, Vector2(72, 12) * s))
+	ci.draw_style_box(UI.box(Color("#69a724"), OUT, 4, int(16 * s)), r)
+	ci.draw_style_box(UI.box(Color("#88c93c"), Color(0, 0, 0, 0), 0, int(10 * s)), Rect2(r.position + Vector2(8, 6) * s, Vector2(72, 12) * s))
 
 
 func _flowers(ci: CanvasItem, p: Vector2, s: float) -> void:
@@ -972,7 +972,7 @@ func _flowers(ci: CanvasItem, p: Vector2, s: float) -> void:
 	for k in 5:
 		var q := p + Vector2(sin(k * 2.4) * 22.0, cos(k * 1.7) * 12.0) * s
 		var col: Color = cols[(k + int(p.x)) % 4]
-		ci.draw_line(q, q + Vector2(0, 10) * s, Color("#2f8a3c"), 3.0)
+		ci.draw_line(q, q + Vector2(0, 10) * s, Color("#629327"), 3.0)
 		for j in 5:
 			var a := j * TAU / 5.0
 			ci.draw_circle(q + Vector2(cos(a), sin(a)) * 5.0 * s, 4.0 * s, col)
@@ -1016,9 +1016,9 @@ func _tree(ci: CanvasItem, p: Vector2, s: float) -> void:
 	for b in blobs:
 		ci.draw_circle(p + Vector2(b[0], b[1]) * s, (b[2] + 5) * s, OUT)
 	for b in blobs:
-		ci.draw_circle(p + Vector2(b[0], b[1]) * s, b[2] * s, Color("#2f9e48"))
-	ci.draw_circle(p + Vector2(-12, -118) * s, 16.0 * s, Color("#47bd5d"))
-	ci.draw_circle(p + Vector2(18, -96) * s, 10.0 * s, Color("#47bd5d"))
+		ci.draw_circle(p + Vector2(b[0], b[1]) * s, b[2] * s, Color("#69a724"))
+	ci.draw_circle(p + Vector2(-12, -118) * s, 16.0 * s, Color("#88c93c"))
+	ci.draw_circle(p + Vector2(18, -96) * s, 10.0 * s, Color("#88c93c"))
 	if int(p.x * 7.0) % 3 == 0:
 		for k in 3:
 			ci.draw_circle(p + Vector2(-20 + k * 18, -90 + (k % 2) * 16) * s, 6.0 * s, Color("#f04650"))
@@ -1031,7 +1031,7 @@ func _pine(ci: CanvasItem, p: Vector2, s: float) -> void:
 		var y := -30.0 - k * 38.0
 		var w := 52.0 - k * 12.0
 		var tri := PackedVector2Array([p + Vector2(-w, y) * s, p + Vector2(w, y) * s, p + Vector2(0, y - 62.0) * s])
-		_poly(ci, tri, Color("#2b8c4a") if k % 2 == 0 else Color("#33a056"), OUT, 5.0)
+		_poly(ci, tri, Color("#5b9521") if k % 2 == 0 else Color("#6aaa29"), OUT, 5.0)
 
 
 func _dead_tree(ci: CanvasItem, p: Vector2, s: float) -> void:
@@ -1062,7 +1062,7 @@ func _reeds(ci: CanvasItem, p: Vector2, s: float) -> void:
 	for k in 6:
 		var x := (k - 2.5) * 9.0 * s
 		var h := (46.0 + fmod(k * 17.0, 28.0)) * s
-		ci.draw_line(p + Vector2(x, 0), p + Vector2(x + 4.0 * s, -h), Color("#3a8a3f"), 4.0 * s)
+		ci.draw_line(p + Vector2(x, 0), p + Vector2(x + 4.0 * s, -h), Color("#699333"), 4.0 * s)
 		if k % 2 == 0:
 			ci.draw_line(p + Vector2(x + 3.0 * s, -h + 4.0 * s), p + Vector2(x + 4.0 * s, -h - 16.0 * s), OUT, 9.0 * s)
 			ci.draw_line(p + Vector2(x + 3.0 * s, -h + 4.0 * s), p + Vector2(x + 4.0 * s, -h - 16.0 * s), Color("#8a5530"), 6.0 * s)
@@ -1242,7 +1242,7 @@ func _crown(ci: CanvasItem, c: Vector2) -> void:
 	_poly(ci, crown, Color("#ffd23f"), OUT, 6.0)
 	ci.draw_circle(c + Vector2(0, 10), 8.0, Color("#f04650"))
 	ci.draw_circle(c + Vector2(-30, 12), 6.0, Color("#4b87f5"))
-	ci.draw_circle(c + Vector2(30, 12), 6.0, Color("#3fbf5a"))
+	ci.draw_circle(c + Vector2(30, 12), 6.0, Color("#84cb33"))
 
 
 func _sign(ci: CanvasItem, c: Vector2, txt: String, col: Color, size := 22) -> void:
@@ -1314,7 +1314,7 @@ func _start_arch(ci: CanvasItem, p: Vector2) -> void:
 		ci.draw_line(p + Vector2(x, 70), p + Vector2(x, -110), OUT, 14.0)
 		ci.draw_line(p + Vector2(x, 70), p + Vector2(x, -110), Color("#e8c08a"), 8.0)
 	var r := Rect2(p + Vector2(-110, -150), Vector2(220, 52))
-	ci.draw_style_box(UI.box(Color("#5fcd55"), OUT, 5, 14), r)
+	ci.draw_style_box(UI.box(Color("#a1d94b"), OUT, 5, 14), r)
 	UI.text(ci, r.get_center(), "DÉPART", 30, Color.WHITE, 7)
 	for k in 6:
 		var x2 := -100.0 + k * 40.0

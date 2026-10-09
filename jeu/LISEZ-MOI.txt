@@ -1,4 +1,4 @@
-AURA PARTY - v0.15 (10 mini-jeux : Mini-triathlon et Fusées en folie !)
+AURA PARTY - v0.16 (nouvelle direction artistique pastel)
 ==========================================
 Jusqu'à 8 joueurs, chacun sur son PC.
 Tout le monde doit avoir CETTE version du jeu (sinon la connexion est refusée).

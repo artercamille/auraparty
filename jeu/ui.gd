@@ -75,13 +75,16 @@ static func box(bg: Color, border := DARK, bw := 4, radius := 16) -> StyleBoxFla
 	sb.bg_color = bg
 	sb.set_corner_radius_all(radius)
 	sb.set_border_width_all(bw)
+	# style pastel : pas de gros contour sombre, une bordure dans la teinte du fond
+	if border == DARK and bg.a > 0.5:
+		border = bg.darkened(0.2) if bg.v > 0.3 else bg.lightened(0.15)
 	sb.border_color = border
 	sb.anti_aliasing = true
 	return sb
 
 
 static func button_box(col: Color, pressed := false) -> StyleBoxFlat:
-	var sb := box(col, DARK, 4, 16)
+	var sb := box(col, col.darkened(0.25), 0, 16)
 	sb.border_width_bottom = 4 if pressed else 9
 	sb.content_margin_left = 26
 	sb.content_margin_right = 26

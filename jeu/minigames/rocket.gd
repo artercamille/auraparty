@@ -13,6 +13,7 @@ const ROCKS := ["rock_round1", "rock_round2", "rock_round3", "rock_round4", "roc
 	"rock_brown3", "rock_brown4", "rock_grey1", "rock_grey2", "rock_grey3", "rock_grey4"]
 const UFOS := ["ufo_blue", "ufo_green", "ufo_pink", "ufo_yellow", "ufo_beige"]
 
+const SOFT := Color(0.33, 0.35, 0.43, 0.55)   # bord doux (style pastel)
 var ids: Array = []
 var ships: Dictionary = {}        # id -> {x, a, st, snaps, puff}
 var me_id := 0
@@ -536,7 +537,7 @@ func _draw_view() -> void:
 	# sol et pas de tir
 	var gy := _sy(-48.0)
 	if gy < VIEW_H + 20:
-		c.draw_rect(Rect2(-40, gy, W + 80, 400), Color("#5cb84e"))
+		c.draw_rect(Rect2(-40, gy, W + 80, 400), Color("#94bc55"))
 		c.draw_line(Vector2(-40, gy), Vector2(W + 40, gy), UI.DARK, 4.0)
 		for i in ids.size():
 			var px := W * float(i + 1) / float(ids.size() + 1)
@@ -626,16 +627,16 @@ func _planet(c: CanvasItem, px: float, pa: float, r: float, col: Color, ring: bo
 	var p := Vector2(px, sy)
 	if ring:
 		c.draw_set_transform(p, -0.3, Vector2(1.0, 0.28))
-		c.draw_arc(Vector2.ZERO, r * 1.65, PI, TAU, 40, Color(UI.DARK, al), 16.0)
+		c.draw_arc(Vector2.ZERO, r * 1.65, PI, TAU, 40, Color(SOFT, al), 16.0)
 		c.draw_arc(Vector2.ZERO, r * 1.65, PI, TAU, 40, Color(col.lightened(0.4), al), 9.0)
 		c.draw_set_transform(Vector2.ZERO)
-	c.draw_circle(p, r + 5.0, Color(UI.DARK, al))
+	c.draw_circle(p, r + 5.0, Color(SOFT, al))
 	c.draw_circle(p, r, Color(col, al))
 	c.draw_circle(p + Vector2(r * 0.25, r * 0.2), r * 0.72, Color(col.darkened(0.15), al * 0.6))
 	c.draw_circle(p + Vector2(-r * 0.35, -r * 0.3), r * 0.22, Color(col.lightened(0.3), al))
 	if ring:
 		c.draw_set_transform(p, -0.3, Vector2(1.0, 0.28))
-		c.draw_arc(Vector2.ZERO, r * 1.65, 0, PI, 40, Color(UI.DARK, al), 16.0)
+		c.draw_arc(Vector2.ZERO, r * 1.65, 0, PI, 40, Color(SOFT, al), 16.0)
 		c.draw_arc(Vector2.ZERO, r * 1.65, 0, PI, 40, Color(col.lightened(0.4), al), 9.0)
 		c.draw_set_transform(Vector2.ZERO)
 
@@ -684,7 +685,7 @@ func _rocket(c: CanvasItem, id: int) -> void:
 	if state != "intro":
 		var boost := (st & 4) != 0
 		var fl := (26.0 if boost else 16.0) + sin(t * 40.0 + id) * 5.0
-		c.draw_colored_polygon(PackedVector2Array([Vector2(-15, 36), Vector2(15, 36), Vector2(0, 36 + fl * 2.2)]), UI.DARK)
+		c.draw_colored_polygon(PackedVector2Array([Vector2(-15, 36), Vector2(15, 36), Vector2(0, 36 + fl * 2.2)]), SOFT)
 		c.draw_colored_polygon(PackedVector2Array([Vector2(-11, 36), Vector2(11, 36), Vector2(0, 34 + fl * 2.0)]), Color("#f08c3c"))
 		c.draw_colored_polygon(PackedVector2Array([Vector2(-6, 36), Vector2(6, 36), Vector2(0, 34 + fl * 1.2)]), Color("#ffe066"))
 	# ailerons
@@ -693,7 +694,7 @@ func _rocket(c: CanvasItem, id: int) -> void:
 		c.draw_colored_polygon(fin, col)
 		var fo := fin.duplicate()
 		fo.append(fin[0])
-		c.draw_polyline(fo, UI.DARK, 4.0, true)
+		c.draw_polyline(fo, SOFT, 4.0, true)
 	# corps
 	var body := PackedVector2Array()
 	for k in 11:
@@ -718,14 +719,14 @@ func _rocket(c: CanvasItem, id: int) -> void:
 	c.draw_rect(Rect2(-16, 34, 32, 6), col.darkened(0.2))
 	var bo := body.duplicate()
 	bo.append(body[0])
-	c.draw_polyline(bo, UI.DARK, 4.0, true)
+	c.draw_polyline(bo, SOFT, 4.0, true)
 	# hublot avec le perso dedans
 	var face: Texture2D = _tex.get("face_%d" % id)
-	c.draw_circle(Vector2(0, -6), 17.0, UI.DARK)
+	c.draw_circle(Vector2(0, -6), 17.0, SOFT)
 	c.draw_circle(Vector2(0, -6), 14.0, Color("#bfe6ff"))
 	if face:
 		c.draw_texture_rect_region(face, Rect2(Vector2(-13, -20), Vector2(26, 26)), Rect2(78, 66, 100, 100))
-	c.draw_arc(Vector2(0, -6), 14.0, 0, TAU, 24, UI.DARK, 3.0)
+	c.draw_arc(Vector2(0, -6), 14.0, 0, TAU, 24, SOFT, 3.0)
 	c.draw_arc(Vector2(0, -6), 10.0, PI * 1.1, PI * 1.5, 8, Color(1, 1, 1, 0.8), 2.5)
 	c.draw_set_transform(Vector2.ZERO)
 	# bouclier pendant l'invincibilité (après un choc)

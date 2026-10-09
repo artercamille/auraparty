@@ -15,7 +15,7 @@ const ROUNDS := 5
 const ASK := 6.5
 const REVEAL := 2.4
 const POINTS := [5, 3, 2, 1]
-const BALLOON_COLS := [Color("#f04650"), Color("#4b87f5"), Color("#5fcd55"), Color("#facd2d"),
+const BALLOON_COLS := [Color("#f04650"), Color("#4b87f5"), Color("#a3d15d"), Color("#facd2d"),
 	Color("#a064f0"), Color("#ff8c28"), Color("#2dc8d2"), Color("#ff78c3")]
 const PAD_COLS := [Color("#f04650"), Color("#4b87f5"), Color("#facd2d")]
 

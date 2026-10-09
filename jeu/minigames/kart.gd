@@ -711,11 +711,11 @@ func _closed(p: PackedVector2Array) -> PackedVector2Array:
 func _draw_ground() -> void:
 	var g := ground
 	var big := Rect2(-1500, -1300, 7600, 5600)
-	g.draw_rect(big, Color("#5cb84e"))
+	g.draw_rect(big, Color("#94bc55"))
 	# herbe tondue en bandes
 	for k in range(-30, 60):
 		var x := k * 160.0
-		g.draw_colored_polygon(PackedVector2Array([Vector2(x, -1300), Vector2(x + 80, -1300), Vector2(x + 80 - 1500, 4300), Vector2(x - 1500, 4300)]), Color("#64c255"))
+		g.draw_colored_polygon(PackedVector2Array([Vector2(x, -1300), Vector2(x + 80, -1300), Vector2(x + 80 - 1500, 4300), Vector2(x - 1500, 4300)]), Color("#9ec65c"))
 	# zone de dégagement (sable) entre la piste et les pneus
 	var outer_wall := _largest(_offset(pts, WALL))
 	var outer_run := _largest(_offset(pts, HALF + 70.0))
@@ -729,8 +729,8 @@ func _draw_ground() -> void:
 	for poly in _offset(pts, -(HALF + 10.0)):
 		g.draw_colored_polygon(poly, Color("#e9cf94"))
 	for poly in _offset(pts, -(HALF + 70.0)):
-		g.draw_colored_polygon(poly, Color("#5cb84e"))
-		g.draw_polyline(_closed(poly), Color("#4ea842"), 6.0, true)
+		g.draw_colored_polygon(poly, Color("#94bc55"))
+		g.draw_polyline(_closed(poly), Color("#85ab49"), 6.0, true)
 	# re-dessiner l'asphalte proprement (le remplissage intérieur a pu déborder)
 	var road := _closed(pts)
 	g.draw_polyline(road, Color("#5d6070"), HALF * 2.0, true)
@@ -996,11 +996,11 @@ func _draw_item(d: CanvasItem, kind: String, p: Vector2, s: float, rot := 0.0) -
 			d.draw_set_transform(p, rot, Vector2(s, s))
 			d.draw_circle(Vector2.ZERO, 20.0, UI.DARK)
 			d.draw_circle(Vector2.ZERO, 16.5, Color("#f4f7ff"))
-			d.draw_circle(Vector2.ZERO, 13.0, Color("#3fbf5a"))
+			d.draw_circle(Vector2.ZERO, 13.0, Color("#89c347"))
 			for k in 6:
 				var a := k * TAU / 6.0
-				d.draw_line(Vector2.ZERO, Vector2(cos(a), sin(a)) * 13.0, Color("#2b8c4a"), 2.5)
-			d.draw_circle(Vector2.ZERO, 5.0, Color("#7fe08f"))
+				d.draw_line(Vector2.ZERO, Vector2(cos(a), sin(a)) * 13.0, Color("#608f31"), 2.5)
+			d.draw_circle(Vector2.ZERO, 5.0, Color("#bae486"))
 			d.draw_set_transform(Vector2.ZERO)
 		"mushroom":
 			d.draw_set_transform(p, rot, Vector2(s, s))

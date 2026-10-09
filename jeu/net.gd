@@ -17,13 +17,13 @@ signal mg_go
 signal mg_msg(from_id: int, data: Dictionary)   # reçu par l'hôte
 signal mg_state(data: Dictionary)               # envoyé par l'hôte à tous
 
-const VERSION := "0.15"
+const VERSION := "0.16"
 const PORT := 7777
 const MAX_PLAYERS := 8
 const COLOR_IDS := ["rouge", "orange", "jaune", "vert", "turquoise", "bleu", "violet", "rose"]
 const COLORS := [
-	Color("#f04650"), Color("#ff8c28"), Color("#facd2d"), Color("#5fcd55"),
-	Color("#2dc8d2"), Color("#4b87f5"), Color("#a064f0"), Color("#ff78c3"),
+	Color("#e0404a"), Color("#ff8a1e"), Color("#f5c400"), Color("#5bba4d"),
+	Color("#3fb8bd"), Color("#6f9fe0"), Color("#a57ce0"), Color("#ee86a8"),
 ]
 const STAR_COST := 20
 const START_COINS := 10

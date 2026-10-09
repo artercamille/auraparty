@@ -11,6 +11,7 @@ const SCREEN_X := 360.0           # position de l'athlète à l'écran
 const STAGE_NAMES := ["PAGAIE", "VÉLO", "HAIES"]
 const STAGE_HELP := ["Q et D (ou ← →) en alternance !", "Z et S (ou ↑ ↓) en alternance !", "ESPACE pour sauter les haies !"]
 
+const SOFT := Color(0.33, 0.35, 0.43, 0.55)   # bord doux (style pastel)
 var ids: Array = []
 var lanes: Dictionary = {}        # id -> {x, h, st, snaps, seen}
 var me_id := 0
@@ -470,7 +471,7 @@ func _draw_lane(c: CanvasItem, id: int, li: int, y0: float, lh: float, mine: boo
 				c.draw_rect(tr, Color("#8a8fa8"))
 				for s in 8:
 					var bounce := absf(sin(t * 6.0 + s * 1.7 + j)) * 4.0 * k
-					var cc: Color = [Color("#f04650"), Color("#4b87f5"), Color("#facd2d"), Color("#5fcd55"), Color("#f08c3c")][(s + hsh) % 5]
+					var cc: Color = [Color("#f04650"), Color("#4b87f5"), Color("#facd2d"), Color("#a3d15d"), Color("#f08c3c")][(s + hsh) % 5]
 					var pp := Vector2(tr.position.x + 12 + s * 20, tr.position.y + 16 * k + (s % 2) * 16 * k - bounce)
 					c.draw_circle(pp, 7.0 * k, UI.DARK)
 					c.draw_circle(pp, 5.0 * k, cc)
@@ -552,44 +553,44 @@ func _ground(c: CanvasItem, cam: float, st: int, a: float, b: float, gy: float, 
 	match st:
 		0:
 			# berge puis rivière
-			c.draw_rect(Rect2(sa, gy - 18 * k, sb - sa, 14 * k), Color("#5cb84e"))
-			c.draw_line(Vector2(sa, gy - 18 * k), Vector2(sb, gy - 18 * k), UI.DARK, 3.0)
+			c.draw_rect(Rect2(sa, gy - 18 * k, sb - sa, 14 * k), Color("#94bc55"))
+			c.draw_line(Vector2(sa, gy - 18 * k), Vector2(sb, gy - 18 * k), SOFT, 3.0)
 			c.draw_rect(Rect2(sa, gy - 6 * k, sb - sa, bottom - gy + 6 * k), Color("#3aa3e8"))
 			c.draw_rect(Rect2(sa, gy - 6 * k, sb - sa, 5 * k), Color("#8fd6fb"))
-			c.draw_line(Vector2(sa, gy - 6 * k), Vector2(sb, gy - 6 * k), UI.DARK, 2.0)
+			c.draw_line(Vector2(sa, gy - 6 * k), Vector2(sb, gy - 6 * k), SOFT, 2.0)
 			var w := floorf(a / 70.0) * 70.0
 			while w < b:
 				var wx := w - cam + fmod(t * 30.0, 70.0)
 				c.draw_arc(Vector2(wx, gy + 14 * k), 10.0 * k, PI * 1.1, PI * 1.9, 6, Color(1, 1, 1, 0.6), 2.5)
 				w += 70.0
 		1:
-			c.draw_rect(Rect2(sa, gy, sb - sa, bottom - gy), Color("#5cb84e"))
+			c.draw_rect(Rect2(sa, gy, sb - sa, bottom - gy), Color("#94bc55"))
 			c.draw_rect(Rect2(sa, gy, sb - sa, 22 * k), Color("#8a8fa8"))
-			c.draw_line(Vector2(sa, gy), Vector2(sb, gy), UI.DARK, 3.0)
-			c.draw_line(Vector2(sa, gy + 22 * k), Vector2(sb, gy + 22 * k), UI.DARK, 2.0)
+			c.draw_line(Vector2(sa, gy), Vector2(sb, gy), SOFT, 3.0)
+			c.draw_line(Vector2(sa, gy + 22 * k), Vector2(sb, gy + 22 * k), SOFT, 2.0)
 			var d := floorf(a / 60.0) * 60.0
 			while d < b:
 				c.draw_rect(Rect2(d - cam, gy + 10 * k, 28, 3), Color.WHITE)
 				d += 60.0
 		2:
-			c.draw_rect(Rect2(sa, gy, sb - sa, bottom - gy), Color("#5cb84e"))
+			c.draw_rect(Rect2(sa, gy, sb - sa, bottom - gy), Color("#94bc55"))
 			c.draw_rect(Rect2(sa, gy, sb - sa, 24 * k), Color("#e0643c"))
-			c.draw_line(Vector2(sa, gy), Vector2(sb, gy), UI.DARK, 3.0)
-			c.draw_line(Vector2(sa, gy + 24 * k), Vector2(sb, gy + 24 * k), UI.DARK, 2.0)
+			c.draw_line(Vector2(sa, gy), Vector2(sb, gy), SOFT, 3.0)
+			c.draw_line(Vector2(sa, gy + 24 * k), Vector2(sb, gy + 24 * k), SOFT, 2.0)
 			c.draw_rect(Rect2(sa, gy + 11 * k, sb - sa, 2), Color.WHITE)
 
 
 func _hurdle(c: CanvasItem, p: Vector2, k: float, down: bool) -> void:
 	var h := 40.0 * k
 	if down:
-		c.draw_line(p + Vector2(-16, -4) * k, p + Vector2(18, -10) * k, UI.DARK, 9.0 * k)
+		c.draw_line(p + Vector2(-16, -4) * k, p + Vector2(18, -10) * k, SOFT, 9.0 * k)
 		c.draw_line(p + Vector2(-16, -4) * k, p + Vector2(18, -10) * k, Color.WHITE, 5.0 * k)
 		return
 	for sx in [-14.0, 14.0]:
-		c.draw_line(p + Vector2(sx, 0) * k, p + Vector2(sx * k, -h), UI.DARK, 6.0 * k)
+		c.draw_line(p + Vector2(sx, 0) * k, p + Vector2(sx * k, -h), SOFT, 6.0 * k)
 		c.draw_line(p + Vector2(sx, 0) * k, p + Vector2(sx * k, -h), Color("#c9cde0"), 3.0 * k)
 	var bar := Rect2(p + Vector2(-20 * k, -h - 6 * k), Vector2(40 * k, 10 * k))
-	c.draw_style_box(UI.box(Color.WHITE, UI.DARK, 3, 3), bar)
+	c.draw_style_box(UI.box(Color.WHITE, SOFT, 3, 3), bar)
 	c.draw_rect(Rect2(bar.position + Vector2(10 * k, 2), Vector2(9 * k, bar.size.y - 4)), UI.RED)
 	c.draw_rect(Rect2(bar.position + Vector2(25 * k, 2), Vector2(7 * k, bar.size.y - 4)), UI.RED)
 
@@ -614,15 +615,15 @@ func _athlete(c: CanvasItem, id: int, p: Vector2, h: float, st: int, k: float) -
 			c.draw_colored_polygon(hull, col)
 			var hl := hull.duplicate()
 			hl.append(hull[0])
-			c.draw_polyline(hl, UI.DARK, 3.0, true)
+			c.draw_polyline(hl, SOFT, 3.0, true)
 			c.draw_line(p + Vector2(-50, -6) * k, p + Vector2(50, -6) * k, col.lightened(0.35), 4.0 * k)
 			var pa := sin(lx * 0.02) * 0.9 if not transit else 0.0
 			var pc := p + Vector2(4, -30) * k
 			var dir := Vector2(cos(pa + PI / 2.0), sin(pa + PI / 2.0))
-			c.draw_line(pc - dir * 40.0 * k, pc + dir * 40.0 * k, UI.DARK, 7.0 * k)
+			c.draw_line(pc - dir * 40.0 * k, pc + dir * 40.0 * k, SOFT, 7.0 * k)
 			c.draw_line(pc - dir * 40.0 * k, pc + dir * 40.0 * k, Color("#c98a4e"), 3.5 * k)
 			var blade := pc + dir * 40.0 * k
-			c.draw_circle(blade, 7.0 * k, UI.DARK)
+			c.draw_circle(blade, 7.0 * k, SOFT)
 			c.draw_circle(blade, 5.0 * k, Color("#c98a4e"))
 			if (st & 4) != 0:
 				for j in 4:
@@ -632,22 +633,22 @@ func _athlete(c: CanvasItem, id: int, p: Vector2, h: float, st: int, k: float) -
 			var spin := lx * 0.05
 			for wx in [-30.0, 32.0]:
 				var wc := p + Vector2(wx, -18) * k
-				c.draw_arc(wc, 18.0 * k, 0, TAU, 24, UI.DARK, 6.0 * k)
+				c.draw_arc(wc, 18.0 * k, 0, TAU, 24, SOFT, 6.0 * k)
 				c.draw_arc(wc, 18.0 * k, 0, TAU, 24, Color("#4a4f63"), 3.0 * k)
 				for s in 3:
 					var a2 := spin + s * TAU / 3.0
 					c.draw_line(wc, wc + Vector2(cos(a2), sin(a2)) * 16.0 * k, Color("#c9cde0"), 2.0)
-				c.draw_circle(wc, 3.0 * k, UI.DARK)
+				c.draw_circle(wc, 3.0 * k, SOFT)
 			var seat := p + Vector2(-8, -44) * k
 			var front := p + Vector2(32, -18) * k
 			var back := p + Vector2(-30, -18) * k
 			var pedal := p + Vector2(0, -20) * k
 			for seg in [[back, seat], [seat, front], [back, pedal], [pedal, seat]]:
-				c.draw_line(seg[0], seg[1], UI.DARK, 7.0 * k)
+				c.draw_line(seg[0], seg[1], SOFT, 7.0 * k)
 			for seg in [[back, seat], [seat, front], [back, pedal], [pedal, seat]]:
 				c.draw_line(seg[0], seg[1], col, 3.5 * k)
-			c.draw_line(p + Vector2(24, -50) * k, front, UI.DARK, 5.0 * k)
-			c.draw_line(p + Vector2(18, -52) * k, p + Vector2(32, -50) * k, UI.DARK, 5.0 * k)
+			c.draw_line(p + Vector2(24, -50) * k, front, SOFT, 5.0 * k)
+			c.draw_line(p + Vector2(18, -52) * k, p + Vector2(32, -50) * k, SOFT, 5.0 * k)
 			_tex_char(c, id, "walk_a" if int(lx / 50.0) % 2 == 0 else "walk_b", seat + Vector2(4, 10) * k + Vector2(0, bob * 0.5), sc)
 		2:
 			var pose := "walk_a" if int(lx / 40.0) % 2 == 0 else "walk_b"

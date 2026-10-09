@@ -230,7 +230,7 @@ func _crown(ci: Control, c: Vector2, s: float) -> void:
 	ci.draw_polyline(outline, UI.DARK, 5.0)
 	ci.draw_rect(Rect2(c + Vector2(-42, 10) * s, Vector2(84, 12) * s), Color("#e0a91c"))
 	for k in 3:
-		ci.draw_circle(c + Vector2(-26 + k * 26, 16) * s, 5.0 * s, [Color("#f04650"), Color("#4b87f5"), Color("#5fcd55")][k])
+		ci.draw_circle(c + Vector2(-26 + k * 26, 16) * s, 5.0 * s, [Color("#f04650"), Color("#4b87f5"), Color("#a3d15d")][k])
 	ci.draw_circle(c + Vector2(-48, -22) * s, 5.0 * s, Color.WHITE)
 	ci.draw_circle(c + Vector2(0, -34) * s, 5.0 * s, Color.WHITE)
 	ci.draw_circle(c + Vector2(48, -22) * s, 5.0 * s, Color.WHITE)

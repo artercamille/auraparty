@@ -6,10 +6,13 @@ var t := 0.0
 var clouds: Texture2D = load("res://assets/bg/layer_clouds.png")
 var hills: Texture2D = load("res://assets/bg/layer_hills.png")
 var puffs := []
+var theme_tex: Texture2D
 
 
 func _init(m := "hills") -> void:
 	mode = m
+	if m.begins_with("theme:"):
+		theme_tex = load("res://assets/bg/%s.png" % m.substr(6))
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	for i in 6:
 		puffs.append({"x": randf() * 1500.0, "y": randf_range(60, 260), "s": randf_range(0.6, 1.2), "v": randf_range(8, 22)})
@@ -40,8 +43,14 @@ func _puff(c: Vector2, s: float, a: float) -> void:
 
 
 func _draw() -> void:
-	var top := Color("#5fb2ff")
-	var bot := Color("#d2ebff")
+	if theme_tex:
+		# fond du pack « Remastered » (herbe, désert, champignons...) qui défile doucement
+		draw_rect(Rect2(Vector2.ZERO, size), Color("#d2f3f7"))
+		_strip(theme_tex, size.y - 820.0, 900.0, 5.0)
+		draw_rect(Rect2(Vector2.ZERO, size), Color("#d2f3f7", 0.5))   # plus pâle : c'est le fond
+		return
+	var top := Color("#9fdcef")
+	var bot := Color("#e2f8fb")
 	var steps := 32
 	for i in steps:
 		draw_rect(Rect2(0, floorf(size.y * i / steps), size.x, ceilf(size.y / steps) + 1), top.lerp(bot, float(i) / (steps - 1)))

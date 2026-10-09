@@ -56,7 +56,8 @@ func _ready() -> void:
 	var bg_layer := CanvasLayer.new()
 	bg_layer.layer = -10
 	add_child(bg_layer)
-	bg_layer.add_child(Backdrop.new("sky"))
+	var themes := ["colored_grass", "colored_desert", "colored_shroom", "colored_land"]
+	bg_layer.add_child(Backdrop.new("theme:" + themes[absi(int(Net.mg_data.get("seed", 0))) % themes.size()]))
 	world = Node2D.new()
 	add_child(world)
 	_build_level()
