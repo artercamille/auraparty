@@ -1,4 +1,4 @@
-# Aura PARTY — état du projet (v0.21)
+# Aura PARTY — état du projet (v0.22)
 
 Party game 2D façon Mario Party, Godot 4.3 (GL Compatibility), GDScript, 2 à 8 joueurs en ligne
 (ENet UDP 7777, via Radmin VPN). Export Windows .exe. L'utilisateur (Camille) ne code pas : réponses
@@ -50,6 +50,7 @@ Bloc caché : 6 % sur B/R (pièces / objet / étoile). Rochers-péages à l'entr
 (segments 2 et 9) : prix 5, +5 par passage (max 30), `Game.rocks`. Étoile 20 pièces.
 Début de partie : « Qui commence ? » (blocs). Parties de 10 tours ou plus : « Plus que 5 tours ! » (+10 pièces au dernier).
 Stats suivies dans `players[id]` : coins_won, mg_wins, reds, steps, used.
+Étoile gagnée (achat, bloc caché, fantôme) : grande animation plein écran `board.gd star_celebrate()` (rayons, confettis, étoile à yeux qui file vers le compteur du joueur).
 
 ## Les 16 mini-jeux (`Net.MINIGAMES`, fichiers dans `minigames/`)
 | clé | nom | type |
@@ -69,7 +70,7 @@ Stats suivies dans `players[id]` : coins_won, mg_wins, reds, steps, used.
 | bomb | Bombe chaude ! | Hot Bob-omb, hôte = état de la bombe |
 | tug | Tir à la corde ! | Tug o' War, équipes jusqu'à 4v4, impair ⇒ 1 arbitre gagnant d'office |
 | slots | Jackpot Aura ! | Lucky Lineup : machine à sous locale par joueur, 3 tirages, résultat envoyé à l'hôte (`assets/slots/`) |
-| memory | Mémo-boum ! | Memory Mash (stage.gd) : sol de cartes, piqué ↓ pour retourner, hôte arbitre les paires (`assets/cards/`), 16 cartes ≤4 joueurs, 24 au-delà |
+| memory | Mémo-boum ! | Memory Mash (MP DS) fidèle : vue de dessus, 18 cartes 6x3, 2 équipes (impair ⇒ arbitre), saut + frappe au sol, 1re équipe à 4 paires, hôte arbitre (`assets/cards/`) |
 
 Ajouter un mini-jeu : créer le .gd, l'ajouter à `Net.MINIGAMES` + à la liste `--checkall` dans net.gd,
 gérer les robots (`Net.autotest != ""`), spectateurs/duel, puis faire son aperçu HD dans `assets/previews/`.
@@ -118,6 +119,7 @@ gérer les robots (`Net.autotest != ""`), spectateurs/duel, puis faire son aper�
   StyleBoxTexture (9-slice) et des icônes.
 
 ## À faire / à ne pas oublier
+- Camille veut des mini-jeux **copiés fidèlement** sur les vrais Mario Party (règles, vue, déroulé) : vérifier le vrai jeu avant de l'adapter.
 - Le zip fait ~54 Mo : GitHub refuse au-delà de 100 Mo → prévoir GitHub Releases si ça grossit.
 - Pas encore fait : mini-jeux 2v2 / 1v3 selon la couleur des cases (proposé, pas choisi) ;
   menus en barres penchées style Mario Party (capture de Camille) ; alliés (Jamboree).

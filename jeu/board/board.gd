@@ -69,6 +69,9 @@ var hidden_fx := {}      # 0 : « Veux-tu acheter ? »  1 : l'étagère
 var tex_block: Texture2D = load("res://assets/tiles/block_exclamation.png")
 var tex_block_hit: Texture2D = load("res://assets/tiles/block_exclamation_active.png")
 var _debug_shot := false
+var star_cele := {}               # grande animation « étoile gagnée » : id, t0, txt
+var cele_conf: Array = []
+const CELE_LEN := 3.7
 var dice_hits := 0
 var sparks: Array = []            # particules (pack Kenney Particle)
 var _ptex := {}
@@ -502,8 +505,7 @@ func _on_event(d: Dictionary) -> void:
 				_show_banner(str(d["text"]), UI.YELLOW if delta >= 0 else UI.RED, 1.6)
 		"star":
 			if d.get("bought", false):
-				_show_banner("%s achète une ÉTOILE !" % Net.name_of(id), UI.YELLOW, 2.6)
-				Sfx.play("jingle_star", 2.0, 0.0)
+				_show_banner("%s achète une ÉTOILE !" % Net.name_of(id), UI.YELLOW, 0.4)
 				show_emote(id, "stars")
 				if vis.has(id):
 					burst(vis[id] + Vector2(0, -60), "star_06", 18, UI.YELLOW, 420.0)
@@ -511,9 +513,10 @@ func _on_event(d: Dictionary) -> void:
 				if vis.has(id):
 					popups.append({"p": vis[id], "txt": "+1 étoile", "c": UI.YELLOW, "t": t})
 				_hop(id, 0.5, 90.0)
+				star_celebrate(id, "%s gagne une ÉTOILE !" % _who(id), 0.3)
 				star = int(d.get("from", star))
 				_sync(d, k, id)
-				await get_tree().create_timer(1.2).timeout
+				await get_tree().create_timer(CELE_LEN + 0.2).timeout
 				if not is_inside_tree():
 					return
 				star = int(d.get("star", star))
@@ -527,11 +530,14 @@ func _on_event(d: Dictionary) -> void:
 			panel = {"kind": "msg", "title": "Bloc caché !", "text": str(d.get("text", "")), "item": str(d.get("item", "")),
 				"tex": "block", "t0": t, "dur": 3.0, "col": Color("#e0a000")}
 			Sfx.play("die_hit", 0.0, 0.0)
-			Sfx.play("jingle_star" if str(d.get("prize", "")) == "star" else "jingle_good", 0.0, 0.0)
+			if str(d.get("prize", "")) != "star":
+				Sfx.play("jingle_good", 0.0, 0.0)
 			show_emote(id, "stars" if str(d.get("prize", "")) == "star" else "exclamation")
 			if vis.has(id):
 				burst(vis[id] + Vector2(0, -120), "star_06", 14, UI.YELLOW, 300.0)
 				hidden_fx = {"id": id, "t0": t}
+			if str(d.get("prize", "")) == "star":
+				star_celebrate(id, "%s trouve une ÉTOILE !" % _who(id), 1.4)
 		"king":
 			panel = {"kind": "msg", "title": "Case du Roi Grognon !", "text": str(d.get("text", "")), "item": "",
 				"tex": "fire", "t0": t, "dur": 3.8, "col": Color("#b8322a")}
@@ -546,6 +552,8 @@ func _on_event(d: Dictionary) -> void:
 			if d.get("ok", false):
 				show_emote(int(d.get("target", 0)), "faceAngry")
 				show_emote(id, "laugh")
+				if str(d.get("what", "")) == "star":
+					star_celebrate(id, "%s vole une ÉTOILE !" % _who(id), 1.2)
 		"msg":
 			panel = {"kind": "msg", "title": str(d.get("title", "")), "text": str(d.get("text", "")), "item": str(d.get("item", "")),
 				"t0": t, "dur": 3.2, "col": UI.RED if d.get("bad", false) else UI.BLUE}
@@ -643,6 +651,150 @@ func burst(p: Vector2, kind: String, n: int, col := Color.WHITE, speed := 260.0)
 		var a := randf() * TAU
 		var v := Vector2(cos(a), sin(a) * 0.7) * randf_range(speed * 0.4, speed) + Vector2(0, -speed * 0.4)
 		sparks.append({"tex": kind, "p": p, "v": v, "t0": t, "life": randf_range(0.6, 1.1), "r": randf() * TAU, "s": randf_range(0.35, 0.7), "c": col})
+
+
+func _who(id: int) -> String:
+	return "Tu" if id == Net.my_id() else Net.name_of(id)
+
+
+## Grande animation « étoile gagnée » (façon Mario Party) par-dessus tout l'écran.
+func star_celebrate(id: int, txt: String, delay := 0.0) -> void:
+	star_cele = {"id": id, "t0": t + delay, "txt": txt.replace("Tu gagne ", "Tu gagnes ").replace("Tu trouve ", "Tu trouves ").replace("Tu vole ", "Tu voles "), "snd": false}
+	cele_conf.clear()
+	var col := Net.color_of(id)
+	for i in 90:
+		cele_conf.append({"p": Vector2(randf_range(-40, 1320), randf_range(-700, -20)), "v": Vector2(randf_range(-60, 60), randf_range(160, 320)),
+			"r": randf() * TAU, "w": randf_range(-8, 8), "s": randf_range(7, 13),
+			"c": [UI.YELLOW, col, Color("#ff7b9c"), Color("#7fd6ff"), UI.WHITE][i % 5]})
+
+
+## Position de l'icône étoile d'un joueur dans les cartouches du bas (même calcul que _draw_cards).
+func _card_star_pos(id: int) -> Vector2:
+	var ids := disp.keys()
+	ids.sort_custom(func(a, b):
+		var ka := int(disp[a]["stars"]) * 100000 + int(disp[a]["coins"])
+		var kb := int(disp[b]["stars"]) * 100000 + int(disp[b]["coins"])
+		return ka > kb)
+	var n := ids.size()
+	var cw := 168.0 if n <= 6 else 140.0
+	var gap := 10.0 if n <= 6 else 6.0
+	var x0 := (1280.0 - (n * cw + (n - 1) * gap)) / 2.0
+	var i := maxi(0, ids.find(id))
+	return Vector2(x0 + i * (cw + gap) + 74.0, 720 - 90 + 41)
+
+
+static func star_shape(c: CanvasItem, at: Vector2, r: float, rot: float, face := true) -> void:
+	var outer := PackedVector2Array()
+	var inner := PackedVector2Array()
+	var core := PackedVector2Array()
+	for k in 10:
+		var a := rot - PI / 2.0 + PI * k / 5.0
+		var rr := r if k % 2 == 0 else r * 0.5
+		outer.append(at + Vector2(cos(a), sin(a)) * (rr + r * 0.12))
+		inner.append(at + Vector2(cos(a), sin(a)) * rr)
+		core.append(at + Vector2(cos(a), sin(a)) * rr * 0.62 + Vector2(-r * 0.05, -r * 0.08))
+	c.draw_colored_polygon(outer, Color("#fff8d8"))
+	c.draw_colored_polygon(inner, Color("#ffb627"))
+	c.draw_colored_polygon(core, Color("#ffe066"))
+	if face:
+		for sx in [-1.0, 1.0]:
+			var e := at + Vector2(sx * r * 0.17, -r * 0.02).rotated(rot)
+			c.draw_set_transform(e, rot, Vector2(1.0, 1.7))
+			c.draw_circle(Vector2.ZERO, r * 0.07, Color("#3b2a1a"))
+			c.draw_circle(Vector2(-r * 0.02, -r * 0.03), r * 0.025, UI.WHITE)
+			c.draw_set_transform(Vector2.ZERO)
+
+
+func _draw_star_cele() -> void:
+	if star_cele.is_empty():
+		return
+	var k := t - float(star_cele["t0"])
+	if k < 0.0:
+		return
+	if k > CELE_LEN:
+		star_cele = {}
+		return
+	if not star_cele["snd"]:
+		star_cele["snd"] = true
+		Sfx.play("spawn", 0.0, 0.0)
+		Sfx.play("jingle_star", 2.0, 0.0)
+		if int(star_cele["id"]) == Net.my_id():
+			Sfx.voice("congratulations", -2.0)
+	var h := hud
+	var id := int(star_cele["id"])
+	var col := Net.color_of(id)
+	var fade_in := clampf(k / 0.3, 0.0, 1.0)
+	var fly := clampf((k - 2.45) / 0.75, 0.0, 1.0)
+	var dim := 0.55 * fade_in * (1.0 - fly)
+	h.draw_rect(Rect2(0, 0, 1280, 720), Color(0.12, 0.07, 0.25, dim))
+	var center := Vector2(640, 215)
+	# rayons qui tournent
+	var ray_a := (1.0 - fly) * fade_in
+	if ray_a > 0.0:
+		for i in 16:
+			var a0 := k * 0.6 + TAU * i / 16.0
+			var pts := PackedVector2Array([center, center + Vector2(cos(a0), sin(a0)) * 900.0, center + Vector2(cos(a0 + 0.17), sin(a0 + 0.17)) * 900.0])
+			h.draw_colored_polygon(pts, Color(1, 0.92, 0.5, 0.22 * ray_a) if i % 2 == 0 else Color(1, 1, 1, 0.08 * ray_a))
+		h.draw_circle(center, 190.0, Color(1, 0.95, 0.6, 0.18 * ray_a))
+		h.draw_circle(center, 130.0, Color(1, 1, 0.85, 0.25 * ray_a))
+	# confettis
+	for cf in cele_conf:
+		var p: Vector2 = (cf["p"] as Vector2) + (cf["v"] as Vector2) * k + Vector2(sin(k * 3.0 + float(cf["w"])) * 20.0, 0)
+		if p.y > 760:
+			continue
+		var sz := float(cf["s"])
+		h.draw_set_transform(p, float(cf["r"]) + k * float(cf["w"]), Vector2(1.0, absf(cos(k * 5.0 + float(cf["w"])))))
+		h.draw_rect(Rect2(Vector2(-sz / 2.0, -sz / 3.0), Vector2(sz, sz * 0.66)), Color(cf["c"], 1.0 - fly))
+		h.draw_set_transform(Vector2.ZERO)
+	# le perso qui saute de joie, l'étoile au-dessus de la tête
+	if fly < 1.0:
+		var hop := absf(sin(k * 6.0)) * 26.0 * (1.0 - fly)
+		var cs := 0.95 * minf(1.0, k / 0.25) * (1.0 - fly)
+		var tx: Texture2D = UI.char_tex(Net.color_idx(id), "jump")
+		h.draw_set_transform(Vector2(640, 572 - hop), sin(k * 6.0) * 0.06, Vector2(cs, cs))
+		h.draw_texture(tx, Vector2(-128, -256))
+		h.draw_set_transform(Vector2.ZERO)
+	# l'étoile : arrive en tournant, rebondit, puis file vers le compteur du joueur
+	var pop := 0.0
+	if k < 0.5:
+		var u := k / 0.5
+		pop = 1.0 + sin(u * PI * 1.5) * (1.0 - u) * 0.6 - (1.0 - u) * (1.0 - u)
+	else:
+		pop = 1.0 + 0.05 * sin(k * 7.0)
+	var spin := (1.0 - minf(1.0, k / 0.6)) * TAU * 1.5 + sin(k * 3.0) * 0.12
+	var sp := center + Vector2(0, -sin(k * 2.2) * 10.0)
+	var sr := 95.0 * pop
+	if fly > 0.0:
+		var e := fly * fly * (3.0 - 2.0 * fly)
+		var target := _card_star_pos(id)
+		sp = sp.lerp(target, e) + Vector2(0, -sin(fly * PI) * 120.0)
+		sr = lerpf(95.0, 12.0, e)
+		spin += fly * TAU
+	if k < 0.6:
+		for i in 10:
+			var a := TAU * i / 10.0 + k * 4.0
+			h.draw_circle(sp + Vector2(cos(a), sin(a)) * (sr * 1.6 + k * 120.0), 7.0 * (1.0 - k / 0.6), Color(1, 1, 0.8, 1.0 - k / 0.6))
+	star_shape(h, sp, sr, spin, sr > 30.0)
+	# éclats autour
+	if fly < 1.0:
+		for i in 6:
+			var a2 := TAU * i / 6.0 + k * 1.3
+			var tw := 0.5 + 0.5 * sin(k * 9.0 + i * 1.7)
+			var q := sp + Vector2(cos(a2), sin(a2)) * (sr + 46.0)
+			h.draw_line(q - Vector2(0, 10 * tw), q + Vector2(0, 10 * tw), Color(1, 1, 1, tw * (1.0 - fly)), 3.0)
+			h.draw_line(q - Vector2(10 * tw, 0), q + Vector2(10 * tw, 0), Color(1, 1, 1, tw * (1.0 - fly)), 3.0)
+	# bandeau
+	if k > 0.35 and fly < 0.6:
+		var bk := minf(1.0, (k - 0.35) / 0.2)
+		var sc := 0.6 + 0.4 * bk + (0.08 * sin((k - 0.35) * 12.0) * (1.0 - bk))
+		h.draw_set_transform(Vector2(640, 628), 0.0, Vector2(sc, sc))
+		UI.ribbon(h, Vector2.ZERO, str(star_cele["txt"]), 40, col.lerp(UI.YELLOW, 0.15))
+		h.draw_set_transform(Vector2.ZERO)
+	# arrivée sur le compteur : un anneau qui s'ouvre
+	if fly >= 1.0:
+		var ak := clampf((k - 3.2) / 0.45, 0.0, 1.0)
+		var tp := _card_star_pos(id)
+		h.draw_arc(tp, 14.0 + ak * 26.0, 0, TAU, 32, Color(1, 0.9, 0.3, 1.0 - ak), 4.0)
 
 
 ## Bulle d'émote au-dessus d'un pion.
@@ -1026,6 +1178,7 @@ func _draw_hud() -> void:
 		sel = maxi(0, buttons.size() - 1)
 	UI.text(hud, Vector2(84, 98), "Tab : carte", 17, UI.WHITE, 5)
 	UI.text(hud, Vector2(84, 122), "1 à 6 : émotes", 17, UI.WHITE, 5)
+	_draw_star_cele()
 
 
 func _draw_cards() -> void:

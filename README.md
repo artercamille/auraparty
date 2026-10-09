@@ -7,7 +7,7 @@ Une grande île volante avec des carrefours, des objets, une boutique, des duels
 
 ## ⬇️ Télécharger
 
-### **[Télécharger Aura PARTY v0.21 pour Windows](https://github.com/artercamille/auraparty/raw/main/telecharger/AuraParty.zip)**
+### **[Télécharger Aura PARTY v0.22 pour Windows](https://github.com/artercamille/auraparty/raw/main/telecharger/AuraParty.zip)**
 
 Dézippe le fichier, puis lance `AuraParty.exe`.
 Si Windows affiche « Windows a protégé votre ordinateur » : *Informations complémentaires* → *Exécuter quand même*.
@@ -56,7 +56,7 @@ Dans le salon, l'hôte peut aussi lancer directement un mini-jeu pour le tester,
 | Tir à la corde ! | (Tug o' War) En équipes jusqu'à 4 contre 4 : martèle Espace pour tirer l'autre équipe dans la boue. |
 | Boules-tamponneuses ! | (Bumper Balls) Sur une boule dans une arène ronde : éjecte les autres. |
 | Jackpot Aura ! | (Lucky Lineup) Chacun sa machine à sous : arrête les rouleaux pile au bon moment pour aligner les 7. |
-| Mémo-boum ! | (Memory Mash) Le sol est fait de cartes : retombe en piqué pour les retourner et trouve les paires. |
+| Mémo-boum ! | (Memory Mash) En équipes : frappe le sol sur les cartes pour les retourner, la première équipe à 4 paires gagne. |
 
 **Commandes** : plateau : Espace pour valider, ← → pour choisir, Tab pour la carte, 1 à 6 pour les émotes · M pour couper la musique · mini-jeux : bouger Q/D ou flèches · sauter Espace (double saut) · pousser Maj/X/E/clic · plein écran F11.
 Kart : Z/↑/Espace pour accélérer, S/↓ pour freiner, Q/D pour tourner, Maj/X/clic pour l'objet.
