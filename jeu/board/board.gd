@@ -980,6 +980,10 @@ func _input(event: InputEvent) -> void:
 		nav = 4
 	elif event.is_action_pressed("up") and menu == "shop":
 		nav = -4
+	elif event.is_action_pressed("down") and menu == "action":
+		nav = 1
+	elif event.is_action_pressed("up") and menu == "action":
+		nav = -1
 	if nav != 0:
 		if menu == "custom":
 			custom_val = clampi(custom_val + signi(nav), 1, 10)
@@ -1110,18 +1114,12 @@ func _draw_hud() -> void:
 	UI.text(hud, r.position + Vector2(128, 32), "%d/%d" % [mini(Net.round_num, Net.total_rounds), Net.total_rounds], 32, UI.WHITE, 7)
 	var r2 := Rect2(Vector2(1280 - 240, 14), Vector2(220, 56))
 	UI.panel(hud, r2, Color("#ffc93c"), UI.WHITE, 22, 5)
-	hud.draw_circle(r2.position + Vector2(34, 28), 19.0, UI.WHITE)
-	hud.draw_set_transform(r2.position + Vector2(34, 28), 0.0, Vector2(0.36, 0.36))
-	hud.draw_texture(tex_star, Vector2(-64, -64))
-	hud.draw_set_transform(Vector2.ZERO)
+	hud.draw_texture_rect(UI.gui("ic_star"), Rect2(r2.position + Vector2(10, 4), Vector2(48, 48)), false)
 	UI.text(hud, r2.position + Vector2(132, 28), "= %d pièces" % Game.STAR_COST, 22, UI.WHITE, 6)
 	var r3 := Rect2(Vector2(1280 - 220, 80), Vector2(200, 44))
 	UI.panel(hud, r3, Color("#4fc3e8"), UI.WHITE, 18, 4)
 	UI.text(hud, r3.position + Vector2(84, 22), "Banque : %d" % Game.bank, 20, UI.WHITE, 6)
-	hud.draw_circle(r3.position + Vector2(176, 22), 13.0, UI.WHITE)
-	hud.draw_set_transform(r3.position + Vector2(176, 22), 0.0, Vector2(0.22, 0.22))
-	hud.draw_texture(tex_coin, Vector2(-64, -64))
-	hud.draw_set_transform(Vector2.ZERO)
+	hud.draw_texture_rect(UI.gui("ic_coin"), Rect2(r3.position + Vector2(160, 6), Vector2(32, 32)), false)
 	if not (menu == "shop" and shop_step == 1):
 		_draw_cards()
 	if map_view:
@@ -1214,19 +1212,14 @@ func _draw_cards() -> void:
 		# rang
 		var rk_col: Color = [Color("#ffc93c"), Color("#c9d3e3"), Color("#e8a061")][rank] if rank < 3 else Color("#9aa3b8")
 		var badge := cr.position + Vector2(6, 2)
-		hud.draw_circle(badge, 15.0, UI.WHITE)
-		hud.draw_circle(badge, 12.0, rk_col)
-		UI.text(hud, badge + Vector2(0, -1), str(rank + 1), 17, UI.WHITE, 5)
+		hud.draw_texture_rect(UI.gui("rank%d" % mini(rank + 1, 8)), Rect2(badge - Vector2(17, 20), Vector2(34, 41)), false)
 		var nm := str(disp[id]["name"])
 		if nm.length() > 9:
 			nm = nm.substr(0, 8) + "."
 		UI.text(hud, cr.position + Vector2(112, 16), nm, 16, UI.WHITE, 5)
-		for ic2 in [[74.0, tex_star, str(int(disp[id]["stars"]))], [cw - 48.0, tex_coin, str(int(round(float(shown_coins.get(id, 0.0)))))]]:
+		for ic2 in [[74.0, UI.gui("ic_star"), str(int(disp[id]["stars"]))], [cw - 48.0, UI.gui("ic_coin"), str(int(round(float(shown_coins.get(id, 0.0)))))]]:
 			var ip := cr.position + Vector2(float(ic2[0]), 41)
-			hud.draw_circle(ip, 11.0, UI.WHITE)
-			hud.draw_set_transform(ip, 0.0, Vector2(0.2, 0.2))
-			hud.draw_texture(ic2[1], Vector2(-64, -64))
-			hud.draw_set_transform(Vector2.ZERO)
+			hud.draw_texture_rect(ic2[1], Rect2(ip - Vector2(14, 14), Vector2(28, 28)), false)
 			UI.text(hud, ip + Vector2(24, 0), ic2[2], 22, UI.WHITE, 6)
 		var items: Array = disp[id].get("items", [])
 		for j in Items.MAX_HELD:
@@ -1388,28 +1381,32 @@ func _title(txt: String, y: float) -> void:
 
 
 func _menu_action() -> void:
-	_title("À toi ! Que veux-tu faire ?", 470)
+	# menu façon Mario Party : barres penchées empilées à droite (kit d'interface)
 	var items := _my_items()
 	var used: bool = ask.get("used", false)
-	var labels := [["roll", "Lancer le dé", true], ["items", "Objets (%d)" % items.size(), items.size() > 0 and not used], ["map", "Carte", true]]
-	var w := 230.0
-	var x0 := 640.0 - (labels.size() * w + (labels.size() - 1) * 16.0) / 2.0
+	var labels := [["roll", "Lancer le dé", true, "bar_blue"], ["items", "Objets (%d)" % items.size(), items.size() > 0 and not used, "bar_green"],
+		["map", "Carte", true, "bar_yellow"]]
+	UI.ribbon(hud, Vector2(1010, 268), "À toi ! Que fais-tu ?", 22, Color("#8e6cf0"))
 	for i in labels.size():
-		var r := Rect2(Vector2(x0 + i * (w + 16.0), 504), Vector2(w, 66))
-		_btn(r, labels[i][0], labels[i][2])
+		var bar: Texture2D = UI.gui(str(labels[i][3]))
 		var on: bool = labels[i][2]
-		UI.text(hud, r.get_center() + Vector2(14, 0), labels[i][1], 24, UI.DARK if on else UI.GREY, 0)
-		var ic := r.position + Vector2(30, 35)
-		match str(labels[i][0]):
-			"roll":
-				hud.draw_set_transform(ic, 0.0, Vector2(0.36, 0.36))
-				hud.draw_texture(tex_block, Vector2(-64, -64))
-				hud.draw_set_transform(Vector2.ZERO)
-			"items":
-				Items.draw_icon(hud, str(items[0]) if items.size() > 0 else "mushroom", ic, 0.7)
-			"map":
-				_map_icon(ic)
-	UI.text(hud, Vector2(640, 596), "ESPACE : lancer le dé  ·  ← → : choisir  ·  Tab : carte", 18, UI.WHITE, 5)
+		var focus := i == sel and on
+		var k := 1.22 if not focus else 1.3 + 0.03 * sin(t * 7.0)
+		var sz := Vector2(bar.get_width(), bar.get_height()) * k
+		var c := Vector2(1040 - i * 12 + (-16 if focus else 0), 350 + i * 70)
+		var r := Rect2(c - sz / 2.0, sz)
+		buttons.append({"r": Rect2(c - Vector2(sz.x / 2.0, 30), Vector2(sz.x, 60)), "a": labels[i][0], "on": on})
+		if focus:
+			hud.draw_texture_rect(bar, Rect2(r.position + Vector2(-6, -6), r.size + Vector2(12, 12)), false, Color(1, 1, 0.75, 0.55))
+		hud.draw_texture_rect(bar, r, false, Color.WHITE if on else Color(0.55, 0.57, 0.65))
+		hud.draw_set_transform(c + Vector2(22, -2), -0.2, Vector2.ONE)
+		UI.text(hud, Vector2.ZERO, str(labels[i][1]), 24 if focus else 21, UI.WHITE if on else Color("#d5d8e3"), 7)
+		hud.draw_set_transform(Vector2.ZERO)
+		if focus:
+			var ar := c + Vector2(-sz.x / 2.0 - 10.0 + 6.0 * sin(t * 8.0), 8)
+			hud.draw_colored_polygon(PackedVector2Array([ar + Vector2(-20, -18), ar + Vector2(10, 0), ar + Vector2(-20, 18)]), UI.outline_of(UI.YELLOW))
+			hud.draw_colored_polygon(PackedVector2Array([ar + Vector2(-16, -12), ar + Vector2(4, 0), ar + Vector2(-16, 12)]), Color("#ffd23f"))
+	UI.text(hud, Vector2(1010, 560), "ESPACE : valider  ·  ↑ ↓ : choisir", 17, UI.WHITE, 5)
 
 
 func _map_icon(c: Vector2) -> void:

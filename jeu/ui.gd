@@ -60,14 +60,34 @@ static func make_theme() -> Theme:
 	t.set_color("font_placeholder_color", "LineEdit", Color(DARK, 0.4))
 	t.set_color("caret_color", "LineEdit", DARK)
 	t.set_color("font_color", "Label", DARK)
-	# panneaux
-	var pn := box(WHITE, Color("#ece9fb"), 6, 30)
-	pn.set_content_margin_all(28)
-	pn.shadow_color = Color(0.13, 0.1, 0.25, 0.25)
-	pn.shadow_size = 1
-	pn.shadow_offset = Vector2(0, 10)
+	# panneaux : le grand cadre du kit d'interface (bords nuageux bleu clair, fond crème)
+	var pn := StyleBoxTexture.new()
+	pn.texture = gui("frame_plain")
+	pn.texture_margin_left = 74
+	pn.texture_margin_right = 74
+	pn.texture_margin_top = 66
+	pn.texture_margin_bottom = 66
+	pn.content_margin_left = 40
+	pn.content_margin_right = 40
+	pn.content_margin_top = 26
+	pn.content_margin_bottom = 30
 	t.set_stylebox("panel", "PanelContainer", pn)
 	return t
+
+
+static var _gui := {}
+
+
+## Éléments du kit d'interface (assets/gui), chargés une seule fois.
+static func gui(n: String) -> Texture2D:
+	if not _gui.has(n):
+		_gui[n] = load("res://assets/gui/%s.png" % n)
+	return _gui[n]
+
+
+## Contour sombre façon kit (bleu nuit teinté par la couleur du fond).
+static func outline_of(col: Color) -> Color:
+	return col.darkened(0.55).lerp(Color("#2c3655"), 0.5)
 
 
 static func box(bg: Color, border := DARK, bw := 4, radius := 16) -> StyleBoxFlat:
@@ -88,16 +108,14 @@ static func box(bg: Color, border := DARK, bw := 4, radius := 16) -> StyleBoxFla
 	return sb
 
 
-static func button_box(col: Color, pressed := false) -> StyleBoxFlat:
-	var sb := box(col, col.darkened(0.22), 0, 24)
-	sb.border_width_bottom = 4 if pressed else 8
-	sb.shadow_color = Color(0.13, 0.1, 0.25, 0.22)
-	sb.shadow_offset = Vector2(0, 4)
-	sb.shadow_size = 1
+static func button_box(col: Color, pressed := false) -> StyleBox:
+	var sb := KitBox.new()
+	sb.col = col
+	sb.pressed = pressed
 	sb.content_margin_left = 26
 	sb.content_margin_right = 26
-	sb.content_margin_top = 12 + (5 if pressed else 0)
-	sb.content_margin_bottom = 10
+	sb.content_margin_top = 12 + (4 if pressed else 0)
+	sb.content_margin_bottom = 12
 	return sb
 
 
@@ -129,6 +147,15 @@ static func btn(text: String, cb: Callable, color := BLUE, size := 26) -> Button
 
 ## Panneau façon Mario Party : fond coloré, bord blanc épais, ombre portée douce.
 static func panel(ci: CanvasItem, r: Rect2, bg: Color, border := WHITE, radius := 20, bw := 5, shadow := true) -> void:
+	if bg.a >= 0.9:
+		var kb := KitBox.new()
+		kb.col = bg
+		kb.radius = radius
+		kb.shadow = shadow
+		if border.s > 0.3 and border.a > 0.5:
+			kb.ring = border
+		ci.draw_style_box(kb, r)
+		return
 	if shadow:
 		var sh := StyleBoxFlat.new()
 		sh.bg_color = Color(0.13, 0.1, 0.25, 0.22 * bg.a)
@@ -153,17 +180,20 @@ static func panel(ci: CanvasItem, r: Rect2, bg: Color, border := WHITE, radius :
 
 ## Bandeau titre (ruban) façon Mario Party.
 static func ribbon(ci: CanvasItem, center: Vector2, s: String, size := 26, col := Color("#8e6cf0"), txt := WHITE) -> void:
-	var w := text_width(s, size) + 70.0
-	var h := size + 26.0
-	var r := Rect2(center - Vector2(w / 2.0, h / 2.0), Vector2(w, h))
-	var dk := col.darkened(0.3)
-	for sd in [-1.0, 1.0]:
-		var ex: float = center.x + sd * (w / 2.0 - 6.0)
-		var pts := PackedVector2Array([Vector2(ex, r.position.y + 10), Vector2(ex + sd * 34, r.position.y + 10),
-			Vector2(ex + sd * 22, r.position.y + 10 + h * 0.5), Vector2(ex + sd * 34, r.end.y + 10), Vector2(ex, r.end.y + 10)])
-		ci.draw_colored_polygon(pts, dk)
-	panel(ci, r, col, WHITE, 14, 4)
-	text(ci, center, s, size, txt, 7)
+	# ruban du kit d'interface, recoloré, étiré au milieu (les deux bouts gardent leur forme)
+	var tex := gui("ribbon_n")
+	var sh := tex.get_height()
+	var sw := tex.get_width()
+	var h := size * 2.2 + 18.0
+	var k := h / float(sh)
+	var tail := 96.0
+	var w := maxf(text_width(s, size) + 70.0 + 2.0 * tail * k * 0.55, 2.0 * tail * k + 20.0)
+	var r := Rect2(center - Vector2(w / 2.0, h * 0.56), Vector2(w, h))
+	var mod := col.lightened(0.05)
+	ci.draw_texture_rect_region(tex, Rect2(r.position, Vector2(tail * k, h)), Rect2(0, 0, tail, sh), mod)
+	ci.draw_texture_rect_region(tex, Rect2(r.position + Vector2(tail * k, 0), Vector2(w - 2.0 * tail * k, h)), Rect2(tail, 0, sw - 2.0 * tail, sh), mod)
+	ci.draw_texture_rect_region(tex, Rect2(r.position + Vector2(w - tail * k, 0), Vector2(tail * k, h)), Rect2(sw - tail, 0, tail, sh), mod)
+	text(ci, center + Vector2(0, -h * 0.06), s, size, txt, 7)
 
 
 ## Texte centré avec contour, dessiné directement (noms, scores, gros titres).
@@ -195,6 +225,52 @@ static func char_tex(color_idx: int, pose := "idle") -> Texture2D:
 	if not _tex_cache.has(key):
 		_tex_cache[key] = load("res://assets/chars/%s/%s.png" % [Net.COLOR_IDS[clampi(color_idx, 0, 7)], pose])
 	return _tex_cache[key]
+
+
+## Bouton / panneau dans le style du kit d'interface : contour sombre, corps coloré avec un bas
+## plus foncé (effet 3D), reflet brillant en haut et petit point lumineux. Dessiné en code pour
+## rester net à toutes les tailles et dans toutes les couleurs.
+class KitBox extends StyleBox:
+	var col := Color.WHITE
+	var radius := 20
+	var shadow := true
+	var pressed := false
+	var ring := Color(0, 0, 0, 0)
+	static var _sb: StyleBoxFlat
+
+	func _flat(c: Color, rad: float) -> StyleBoxFlat:
+		if _sb == null:
+			_sb = StyleBoxFlat.new()
+			_sb.anti_aliasing = true
+			_sb.anti_aliasing_size = 1.0
+		_sb.bg_color = c
+		_sb.set_corner_radius_all(int(maxf(0.0, rad)))
+		return _sb
+
+	func _draw(ci: RID, r: Rect2) -> void:
+		var m := minf(r.size.x, r.size.y)
+		var rad := minf(float(radius) + 2.0, m / 2.0)
+		var ow := clampf(m * 0.075, 2.0, 4.5)
+		var lift := 0.0 if not pressed else 3.0
+		var rr := Rect2(r.position + Vector2(0, lift), r.size - Vector2(0, lift))
+		if shadow and not pressed:
+			_flat(Color(0.12, 0.1, 0.25, 0.22), rad).draw(ci, Rect2(rr.position + Vector2(0, 5), rr.size))
+		if ring.a > 0.0:
+			_flat(ring, rad + 4.0).draw(ci, rr.grow(4.0))
+		_flat(UI.outline_of(col), rad).draw(ci, rr)
+		var inner := rr.grow(-ow)
+		var irad := maxf(2.0, rad - ow)
+		_flat(col.darkened(0.16), irad).draw(ci, inner)
+		var shade := clampf(inner.size.y * (0.1 if pressed else 0.16), 2.0, 9.0)
+		_flat(col, irad).draw(ci, Rect2(inner.position, inner.size - Vector2(0, shade)))
+		# reflet du haut
+		var hh := maxf(3.0, (inner.size.y - shade) * 0.36)
+		var lite := 0.16 if col.v > 0.93 and col.s < 0.15 else 0.3
+		_flat(Color(1, 1, 1, lite), minf(irad, hh / 2.0 + 2.0)).draw(ci, Rect2(inner.position + Vector2(inner.size.x * 0.04, 2.0), Vector2(inner.size.x * 0.92, hh)))
+		# petit point brillant en haut à gauche
+		if inner.size.y > 26.0 and inner.size.x > 40.0:
+			var d := clampf(inner.size.y * 0.12, 3.0, 7.0)
+			_flat(Color(1, 1, 1, 0.75), d).draw(ci, Rect2(inner.position + Vector2(irad * 0.55 + 3.0, 4.0), Vector2(d * 1.6, d)))
 
 
 ## Petit perso qui se dandine, utilisé dans le menu et le salon.

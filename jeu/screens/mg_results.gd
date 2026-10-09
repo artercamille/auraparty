@@ -51,9 +51,13 @@ func _draw_results(ci: Control) -> void:
 		# médaille
 		var mc: Color = [Color("#ffc93c"), Color("#c9d3e3"), Color("#e8a061")][rank] if rank < 3 else Color("#9aa3b8")
 		var md := row.position + Vector2(34, 27)
-		ci.draw_circle(md, 22.0, Color(1, 1, 1, appear))
-		ci.draw_circle(md, 18.0, Color(mc, appear))
-		UI.text(ci, md, str(rank + 1), 24, Color(1, 1, 1, appear), 6)
+		if rank < 8:
+			(ci as CanvasItem).texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+			ci.draw_texture_rect(UI.gui("rank%d" % (rank + 1)), Rect2(md - Vector2(30, 36), Vector2(60, 72)), false, Color(1, 1, 1, appear))
+		else:
+			ci.draw_circle(md, 22.0, Color(1, 1, 1, appear))
+			ci.draw_circle(md, 18.0, Color(mc, appear))
+			UI.text(ci, md, str(rank + 1), 24, Color(1, 1, 1, appear), 6)
 		# portrait
 		var pc := row.position + Vector2(92, 27)
 		ci.draw_circle(pc, 23.0, Color(1, 1, 1, appear))

@@ -25,7 +25,9 @@ def is_bg_factory(im):
     alpha_bg = sum(1 for p in border if p[3] < 20) > len(border) * 0.6
     green_bg = sum(1 for p in border if p[1] > 180 and p[0] < 110 and p[2] < 110) > len(border) * 0.6
     if alpha_bg:
-        return "alpha", lambda p: p[3] < 40
+        # vrai fond transparent ; on retire aussi les halos flous, les traits de séparation
+        # et les fonds gris clair opaques laissés par l'IA (arrêtés par les contours foncés)
+        return "alpha", lambda p: p[3] < 150 or (min(p[:3]) > 175 and max(p[:3]) - min(p[:3]) < 28)
     if green_bg:
         return "vert", lambda p: p[1] > 150 and p[1] - max(p[0], p[2]) > 60
     # faux damier : gris très clairs sans couleur

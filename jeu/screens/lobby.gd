@@ -150,14 +150,14 @@ func _open_picker() -> void:
 	var grid2 := GridContainer.new()
 	grid2.columns = 3
 	grid2.add_theme_constant_override("h_separation", 14)
-	grid2.add_theme_constant_override("v_separation", 12)
+	grid2.add_theme_constant_override("v_separation", 8)
 	v.add_child(grid2)
 	var cols := [UI.RED, UI.BLUE, UI.GREEN, Color("#ff8c28"), Color("#a064f0"), Color("#2dc8d2"), Color("#ff78c3"), UI.YELLOW]
 	var i := 0
 	for key in Net.MINIGAMES:
 		var k: String = key
 		var b := UI.btn(str(Net.MINIGAMES[k]["name"]), func(): over.queue_free(); Net.start_practice(k), cols[i % cols.size()], 20)
-		b.custom_minimum_size = Vector2(300, 50)
+		b.custom_minimum_size = Vector2(290, 46)
 		grid2.add_child(b)
 		i += 1
 	var close_row := HBoxContainer.new()
@@ -182,9 +182,9 @@ func _open_options() -> void:
 	pc.custom_minimum_size = Vector2(900, 0)
 	center.add_child(pc)
 	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 12)
+	v.add_theme_constant_override("separation", 8)
 	pc.add_child(v)
-	v.add_child(UI.lbl("Options", 44, UI.YELLOW, HORIZONTAL_ALIGNMENT_CENTER, 12, true))
+	v.add_child(UI.lbl("Options", 40, UI.YELLOW, HORIZONTAL_ALIGNMENT_CENTER, 12, true))
 	# son (chacun pour soi)
 	v.add_child(UI.lbl("Son", 26, UI.DARK, HORIZONTAL_ALIGNMENT_LEFT, 0, true))
 	v.add_child(_vol_row("Musique", func(): return Sfx.music_vol, func(x): Sfx.set_volumes(x, Sfx.sfx_vol)))
@@ -209,7 +209,7 @@ func _open_options() -> void:
 		for key in Net.MINIGAMES:
 			var k: String = key
 			var b := UI.btn("", func(): pass, UI.BLUE, 15)
-			b.custom_minimum_size = Vector2(212, 36)
+			b.custom_minimum_size = Vector2(212, 34)
 			var refresh := func():
 				var on := not Net.opt_excluded.has(k)
 				b.text = str(Net.MINIGAMES[k]["name"])

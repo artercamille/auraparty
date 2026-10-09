@@ -1,4 +1,4 @@
-# Aura PARTY — état du projet (v0.24)
+# Aura PARTY — état du projet (v0.25)
 
 Party game 2D façon Mario Party, Godot 4.3 (GL Compatibility), GDScript, 2 à 8 joueurs en ligne
 (ENet UDP 7777, via Radmin VPN). Export Windows .exe. L'utilisateur (Camille) ne code pas : réponses
@@ -116,19 +116,22 @@ gérer les robots (`Net.autotest != ""`), spectateurs/duel, puis faire son aper�
   dans les arènes (le chrono avance au ralenti, les captures sont décalées).
 - Robots dans les jeux de plateforme : métas `goal_x`, `goal_jump`, `jump_now`, `goal_down` (piqué) sur le Player.
 
-## Interface (GUI) à refaire
-- Camille fait générer un kit d'interface par ChatGPT (style validé : cartoon arrondi pastel, boutons ronds,
-  barres de menu penchées, grand cadre à étoile, ruban, cartouche joueur, icônes, touches, badges 1-8).
-- `tools/decoupe_gui.py planche.png dossier` : retire le fond (vrai alpha, faux damier ou vert #00FF00)
-  et découpe chaque élément en PNG + `_sommaire.png` numéroté. Testé sur la 1re planche (44 éléments).
-- Attendu : images séparées en grand, sans texte. Puis remplacer `UI.panel`/`UI.btn`/`UI.ribbon` par des
-  StyleBoxTexture (9-slice) et des icônes.
+## Interface (kit ChatGPT, v0.25)
+- Planche d'origine : `tools/kit_gui_chatgpt.png` ; éléments découpés dans `assets/gui/` (boutons, `bar_*` barres
+  penchées, `frame`/`frame_plain`, `ribbon`/`ribbon_n` (version neutre recolorable), `cartouche`, `box_*`, `ic_*`,
+  `key_*`, `rank1..8`). `UI.gui("nom")` charge une texture.
+- `UI.KitBox` (StyleBox dessiné en code dans le style du kit : contour sombre, bas foncé, reflet, point brillant) est
+  utilisé par `UI.panel()` et `UI.button_box()` → tous les boutons et panneaux du jeu. Fenêtres (PanelContainer) =
+  `frame_plain` en 9-slice. `UI.ribbon()` = ruban du kit étiré et recoloré.
+- Plateau : menu d'action en barres penchées (↑ ↓), icônes étoile/pièce du kit, badges de rang 1-8.
+- `tools/decoupe_gui.py planche.png dossier` : découpe une planche (vrai alpha, faux damier ou vert #00FF00).
+- Pas encore converti : cartouche joueur du plateau (toujours dessiné), touches du clavier dans l'encart Commandes.
 
 ## À faire / à ne pas oublier
 - Camille veut des mini-jeux **copiés fidèlement** sur les vrais Mario Party (règles, vue, déroulé) : vérifier le vrai jeu avant de l'adapter.
 - Le zip fait ~54 Mo : GitHub refuse au-delà de 100 Mo → prévoir GitHub Releases si ça grossit.
 - Pas encore fait : mini-jeux 2v2 / 1v3 selon la couleur des cases (proposé, pas choisi) ;
-  menus en barres penchées style Mario Party (capture de Camille) ; alliés (Jamboree).
+  alliés (Jamboree) ; mode « mini-jeux seulement » ; 2e plateau.
 - Idées de mini-jeux en attente : Bowser's Big Blast, Hot Rope Jump, « jeu des marches 10 8 5 3 »,
   « poupées russes », Le bon cliché, Carrousel hanté, Course aux drapeaux, Abris-sandwichs.
 - Jamais testé avec de vrais joueurs depuis v0.15 : équilibrage du triathlon, de la corde (TAP_CAP 11),
