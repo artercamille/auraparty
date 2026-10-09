@@ -1,4 +1,4 @@
-# Aura PARTY — état du projet (v0.22)
+# Aura PARTY — état du projet (v0.23)
 
 Party game 2D façon Mario Party, Godot 4.3 (GL Compatibility), GDScript, 2 à 8 joueurs en ligne
 (ENet UDP 7777, via Radmin VPN). Export Windows .exe. L'utilisateur (Camille) ne code pas : réponses
@@ -52,7 +52,7 @@ Début de partie : « Qui commence ? » (blocs). Parties de 10 tours ou plus : �
 Stats suivies dans `players[id]` : coins_won, mg_wins, reds, steps, used.
 Étoile gagnée (achat, bloc caché, fantôme) : grande animation plein écran `board.gd star_celebrate()` (rayons, confettis, étoile à yeux qui file vers le compteur du joueur).
 
-## Les 16 mini-jeux (`Net.MINIGAMES`, fichiers dans `minigames/`)
+## Les 18 mini-jeux (`Net.MINIGAMES`, fichiers dans `minigames/`)
 | clé | nom | type |
 |---|---|---|
 | blocks | Gare aux blocs ! | élimination (stage.gd) |
@@ -71,6 +71,8 @@ Stats suivies dans `players[id]` : coins_won, mg_wins, reds, steps, used.
 | tug | Tir à la corde ! | Tug o' War, équipes jusqu'à 4v4, impair ⇒ 1 arbitre gagnant d'office |
 | slots | Jackpot Aura ! | Lucky Lineup : machine à sous locale par joueur, 3 tirages, résultat envoyé à l'hôte (`assets/slots/`) |
 | memory | Mémo-boum ! | Memory Mash (MP DS) fidèle : vue de dessus, 18 cartes 6x3, 2 équipes (impair ⇒ arbitre), saut + frappe au sol, 1re équipe à 4 paires, hôte arbitre (`assets/cards/`) |
+| flags | Le Capitaine a dit ! | Shy Guy Says (Superstars) : l'hôte envoie les ordres (feintes), chacun juge sa réponse et `report_out(at de l'ordre)` ; minuteur 30 s à 45 s ⇒ survivants gagnent |
+| roulette | Roulette-marteau ! | Spin and Bear It : phases hôte choose/arrow/spin_wait/spin/smash, l'hôte élimine via `Net._on_out(victime, manche)` |
 
 Ajouter un mini-jeu : créer le .gd, l'ajouter à `Net.MINIGAMES` + à la liste `--checkall` dans net.gd,
 gérer les robots (`Net.autotest != ""`), spectateurs/duel, puis faire son aperçu HD dans `assets/previews/`.
@@ -82,7 +84,7 @@ gérer les robots (`Net.autotest != ""`), spectateurs/duel, puis faire son aper�
   `~/.config/godot/editor_settings-4.3.tres` (`export/windows/rcedit`, `export/windows/wine = /usr/lib/wine/wine64`).
 - Godot 4.3 en local (`godot`), export : `godot --headless --export-release "Windows Desktop" build/AuraParty.exe`
   (rcedit via wine), vérif : `WINEDEBUG=-all /usr/lib/wine/wine64 build/AuraParty.exe --headless -- --checkall`
-  (31 OK attendus), zip : `7z a -tzip -mx=9 -mm=Deflate`.
+  (33 OK attendus), zip : `7z a -tzip -mx=9 -mm=Deflate`.
 - **Toujours `godot --headless --import` après avoir ajouté des images**, sinon elles sont nulles (`null`).
 - **Textures : les charger AVANT de dessiner** (dans `_ready`), sinon blanches dans les couches dessinées une seule fois.
 - Imports par défaut en compression lossy 0.9 ; les aperçus (`assets/previews/*.import`) sont en
@@ -123,7 +125,7 @@ gérer les robots (`Net.autotest != ""`), spectateurs/duel, puis faire son aper�
 - Le zip fait ~54 Mo : GitHub refuse au-delà de 100 Mo → prévoir GitHub Releases si ça grossit.
 - Pas encore fait : mini-jeux 2v2 / 1v3 selon la couleur des cases (proposé, pas choisi) ;
   menus en barres penchées style Mario Party (capture de Camille) ; alliés (Jamboree).
-- Idées de mini-jeux en attente : Shy Guy Says, Bowser's Big Blast, Spin and Bear It (roulette), « jeu des marches 10 8 5 3 »,
+- Idées de mini-jeux en attente : Bowser's Big Blast, Hot Rope Jump, « jeu des marches 10 8 5 3 »,
   « poupées russes », Le bon cliché, Carrousel hanté, Course aux drapeaux, Abris-sandwichs.
 - Jamais testé avec de vrais joueurs depuis v0.15 : équilibrage du triathlon, de la corde (TAP_CAP 11),
   de la mèche de la bombe, des rochers et du fantôme à vérifier.

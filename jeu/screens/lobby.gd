@@ -204,12 +204,12 @@ func _open_options() -> void:
 		var grid2 := GridContainer.new()
 		grid2.columns = 4
 		grid2.add_theme_constant_override("h_separation", 10)
-		grid2.add_theme_constant_override("v_separation", 8)
+		grid2.add_theme_constant_override("v_separation", 4)
 		v.add_child(grid2)
 		for key in Net.MINIGAMES:
 			var k: String = key
 			var b := UI.btn("", func(): pass, UI.BLUE, 15)
-			b.custom_minimum_size = Vector2(212, 42)
+			b.custom_minimum_size = Vector2(212, 36)
 			var refresh := func():
 				var on := not Net.opt_excluded.has(k)
 				b.text = str(Net.MINIGAMES[k]["name"])

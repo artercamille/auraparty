@@ -1,4 +1,4 @@
-AURA PARTY - v0.22 (16 mini-jeux, Mémo-boum refait, animation des étoiles)
+AURA PARTY - v0.23 (18 mini-jeux : nouveaux Capitaine a dit et Roulette-marteau)
 ==========================================
 Jusqu'à 8 joueurs, chacun sur son PC.
 Tout le monde doit avoir CETTE version du jeu (sinon la connexion est refusée).
@@ -121,6 +121,14 @@ LES MINI-JEUX
   retourner une carte. 2 cartes pareilles retournées par ton équipe = une
   paire. Frapper le sol près d'un adversaire l'assomme. La première équipe
   à 4 paires gagne. Nombre impair : un arbitre tiré au sort gagne d'office.
+- Le Capitaine a dit ! (Shy Guy Says) : le capitaine lève le drapeau rouge
+  ou blanc, lève vite le même (Q/← rouge, D/→ blanc). Mauvais drapeau ou
+  trop lent = corde coupée. Attention aux feintes ! De plus en plus vite.
+  Le dernier attaché gagne (minuteur final : les survivants gagnent tous).
+- Roulette-marteau ! (Spin and Bear It) : choisis ta place sur la roue
+  (← → puis Espace). Une flèche désigne le lanceur : il maintient Espace
+  puis lâche. Celui qui s'arrête devant le marteau est écrasé. Une place
+  de moins par manche, le dernier épargné gagne.
 
 OPTIONS (salon) : volume de la musique et des bruitages ; pour l'hôte,
 étoiles bonus oui/non et choix des mini-jeux à retirer.
