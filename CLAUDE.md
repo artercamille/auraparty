@@ -1,4 +1,4 @@
-# Aura PARTY — état du projet (v0.20)
+# Aura PARTY — état du projet (v0.21)
 
 Party game 2D façon Mario Party, Godot 4.3 (GL Compatibility), GDScript, 2 à 8 joueurs en ligne
 (ENet UDP 7777, via Radmin VPN). Export Windows .exe. L'utilisateur (Camille) ne code pas : réponses
@@ -51,7 +51,7 @@ Bloc caché : 6 % sur B/R (pièces / objet / étoile). Rochers-péages à l'entr
 Début de partie : « Qui commence ? » (blocs). Parties de 10 tours ou plus : « Plus que 5 tours ! » (+10 pièces au dernier).
 Stats suivies dans `players[id]` : coins_won, mg_wins, reds, steps, used.
 
-## Les 14 mini-jeux (`Net.MINIGAMES`, fichiers dans `minigames/`)
+## Les 16 mini-jeux (`Net.MINIGAMES`, fichiers dans `minigames/`)
 | clé | nom | type |
 |---|---|---|
 | blocks | Gare aux blocs ! | élimination (stage.gd) |
@@ -68,14 +68,20 @@ Stats suivies dans `players[id]` : coins_won, mg_wins, reds, steps, used.
 | bumper | Boules-tamponneuses ! | Bumper Balls, élimination |
 | bomb | Bombe chaude ! | Hot Bob-omb, hôte = état de la bombe |
 | tug | Tir à la corde ! | Tug o' War, équipes jusqu'à 4v4, impair ⇒ 1 arbitre gagnant d'office |
+| slots | Jackpot Aura ! | Lucky Lineup : machine à sous locale par joueur, 3 tirages, résultat envoyé à l'hôte (`assets/slots/`) |
+| memory | Mémo-boum ! | Memory Mash (stage.gd) : sol de cartes, piqué ↓ pour retourner, hôte arbitre les paires (`assets/cards/`), 16 cartes ≤4 joueurs, 24 au-delà |
 
 Ajouter un mini-jeu : créer le .gd, l'ajouter à `Net.MINIGAMES` + à la liste `--checkall` dans net.gd,
 gérer les robots (`Net.autotest != ""`), spectateurs/duel, puis faire son aperçu HD dans `assets/previews/`.
 
 ## Dépendances / pièges importants
+- Si le conteneur est neuf : installer Godot 4.3 (zip GitHub godotengine), les modèles d'export Windows
+  (`Godot_v4.3-stable_export_templates.tpz` → `~/.local/share/godot/export_templates/4.3.stable/`),
+  `apt-get install wine64 p7zip-full`, rcedit-x64.exe (GitHub electron/rcedit) déclaré dans
+  `~/.config/godot/editor_settings-4.3.tres` (`export/windows/rcedit`, `export/windows/wine = /usr/lib/wine/wine64`).
 - Godot 4.3 en local (`godot`), export : `godot --headless --export-release "Windows Desktop" build/AuraParty.exe`
   (rcedit via wine), vérif : `WINEDEBUG=-all /usr/lib/wine/wine64 build/AuraParty.exe --headless -- --checkall`
-  (29 OK attendus), zip : `7z a -tzip -mx=9 -mm=Deflate`.
+  (31 OK attendus), zip : `7z a -tzip -mx=9 -mm=Deflate`.
 - **Toujours `godot --headless --import` après avoir ajouté des images**, sinon elles sont nulles (`null`).
 - **Textures : les charger AVANT de dessiner** (dans `_ready`), sinon blanches dans les couches dessinées une seule fois.
 - Imports par défaut en compression lossy 0.9 ; les aperçus (`assets/previews/*.import`) sont en
@@ -89,7 +95,7 @@ gérer les robots (`Net.autotest != ""`), spectateurs/duel, puis faire son aper�
 - Version : `Net.VERSION` (doit être identique chez tous les joueurs) + `version.txt` + LISEZ-MOI + README.
 - Commits : `git -c user.name=artercamille -c user.email=artercamille@users.noreply.github.com`.
 
-## Tests automatiques (scripts dans le scratchpad, à recréer si besoin)
+## Tests automatiques (`tools/rungame.sh` dans le projet)
 - Partie de robots : hôte `godot -- --autotest-host` + clients `godot --headless -- --autotest-join`,
   variables : `AUTOTEST_PLAYERS`, `ROUNDS`, `SPEED`, `MG`, `DUEL_MG`, `FORCE_SPACE=B,D,W,G`, `HIDDEN=1`,
   `PRACTICE=<type>` (mini-jeu seul), `NOREADY=1` (reste sur l'écran d'intro), `SHOTS`/`SHOT_DELAYS`
@@ -99,12 +105,23 @@ gérer les robots (`Net.autotest != ""`), spectateurs/duel, puis faire son aper�
   `BOARD_SHOT_T`, `BOARD_EVENT='{json}|{json}'`, `BOARD_MENU`, `BOARD_MAP=1`.
   Autres écrans : `--debug-screen=final` (`SHOW_STATS=1`), `--debug-screen=lobby` (`SHOW_OPTIONS=1`).
 - Lancer les commandes depuis `/home/claude/potes2` (sinon pas de captures).
+- `HL=1` = hôte sans écran : à utiliser pour tester la logique, car l'hôte sous xvfb tourne à ~10 i/s
+  dans les arènes (le chrono avance au ralenti, les captures sont décalées).
+- Robots dans les jeux de plateforme : métas `goal_x`, `goal_jump`, `jump_now`, `goal_down` (piqué) sur le Player.
+
+## Interface (GUI) à refaire
+- Camille fait générer un kit d'interface par ChatGPT (style validé : cartoon arrondi pastel, boutons ronds,
+  barres de menu penchées, grand cadre à étoile, ruban, cartouche joueur, icônes, touches, badges 1-8).
+- `tools/decoupe_gui.py planche.png dossier` : retire le fond (vrai alpha, faux damier ou vert #00FF00)
+  et découpe chaque élément en PNG + `_sommaire.png` numéroté. Testé sur la 1re planche (44 éléments).
+- Attendu : images séparées en grand, sans texte. Puis remplacer `UI.panel`/`UI.btn`/`UI.ribbon` par des
+  StyleBoxTexture (9-slice) et des icônes.
 
 ## À faire / à ne pas oublier
 - Le zip fait ~54 Mo : GitHub refuse au-delà de 100 Mo → prévoir GitHub Releases si ça grossit.
 - Pas encore fait : mini-jeux 2v2 / 1v3 selon la couleur des cases (proposé, pas choisi) ;
   menus en barres penchées style Mario Party (capture de Camille) ; alliés (Jamboree).
-- Idées de mini-jeux en attente : Shy Guy Says, Bowser's Big Blast, « jeu des marches 10 8 5 3 »,
+- Idées de mini-jeux en attente : Shy Guy Says, Bowser's Big Blast, Spin and Bear It (roulette), « jeu des marches 10 8 5 3 »,
   « poupées russes », Le bon cliché, Carrousel hanté, Course aux drapeaux, Abris-sandwichs.
 - Jamais testé avec de vrais joueurs depuis v0.15 : équilibrage du triathlon, de la corde (TAP_CAP 11),
   de la mèche de la bombe, des rochers et du fantôme à vérifier.

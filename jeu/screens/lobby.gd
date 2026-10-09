@@ -140,7 +140,7 @@ func _open_picker() -> void:
 	center.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 	over.add_child(center)
 	var pc := PanelContainer.new()
-	pc.custom_minimum_size = Vector2(820, 0)
+	pc.custom_minimum_size = Vector2(960, 0)
 	center.add_child(pc)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 16)
@@ -148,7 +148,7 @@ func _open_picker() -> void:
 	v.add_child(UI.lbl("Quel mini-jeu ?", 44, UI.YELLOW, HORIZONTAL_ALIGNMENT_CENTER, 12, true))
 	v.add_child(UI.lbl("Il se lance tout de suite avec les joueurs du salon, puis vous revenez ici.", 18, UI.GREY))
 	var grid2 := GridContainer.new()
-	grid2.columns = 2
+	grid2.columns = 3
 	grid2.add_theme_constant_override("h_separation", 14)
 	grid2.add_theme_constant_override("v_separation", 12)
 	v.add_child(grid2)
@@ -156,8 +156,8 @@ func _open_picker() -> void:
 	var i := 0
 	for key in Net.MINIGAMES:
 		var k: String = key
-		var b := UI.btn(str(Net.MINIGAMES[k]["name"]), func(): over.queue_free(); Net.start_practice(k), cols[i % cols.size()], 24)
-		b.custom_minimum_size = Vector2(380, 56)
+		var b := UI.btn(str(Net.MINIGAMES[k]["name"]), func(): over.queue_free(); Net.start_practice(k), cols[i % cols.size()], 20)
+		b.custom_minimum_size = Vector2(300, 50)
 		grid2.add_child(b)
 		i += 1
 	var close_row := HBoxContainer.new()
@@ -202,14 +202,14 @@ func _open_options() -> void:
 		v.add_child(bonus_btn)
 		v.add_child(UI.lbl("Mini-jeux en jeu (clique pour en retirer) :", 18, UI.GREY, HORIZONTAL_ALIGNMENT_LEFT))
 		var grid2 := GridContainer.new()
-		grid2.columns = 3
+		grid2.columns = 4
 		grid2.add_theme_constant_override("h_separation", 10)
 		grid2.add_theme_constant_override("v_separation", 8)
 		v.add_child(grid2)
 		for key in Net.MINIGAMES:
 			var k: String = key
-			var b := UI.btn("", func(): pass, UI.BLUE, 17)
-			b.custom_minimum_size = Vector2(280, 44)
+			var b := UI.btn("", func(): pass, UI.BLUE, 15)
+			b.custom_minimum_size = Vector2(212, 42)
 			var refresh := func():
 				var on := not Net.opt_excluded.has(k)
 				b.text = str(Net.MINIGAMES[k]["name"])

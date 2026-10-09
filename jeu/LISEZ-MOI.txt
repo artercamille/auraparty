@@ -1,4 +1,4 @@
-AURA PARTY - v0.20 (14 mini-jeux, fantôme, Roi Grognon, blocs cachés, rochers)
+AURA PARTY - v0.21 (16 mini-jeux : nouveaux Jackpot Aura et Mémo-boum)
 ==========================================
 Jusqu'à 8 joueurs, chacun sur son PC.
 Tout le monde doit avoir CETTE version du jeu (sinon la connexion est refusée).
@@ -112,6 +112,14 @@ LES MINI-JEUX
 - Boules-tamponneuses ! (Bumper Balls) : chacun roule sur une boule dans
   une arène ronde (flèches ou ZQSD), Maj/X/clic pour un boost. Éjecte les
   autres ! L'arène rétrécit à la fin. Le dernier dessus gagne.
+- Jackpot Aura ! (Lucky Lineup) : chacun sa machine à sous, 3 tirages.
+  Espace arrête les rouleaux un par un. 3 symboles pareils sur une ligne ou
+  une diagonale : 7 = 50, gemme = 20, cœur = 10, pièce = 5. L'étoile est un
+  joker. Le plus de points gagne.
+- Mémo-boum ! (Memory Mash) : le sol est fait de cartes face cachée. Saute
+  et retombe en piqué (↓ en l'air) pour retourner une carte. 2 cartes
+  pareilles à la suite = une paire. Retiens les cartes des autres !
+  Le plus de paires gagne.
 
 OPTIONS (salon) : volume de la musique et des bruitages ; pour l'hôte,
 étoiles bonus oui/non et choix des mini-jeux à retirer.

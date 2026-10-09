@@ -134,7 +134,7 @@ func _bot_input() -> Dictionary:
 		return {"x": 0.0, "down": false, "jump": false, "jump_held": false, "push": false}
 	if has_meta("goal_x"):
 		var gx: float = get_meta("goal_x")
-		var gd := {"x": signf(gx - position.x) if absf(gx - position.x) > 8.0 else 0.0, "down": false,
+		var gd := {"x": signf(gx - position.x) if absf(gx - position.x) > 8.0 else 0.0, "down": get_meta("goal_down", false) and not is_on_floor(),
 			"jump": false, "jump_held": true, "push": false}
 		bot_t -= get_physics_process_delta_time()
 		if bot_t <= 0.0:

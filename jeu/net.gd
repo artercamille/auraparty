@@ -17,7 +17,7 @@ signal mg_go
 signal mg_msg(from_id: int, data: Dictionary)   # reçu par l'hôte
 signal mg_state(data: Dictionary)               # envoyé par l'hôte à tous
 
-const VERSION := "0.20"
+const VERSION := "0.21"
 const PORT := 7777
 const MAX_PLAYERS := 8
 const COLOR_IDS := ["rouge", "orange", "jaune", "vert", "turquoise", "bleu", "violet", "rose"]
@@ -47,6 +47,8 @@ const MINIGAMES := {
 	"bumper": {"name": "Boules-tamponneuses !", "path": "res://minigames/bumper.gd", "max": 80.0},
 	"bomb": {"name": "Bombe chaude !", "path": "res://minigames/bomb.gd", "max": 105.0},
 	"tug": {"name": "Tir à la corde !", "path": "res://minigames/tug.gd", "max": 40.0},
+	"slots": {"name": "Jackpot Aura !", "path": "res://minigames/slots.gd", "max": 75.0},
+	"memory": {"name": "Mémo-boum !", "path": "res://minigames/memory.gd", "max": 100.0},
 }
 
 var my_name := ""
@@ -98,7 +100,7 @@ func _ready() -> void:
 	if "--checkall" in args:
 		for f in ["res://main.gd", "res://ui.gd", "res://screens/menu.gd", "res://screens/lobby.gd",
 				"res://game.gd", "res://board/board.gd", "res://board/map.gd", "res://board/items.gd", "res://board/island.gd", "res://minigames/stage.gd", "res://minigames/blocks.gd",
-				"res://minigames/paint.gd", "res://minigames/keys.gd", "res://minigames/parcours.gd", "res://minigames/rock.gd", "res://minigames/logs.gd", "res://minigames/quiz.gd", "res://minigames/kart.gd", "res://minigames/triathlon.gd", "res://minigames/rocket.gd", "res://minigames/mushroom.gd", "res://minigames/bumper.gd", "res://minigames/bomb.gd", "res://minigames/tug.gd",
+				"res://minigames/paint.gd", "res://minigames/keys.gd", "res://minigames/parcours.gd", "res://minigames/rock.gd", "res://minigames/logs.gd", "res://minigames/quiz.gd", "res://minigames/kart.gd", "res://minigames/triathlon.gd", "res://minigames/rocket.gd", "res://minigames/mushroom.gd", "res://minigames/bumper.gd", "res://minigames/bomb.gd", "res://minigames/tug.gd", "res://minigames/slots.gd", "res://minigames/memory.gd",
 				"res://arena/player.gd", "res://arena/fx.gd", "res://screens/backdrop.gd",
 				"res://screens/mg_results.gd", "res://screens/final.gd"]:
 			var s = load(f)
