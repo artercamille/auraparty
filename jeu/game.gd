@@ -28,6 +28,10 @@ var _ask_what := ""
 var _duel_done := false
 var _forced_i := 0
 var _order_rolled := false
+var rocks := {}   # rochers-péages : première case du chemin -> prix pour passer
+const ROCK_SEGMENTS := [2, 9]   # « Sentier des champignons » et « Coulée de lave »
+const BOO_COINS := 5
+const BOO_STAR := 30
 
 
 func _ready() -> void:
@@ -40,6 +44,7 @@ func _send(d: Dictionary) -> void:
 	d["star"] = star_node
 	d["bank"] = bank
 	d["cur"] = cur
+	d["rocks"] = rocks
 	d["players"] = Net.players
 	_ev.rpc(d)
 
@@ -49,6 +54,8 @@ func _ev(d: Dictionary) -> void:
 	star_node = int(d.get("star", star_node))
 	bank = int(d.get("bank", bank))
 	cur = int(d.get("cur", cur))
+	if d.has("rocks"):
+		rocks = d["rocks"]
 	if d.has("players") and not Net.is_host():
 		Net.players = d["players"]
 		Net.players_changed.emit()
@@ -131,6 +138,11 @@ func reset() -> void:
 	turn_idx = 0
 	ask = {}
 	_order_rolled = false
+	rocks = {}
+	for si in ROCK_SEGMENTS:
+		var f := BoardMap.first_of_segment(si)
+		if f >= 0:
+			rocks[f] = 5
 	for id in Net.players:
 		var p: Dictionary = Net.players[id]
 		p["pos"] = BoardMap.start()
@@ -294,25 +306,29 @@ func _move(id: int, steps: int, flow: int) -> void:
 		if opts.size() > 1:
 			var choices := []
 			for o in opts:
-				choices.append({"to": o, "cost": BoardMap.cost(at, o), "name": BoardMap.route_name(o)})
+				choices.append({"to": o, "cost": edge_cost(at, o), "name": BoardMap.route_name(o), "rock": rocks.has(o)})
 			var a = await _ask_and_wait(id, "branch", {"at": at, "options": choices, "left": steps}, CHOICE_TIMEOUT, flow)
 			if flow != _flow or not Net.players.has(id):
 				return
 			var pick := -1
 			if a != null and opts.has(int(a.get("to", -1))):
 				pick = int(a["to"])
-			if pick < 0 or BoardMap.cost(at, pick) > int(p["coins"]):
+			if pick < 0 or edge_cost(at, pick) > int(p["coins"]):
 				var free := []
 				for o in opts:
-					if BoardMap.cost(at, o) <= int(p["coins"]):
+					if edge_cost(at, o) <= int(p["coins"]):
 						free.append(o)
 				pick = free[rng.randi() % free.size()] if free.size() > 0 else opts[0]
 			to = pick
-			var c := BoardMap.cost(at, to)
+			var c := edge_cost(at, to)
 			if c > 0:
 				p["coins"] = int(p["coins"]) - c
-				_send({"k": "coins", "id": id, "delta": -c, "text": "Péage du pont : -%d pièces" % c})
-				if not await _wait(1.0, flow):
+				if rocks.has(to):
+					rocks[to] = mini(int(rocks[to]) + 5, 30)
+					_send({"k": "coins", "id": id, "delta": -c, "text": "Le rocher piquant se pousse : -%d pièces ! (prochain : %d)" % [c, int(rocks[to])], "rock": to})
+				else:
+					_send({"k": "coins", "id": id, "delta": -c, "text": "Péage du pont : -%d pièces" % c})
+				if not await _wait(1.3, flow):
 					return
 		p["pos"] = to
 		p["steps"] = int(p.get("steps", 0)) + 1
@@ -340,6 +356,10 @@ func _move(id: int, steps: int, flow: int) -> void:
 							return
 				"H":
 					await _shop(id, flow)
+					if flow != _flow:
+						return
+				"G":
+					await _boo(id, flow)
 					if flow != _flow:
 						return
 
@@ -390,7 +410,17 @@ func _land(id: int, flow: int) -> void:
 		var forced := OS.get_environment("FORCE_SPACE").split(",")
 		kind = forced[_forced_i % forced.size()]
 		_forced_i += 1
+	# bloc caché (rare) sur une case bleue ou rouge
+	if kind in ["B", "R"] and rng.randf() < hidden_chance():
+		await _hidden_block(id, flow)
+		return
 	match kind:
+		"W":
+			await _grumpy_king(id, flow)
+			return
+		"G":
+			await _boo(id, flow)
+			return
 		"B", "S":
 			_send({"k": "coins", "id": id, "delta": _coins(id, 6 if final_turns() else 3), "text": "", "land": true})
 		"R":
@@ -429,6 +459,122 @@ func _land(id: int, flow: int) -> void:
 			await _wait(2.4, flow)
 			return
 	await _wait(1.9, flow)
+
+
+func edge_cost(from: int, to: int) -> int:
+	return BoardMap.cost(from, to) + int(rocks.get(to, 0))
+
+
+func hidden_chance() -> float:
+	if Net.autotest != "" and OS.get_environment("HIDDEN") != "":
+		return 1.0
+	return 0.06
+
+
+## Bloc caché : pièces, objet, ou (rarement) une étoile.
+func _hidden_block(id: int, flow: int) -> void:
+	var p: Dictionary = Net.players[id]
+	var roll := rng.randf()
+	var d := {"k": "hidden", "id": id, "node": int(p["pos"])}
+	if roll < 0.12:
+		p["stars"] = int(p["stars"]) + 1
+		d["prize"] = "star"
+		d["text"] = "Un bloc caché ! Il contient... une ÉTOILE !"
+	elif roll < 0.4 and (p["items"] as Array).size() < Items.MAX_HELD:
+		var it := Items.random_gift(rng)
+		(p["items"] as Array).append(it)
+		d["prize"] = "item"
+		d["item"] = it
+		d["text"] = "Un bloc caché ! Tu gagnes : %s" % Items.item_name(it)
+	else:
+		var n := rng.randi_range(10, 20)
+		_coins(id, n)
+		d["prize"] = "coins"
+		d["amount"] = n
+		d["text"] = "Un bloc caché ! +%d pièces !" % n
+	_send(d)
+	await _wait(3.2, flow)
+
+
+## Case du Roi Grognon : un malus au hasard (comme les cases Bowser).
+func _grumpy_king(id: int, flow: int) -> void:
+	var p: Dictionary = Net.players[id]
+	var opts := ["coins", "tax", "revolution", "coins"]
+	if (p["items"] as Array).size() > 0:
+		opts.append("item")
+	if int(p["stars"]) > 0 and rng.randf() < 0.25:
+		opts.append("star")
+	var kind: String = opts[rng.randi() % opts.size()]
+	var text := ""
+	match kind:
+		"coins":
+			var lost := -_coins(id, -rng.randi_range(10, 20))
+			bank += lost
+			text = "Le Roi Grognon te confisque %d pièces ! (elles vont à la banque)" % lost
+		"tax":
+			var total := 0
+			for o in Net.players:
+				var l := -_coins(o, -5)
+				total += l
+			bank += total
+			text = "Impôt royal : tout le monde paie 5 pièces ! (%d pièces à la banque)" % total
+		"revolution":
+			var sum := 0
+			for o in Net.players:
+				sum += int(Net.players[o]["coins"])
+			var each := sum / maxi(1, Net.players.size())
+			for o in Net.players:
+				Net.players[o]["coins"] = each
+			text = "RÉVOLUTION ! Les pièces sont partagées : %d chacun !" % each
+		"item":
+			var items: Array = p["items"]
+			var it: String = items[rng.randi() % items.size()]
+			items.erase(it)
+			text = "Le Roi Grognon te vole ton objet : %s !" % Items.item_name(it)
+		"star":
+			p["stars"] = int(p["stars"]) - 1
+			text = "Le Roi Grognon te vole une ÉTOILE !!!"
+	_send({"k": "king", "id": id, "kind": kind, "text": text})
+	await _wait(4.0, flow)
+
+
+## Le fantôme : contre des pièces, il vole des pièces ou une étoile à quelqu'un.
+func _boo(id: int, flow: int) -> void:
+	var others := _others(id)
+	var p: Dictionary = Net.players[id]
+	if others.is_empty() or int(p["coins"]) < BOO_COINS:
+		_send({"k": "msg", "id": id, "title": "Le fantôme", "text": "Hihihi... reviens quand tu auras %d pièces !" % BOO_COINS})
+		await _wait(2.0, flow)
+		return
+	var a = await _ask_and_wait(id, "boo", {"options": others, "price_coins": BOO_COINS, "price_star": BOO_STAR}, 20.0, flow)
+	if flow != _flow or not Net.players.has(id):
+		return
+	var what := str(a.get("do", "")) if a != null else ""
+	var target := int(a.get("target", -1)) if a != null else -1
+	if what == "" or not others.has(target):
+		_send({"k": "msg", "id": id, "title": "Le fantôme", "text": "Une prochaine fois, hihihi !"})
+		await _wait(1.6, flow)
+		return
+	var tp: Dictionary = Net.players[target]
+	var text := ""
+	var ok := false
+	if what == "star" and int(p["coins"]) >= BOO_STAR:
+		_coins(id, -BOO_STAR)
+		if int(tp["stars"]) > 0:
+			tp["stars"] = int(tp["stars"]) - 1
+			p["stars"] = int(p["stars"]) + 1
+			text = "Le fantôme vole une ÉTOILE à %s !" % Net.name_of(target)
+			ok = true
+		else:
+			text = "%s n'a pas d'étoile... le fantôme garde tes pièces, hihihi !" % Net.name_of(target)
+	else:
+		_coins(id, -BOO_COINS)
+		var n := -_coins(target, -rng.randi_range(5, 15))
+		_coins(id, n)
+		text = "Le fantôme vole %d pièces à %s !" % [n, Net.name_of(target)]
+		ok = n > 0
+	_send({"k": "boo", "id": id, "target": target, "text": text, "ok": ok, "what": what})
+	await _wait(3.4, flow)
 
 
 func _others(id: int) -> Array:
@@ -725,3 +871,8 @@ func _bot_answer(d: Dictionary) -> void:
 		"duel":
 			var o: Array = d["options"]
 			send_request({"what": "duel", "target": o[randi() % o.size()]})
+		"boo":
+			var o2: Array = d["options"]
+			var c := int(p.get("coins", 0))
+			var doit := "star" if c >= BOO_STAR else ("coins" if randf() < 0.7 else "")
+			send_request({"what": "boo", "do": doit, "target": o2[randi() % o2.size()]})

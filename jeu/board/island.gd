@@ -31,6 +31,7 @@ const SPACE_COL := {
 	"B": Color("#4b87f5"), "R": Color("#f04650"), "E": Color("#84cb33"), "C": Color("#ff9a2e"),
 	"I": Color("#22b8cf"), "D": Color("#8a4fd8"), "T": Color("#3a3446"), "K": Color("#f2b705"),
 	"H": Color("#ff6fb5"), "P": Color("#6dae23"), "S": Color("#ffffff"),
+	"W": Color("#b8322a"), "G": Color("#6c5fa8"),
 }
 
 var rng := RandomNumberGenerator.new()
@@ -797,7 +798,8 @@ static func draw_space(ci: CanvasItem, p: Vector2, ty: String, r := 37.0, flat :
 			ci.draw_style_box(UI.box(Color("#d1ff88"), OUT, maxi(2, int(3 * s)), int(4 * s)), Rect2(p + Vector2(-16, -16) * s, Vector2(32, 13) * s))
 
 
-const SPACE_ICON := {"E": "hexagon_question", "C": "cards_fan", "I": "pouch_add", "D": "sword", "T": "skull", "K": "tokens_stack", "H": "hand_token", "S": "flag_triangle"}
+const SPACE_ICON := {"E": "hexagon_question", "C": "cards_fan", "I": "pouch_add", "D": "sword", "T": "skull", "K": "tokens_stack", "H": "hand_token", "S": "flag_triangle",
+	"W": "fire", "G": "ghost"}
 static var _icons := {}
 
 

@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/bumper.png-62f6dea222d0742e975e51baf95c9973.c
 
 [params]
 
-compress/mode=1
+compress/mode=0
 compress/high_quality=false
 compress/lossy_quality=0.9
 compress/hdr_compression=1

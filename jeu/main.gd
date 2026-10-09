@@ -106,7 +106,7 @@ uniform float r = 0.0;
 void fragment() {
 	vec2 p = (UV - 0.5) * vec2(1.7778, 1.0);
 	float d = length(p);
-	COLOR = vec4(0.36, 0.29, 0.62, 1.0 - smoothstep(r - 0.004, r + 0.004, d));
+	COLOR = vec4(0.05, 0.04, 0.08, 1.0 - smoothstep(r - 0.004, r + 0.004, d));
 	COLOR.a = 1.0 - COLOR.a;
 }"""
 		var m := ShaderMaterial.new()

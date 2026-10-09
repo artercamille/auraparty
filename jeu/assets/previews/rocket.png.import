@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/rocket.png-af4ac576fa2f72e34c47d05c4cf5e833.c
 
 [params]
 
-compress/mode=1
+compress/mode=0
 compress/high_quality=false
 compress/lossy_quality=0.9
 compress/hdr_compression=1

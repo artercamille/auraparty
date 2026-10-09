@@ -547,6 +547,7 @@ static func draw_intro(h: CanvasItem, ttl: String, lines: Array, ctrl: String) -
 	h.draw_style_box(UI.box(Color(0.13, 0.1, 0.25, 0.2), Color(0, 0, 0, 0), 0, 20), Rect2(pr.position + Vector2(0, 6), pr.size))
 	h.draw_style_box(UI.box(UI.WHITE, Color(0, 0, 0, 0), 0, 20), pr.grow(6))
 	if pv:
+		(h as CanvasItem).texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 		h.draw_texture_rect(pv, pr, false)
 	else:
 		h.draw_style_box(UI.box(Color("#c9e8f7"), Color(0, 0, 0, 0), 0, 16), pr)

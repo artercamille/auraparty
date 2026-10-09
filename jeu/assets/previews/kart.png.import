@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/kart.png-5721c98bdb489d482d055851c633f54e.cte
 
 [params]
 
-compress/mode=1
+compress/mode=0
 compress/high_quality=false
 compress/lossy_quality=0.9
 compress/hdr_compression=1

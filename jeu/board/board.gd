@@ -9,7 +9,7 @@ const TOKEN_SCALE := 0.36
 const MAP_ZOOM := 0.212
 const LEGEND := [["B", "+3 pièces"], ["R", "-3 pièces"], ["E", "Événement de la zone"], ["C", "Carte chance"],
 	["I", "Objet gratuit"], ["D", "Duel 1 contre 1"], ["T", "Piège : -10 pièces"], ["K", "Banque"],
-	["H", "Boutique"], ["P", "Tuyau : téléportation"]]
+	["H", "Boutique"], ["P", "Tuyau : téléportation"], ["W", "Roi Grognon : malus !"], ["G", "Fantôme : vole pièces/étoile"]]
 
 var world: Node2D
 var island: Node2D
@@ -59,7 +59,13 @@ var cam_zoom_target := 0.9
 var tex_star: Texture2D = load("res://assets/tiles/star.png")
 var tex_coin: Texture2D = load("res://assets/tiles/coin_gold.png")
 var tex_vendor: Texture2D = load("res://assets/chars/vendeur/idle.png")
-var shop_step := 0      # 0 : « Veux-tu acheter ? »  1 : l'étagère
+var tex_ghost: Texture2D = load("res://assets/enemies/ghost_npc.png")
+var tex_rock: Texture2D = load("res://assets/enemies/rock_toll.png")
+var tex_fire: Texture2D = load("res://assets/icons/fire.png")
+var boo_step := 0
+var boo_do := ""
+var shop_step := 0
+var hidden_fx := {}      # 0 : « Veux-tu acheter ? »  1 : l'étagère
 var tex_block: Texture2D = load("res://assets/tiles/block_exclamation.png")
 var tex_block_hit: Texture2D = load("res://assets/tiles/block_exclamation_active.png")
 var _debug_shot := false
@@ -224,6 +230,37 @@ func _draw_world() -> void:
 			var l := tri.duplicate()
 			l.append(tri[0])
 			board_fx.draw_polyline(l, UI.DARK, 6.0, true)
+	# fantômes au-dessus des cases fantôme, rochers piquants à l'entrée des raccourcis
+	for i in BoardMap.count():
+		if BoardMap.kind(i) == "G":
+			var gp := BoardMap.pos(i) + Vector2(0, -120 + sin(t * 2.0 + i) * 12.0)
+			board_fx.draw_circle(BoardMap.pos(i) + Vector2(0, 14), 30.0, Color(0, 0, 0, 0.12))
+			board_fx.draw_texture_rect(tex_ghost, Rect2(gp - Vector2(48, 48), Vector2(96, 96)), false, Color(1, 1, 1, 0.85 + 0.15 * sin(t * 3.0)))
+	for f in Game.rocks:
+		var fi := int(f)
+		var jn := fi
+		for k in BoardMap.count():
+			if (BoardMap.next(k) as Array).has(fi) and (BoardMap.next(k) as Array).size() > 1:
+				jn = k
+		var prev_c := BoardMap.pos(jn).lerp(BoardMap.pos(fi), 0.55)
+		var rp := prev_c + Vector2(0, -40)
+		board_fx.draw_circle(prev_c + Vector2(0, 30), 46.0, Color(0, 0, 0, 0.16))
+		board_fx.draw_set_transform(rp, sin(t * 1.3 + fi) * 0.08, Vector2(0.45, 0.45))
+		board_fx.draw_texture(tex_rock, -tex_rock.get_size() / 2.0)
+		board_fx.draw_set_transform(Vector2.ZERO)
+		var sign_r := Rect2(rp + Vector2(-46, -128), Vector2(92, 40))
+		UI.panel(board_fx, sign_r, Color("#fff3d6"), UI.WHITE, 14, 4)
+		board_fx.draw_set_transform(sign_r.position + Vector2(24, 20), 0.0, Vector2(0.22, 0.22))
+		board_fx.draw_texture(tex_coin, Vector2(-64, -64))
+		board_fx.draw_set_transform(Vector2.ZERO)
+		UI.text(board_fx, sign_r.position + Vector2(60, 20), str(int(Game.rocks[f])), 24, UI.DARK, 0)
+	# bloc caché qui sort au-dessus du joueur
+	if not hidden_fx.is_empty() and t - float(hidden_fx["t0"]) < 2.6 and vis.has(int(hidden_fx["id"])):
+		var hk := t - float(hidden_fx["t0"])
+		var hp: Vector2 = vis[int(hidden_fx["id"])] + Vector2(0, -170 - minf(hk, 0.3) * 120.0)
+		board_fx.draw_set_transform(hp, 0.0, Vector2(0.8, 0.8) * (1.0 + maxf(0.0, 0.25 - hk)))
+		board_fx.draw_texture(tex_block_hit if hk > 0.3 else tex_block, Vector2(-64, -64))
+		board_fx.draw_set_transform(Vector2.ZERO)
 	# étoile
 	var sp := star_vis
 	var pulse := sin(t * 4.0)
@@ -406,6 +443,9 @@ func _on_event(d: Dictionary) -> void:
 				sel = 0
 				if what == "shop":
 					shop_step = 0 if int(d.get("n", 0)) == 0 else 1
+				if what == "boo":
+					boo_step = 0
+					boo_do = ""
 				if what == "branch":
 					map_view = false
 				Sfx.play("ui_open", -6.0, 0.0)
@@ -483,6 +523,29 @@ func _on_event(d: Dictionary) -> void:
 				_show_banner("Il faut %d pièces pour l'étoile..." % Game.STAR_COST, UI.GREY, 1.6)
 				Sfx.play("ui_error", -4.0, 0.0)
 				show_emote(id, "drops")
+		"hidden":
+			panel = {"kind": "msg", "title": "Bloc caché !", "text": str(d.get("text", "")), "item": str(d.get("item", "")),
+				"tex": "block", "t0": t, "dur": 3.0, "col": Color("#e0a000")}
+			Sfx.play("die_hit", 0.0, 0.0)
+			Sfx.play("jingle_star" if str(d.get("prize", "")) == "star" else "jingle_good", 0.0, 0.0)
+			show_emote(id, "stars" if str(d.get("prize", "")) == "star" else "exclamation")
+			if vis.has(id):
+				burst(vis[id] + Vector2(0, -120), "star_06", 14, UI.YELLOW, 300.0)
+				hidden_fx = {"id": id, "t0": t}
+		"king":
+			panel = {"kind": "msg", "title": "Case du Roi Grognon !", "text": str(d.get("text", "")), "item": "",
+				"tex": "fire", "t0": t, "dur": 3.8, "col": Color("#b8322a")}
+			Sfx.play("jingle_bad", 0.0, 0.0)
+			show_emote(id, "anger")
+			if vis.has(id):
+				burst(vis[id] + Vector2(0, -40), "flare_01", 10, Color("#ff7b2e"), 260.0)
+		"boo":
+			panel = {"kind": "msg", "title": "Le fantôme", "text": str(d.get("text", "")), "item": "",
+				"tex": "ghost", "t0": t, "dur": 3.2, "col": Color("#6c5fa8")}
+			Sfx.play("jingle_item" if d.get("ok", false) else "ui_error", -2.0, 0.0)
+			if d.get("ok", false):
+				show_emote(int(d.get("target", 0)), "faceAngry")
+				show_emote(id, "laugh")
 		"msg":
 			panel = {"kind": "msg", "title": str(d.get("title", "")), "text": str(d.get("text", "")), "item": str(d.get("item", "")),
 				"t0": t, "dur": 3.2, "col": UI.RED if d.get("bad", false) else UI.BLUE}
@@ -703,6 +766,20 @@ func _activate(a: String) -> void:
 			if a.begins_with("p:"):
 				Game.send_request({"what": "duel", "target": int(a.substr(2))})
 				_close_menu()
+		"boo":
+			if a == "no" or a == "back" and boo_step == 0:
+				Game.send_request({"what": "boo", "do": ""})
+				_close_menu()
+			elif a == "back":
+				boo_step = 0
+				sel = 0
+			elif a == "coins" or a == "star":
+				boo_do = a
+				boo_step = 1
+				sel = 0
+			elif a.begins_with("p:"):
+				Game.send_request({"what": "boo", "do": boo_do, "target": int(a.substr(2))})
+				_close_menu()
 
 
 func _use(k: String, target: int, value: int) -> void:
@@ -764,7 +841,9 @@ func _input(event: InputEvent) -> void:
 		var kc := (event as InputEventKey).physical_keycode
 		go = kc == KEY_SPACE or kc == KEY_ENTER or kc == KEY_KP_ENTER
 		if kc == KEY_ESCAPE or kc == KEY_BACKSPACE:
-			if menu in ["items", "target", "custom"]:
+			if menu == "boo":
+				_activate("back")
+			elif menu in ["items", "target", "custom"]:
 				_activate("back")
 			elif menu == "shop":
 				_activate("leave")
@@ -924,6 +1003,8 @@ func _draw_hud() -> void:
 					_menu_shop()
 				"duel":
 					_menu_duel()
+				"boo":
+					_menu_boo()
 			if left <= 8:
 				UI.text(hud, Vector2(640, 196), "Choix automatique dans %d s" % left, 22, UI.WHITE, 6)
 		elif who != me and who != 0:
@@ -1083,10 +1164,19 @@ func _draw_panel() -> void:
 			UI.text(hud, center + Vector2(0, -58), str(panel["title"]), 34, Color(panel.get("col", UI.BLUE), a), 0)
 			var tx := center + Vector2(-260, -12)
 			var tw := 520.0
+			var ptex := str(panel.get("tex", ""))
 			if it != "":
 				Items.draw_icon(hud, it, center + Vector2(-230, 30), 1.6)
 				tx = center + Vector2(-170, -12)
 				tw = 430.0
+			elif ptex != "":
+				var tt: Texture2D = {"ghost": tex_ghost, "fire": tex_fire, "block": tex_block}.get(ptex)
+				var ic := center + Vector2(-220, 30 + sin(t * 4.0) * 5.0)
+				hud.draw_circle(ic, 52.0, Color(Color(panel.get("col", UI.BLUE)).lightened(0.6), a))
+				if tt:
+					hud.draw_texture_rect(tt, Rect2(ic - Vector2(42, 42), Vector2(84, 84)), false, Color(1, 1, 1, a) if ptex != "fire" else Color(Color("#b8322a"), a))
+				tx = center + Vector2(-160, -12)
+				tw = 420.0
 			hud.draw_multiline_string(UI.font(), tx, str(panel["text"]), HORIZONTAL_ALIGNMENT_CENTER, tw, 24, 4, Color(UI.DARK, a))
 
 
@@ -1253,7 +1343,7 @@ func _menu_branch() -> void:
 		_btn(r, "to:%d" % int(o["to"]), cost <= coins)
 		UI.text(hud, r.get_center() + Vector2(0, -10 if cost > 0 else 0), str(o.get("name", "?")), 23, UI.DARK if cost <= coins else UI.GREY, 0)
 		if cost > 0:
-			UI.text(hud, r.get_center() + Vector2(0, 18), "Péage : %d pièces" % cost, 17, UI.RED if cost > coins else Color("#b37a00"), 0)
+			UI.text(hud, r.get_center() + Vector2(0, 18), ("Rocher piquant : %d pièces" if o.get("rock", false) else "Péage : %d pièces") % cost, 17, UI.RED if cost > coins else Color("#b37a00"), 0)
 	UI.text(hud, Vector2(640, 596), "← → : choisir  ·  ESPACE : valider  ·  %d pas restants" % int(ask.get("left", 0)), 18, UI.WHITE, 5)
 
 
@@ -1369,6 +1459,41 @@ func _shop_intro() -> void:
 			hud.draw_circle(rr.position + Vector2(26, 27), 15.0, UI.DARK)
 			hud.draw_polyline(PackedVector2Array([rr.position + Vector2(22, 19), rr.position + Vector2(30, 27), rr.position + Vector2(22, 35)]), Color("#ffe066"), 4.0)
 		UI.text(hud, rr.get_center() + Vector2(10, 0), opts[i][1], 26, UI.WHITE if focus else UI.DARK, 5 if focus else 0)
+
+
+## Le fantôme : « Que veux-tu que je vole ? » puis « À qui ? »
+func _menu_boo() -> void:
+	var coins := int(disp.get(Net.my_id(), {}).get("coins", 0))
+	var gp := Vector2(250, 420 + sin(t * 2.5) * 10.0)
+	hud.draw_circle(gp + Vector2(0, 110), 60.0, Color(0, 0, 0, 0.15))
+	hud.draw_texture_rect(tex_ghost, Rect2(gp - Vector2(80, 80), Vector2(160, 160)), false, Color(1, 1, 1, 0.92))
+	if boo_step == 0:
+		_bubble(Rect2(Vector2(330, 250), Vector2(560, 110)), "Hihihi... je peux voler pour toi !\nQue veux-tu que je vole ?", Vector2(370, 380))
+		var opts := [["coins", "Des pièces (%d)" % int(ask.get("price_coins", 5)), coins >= int(ask.get("price_coins", 5))],
+			["star", "Une étoile (%d)" % int(ask.get("price_star", 30)), coins >= int(ask.get("price_star", 30))], ["no", "Rien, merci.", true]]
+		for i in opts.size():
+			var r := Rect2(Vector2(920, 250 + i * 66), Vector2(290, 54))
+			_btn(r, opts[i][0], opts[i][2], false)
+			var focus := sel == i
+			var on: bool = opts[i][2]
+			UI.panel(hud, r.grow(3) if focus else r, Color("#8e6cf0") if focus else (UI.WHITE if on else Color("#d5d8e3")), UI.WHITE, 27, 4)
+			UI.text(hud, r.get_center(), opts[i][1], 23, UI.WHITE if focus else (UI.DARK if on else UI.GREY), 5 if focus else 0)
+	else:
+		_bubble(Rect2(Vector2(330, 250), Vector2(560, 90)), "À qui je vole %s ?" % ("une étoile" if boo_do == "star" else "des pièces"), Vector2(370, 360))
+		var others: Array = ask.get("options", [])
+		var w := 150.0
+		var x0 := 640.0 - (others.size() * w + (others.size() - 1) * 10.0) / 2.0 + 120.0
+		for i in others.size():
+			var pid := int(others[i])
+			var r := Rect2(Vector2(x0 + i * (w + 10.0), 420), Vector2(w, 130))
+			_btn(r, "p:%d" % pid)
+			hud.draw_set_transform(r.position + Vector2(w / 2.0, 86), 0.0, Vector2(0.26, 0.26))
+			hud.draw_texture(UI.char_tex(Net.color_idx(pid)), Vector2(-128, -256))
+			hud.draw_set_transform(Vector2.ZERO)
+			UI.text(hud, r.position + Vector2(w / 2.0, 104), Net.name_of(pid), 18, Net.color_of(pid).darkened(0.2), 0)
+			var info := "%d étoile(s)" % int(disp.get(pid, {}).get("stars", 0)) if boo_do == "star" else "%d pièces" % int(disp.get(pid, {}).get("coins", 0))
+			UI.text(hud, r.position + Vector2(w / 2.0, 122), info, 15, UI.GREY, 0)
+	UI.text(hud, Vector2(640, 690), "← → : choisir  ·  ESPACE : valider  ·  Échap : retour", 18, UI.WHITE, 5)
 
 
 func _menu_duel() -> void:

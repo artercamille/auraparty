@@ -17,7 +17,7 @@ signal mg_go
 signal mg_msg(from_id: int, data: Dictionary)   # reçu par l'hôte
 signal mg_state(data: Dictionary)               # envoyé par l'hôte à tous
 
-const VERSION := "0.19"
+const VERSION := "0.20"
 const PORT := 7777
 const MAX_PLAYERS := 8
 const COLOR_IDS := ["rouge", "orange", "jaune", "vert", "turquoise", "bleu", "violet", "rose"]
@@ -45,6 +45,8 @@ const MINIGAMES := {
 	"rocket": {"name": "Fusées en folie !", "path": "res://minigames/rocket.gd", "max": 95.0},
 	"mushroom": {"name": "Champi-couleurs !", "path": "res://minigames/mushroom.gd", "max": 80.0},
 	"bumper": {"name": "Boules-tamponneuses !", "path": "res://minigames/bumper.gd", "max": 80.0},
+	"bomb": {"name": "Bombe chaude !", "path": "res://minigames/bomb.gd", "max": 105.0},
+	"tug": {"name": "Tir à la corde !", "path": "res://minigames/tug.gd", "max": 40.0},
 }
 
 var my_name := ""
@@ -96,7 +98,7 @@ func _ready() -> void:
 	if "--checkall" in args:
 		for f in ["res://main.gd", "res://ui.gd", "res://screens/menu.gd", "res://screens/lobby.gd",
 				"res://game.gd", "res://board/board.gd", "res://board/map.gd", "res://board/items.gd", "res://board/island.gd", "res://minigames/stage.gd", "res://minigames/blocks.gd",
-				"res://minigames/paint.gd", "res://minigames/keys.gd", "res://minigames/parcours.gd", "res://minigames/rock.gd", "res://minigames/logs.gd", "res://minigames/quiz.gd", "res://minigames/kart.gd", "res://minigames/triathlon.gd", "res://minigames/rocket.gd", "res://minigames/mushroom.gd", "res://minigames/bumper.gd",
+				"res://minigames/paint.gd", "res://minigames/keys.gd", "res://minigames/parcours.gd", "res://minigames/rock.gd", "res://minigames/logs.gd", "res://minigames/quiz.gd", "res://minigames/kart.gd", "res://minigames/triathlon.gd", "res://minigames/rocket.gd", "res://minigames/mushroom.gd", "res://minigames/bumper.gd", "res://minigames/bomb.gd", "res://minigames/tug.gd",
 				"res://arena/player.gd", "res://arena/fx.gd", "res://screens/backdrop.gd",
 				"res://screens/mg_results.gd", "res://screens/final.gd"]:
 			var s = load(f)
@@ -122,6 +124,7 @@ func _debug_data() -> void:
 		3: {"name": "Inès", "color": 5, "coins": 30, "stars": 1, "pos": 14, "ping": 80, "items": []},
 		4: {"name": "Tom", "color": 6, "coins": 4, "stars": 0, "pos": 0, "ping": 60, "items": ["pipe", "poison", "swap"]}}
 	order = [1, 2, 3, 4]
+	Game.rocks = {BoardMap.first_of_segment(2): 5, BoardMap.first_of_segment(9): 10}
 	mg_data = {"type": "blocks", "seed": 7, "players": [1, 2, 3, 4]}
 	mg_results = [{"id": 1, "name": "Camille", "color": 2, "rank": 0, "label": "Survivant !", "reward": 10},
 		{"id": 2, "name": "Lucas", "color": 0, "rank": 1, "label": "Tenu 41.2 s", "reward": 6},
