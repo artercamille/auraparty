@@ -241,7 +241,7 @@ func _process(delta: float) -> void:
 		"intro":
 			# chacun appuie sur Espace quand il est prêt ; l'hôte donne le départ
 			if not my_ready and t > 0.6 and me != null:
-				var bot_ready := me != null and me.is_bot and t > 1.0
+				var bot_ready := me != null and me.is_bot and t > 1.0 and OS.get_environment("NOREADY") == ""
 				if bot_ready or Input.is_action_just_pressed("jump") or Input.is_action_just_pressed("push"):
 					my_ready = true
 					Net.mg_set_ready()
@@ -473,15 +473,14 @@ func _draw_hud() -> void:
 	_draw_extra_hud()
 
 	var center := Vector2(640, 360)
-	if state == "intro" or state == "count":
+	if state == "intro":
 		draw_intro(hud, title, Array(rules.split("\n")), controls)
-		var pulse := 1.0 + (1.0 - fmod(t, 1.0)) * 0.35
-		if state == "count":
-			UI.text(hud, Vector2(640, 610), str(3 - int(t)), int(80 * pulse), UI.WHITE, 16)
-		else:
-			draw_ready_row(hud, my_ready, ready_ids, nodes.keys(), t, me == null)
+		draw_ready_row(hud, my_ready, ready_ids, nodes.keys(), t, me == null)
 		if str(Net.mg_data.get("mode", "")) == "duel":
 			draw_duel_banner(hud)
+	elif state == "count":
+		var pulse := 1.0 + (1.0 - fmod(t, 1.0)) * 0.35
+		UI.text(hud, center, str(3 - int(t)), int(110 * pulse), UI.WHITE, 16)
 	elif go_flash > 0.0:
 		var s := 1.0 + (0.8 - go_flash) * 0.6
 		UI.text(hud, center, "GO !", int(110 * s), Color(UI.YELLOW, minf(1.0, go_flash * 2.0)), 18)
@@ -499,46 +498,6 @@ func _draw_hud() -> void:
 	if state == "over":
 		hud.draw_rect(Rect2(0, 0, 1280, 720), Color(UI.DARK, minf(0.4, t)))
 		UI.text(hud, center, "TERMINÉ !", int(96 * minf(1.0, 0.6 + t * 2.0)), UI.YELLOW, 16)
-
-
-## Ligne « Appuie sur ESPACE quand tu es prêt » + têtes cochées (aussi utilisé par le kart).
-static func draw_ready_row(h: CanvasItem, mine: bool, ready: Array, all_ids: Array, tt: float, watch := false) -> void:
-	var ids := all_ids.duplicate()
-	ids.sort()
-	if watch:
-		UI.text(h, Vector2(640, 590), "C'est un duel : tu regardes !", 28, UI.WHITE, 9)
-	elif not mine:
-		var k := 1.0 + 0.06 * sin(tt * 6.0)
-		UI.text(h, Vector2(640, 590), "Appuie sur ESPACE quand tu es prêt !", int(30 * k), UI.YELLOW, 9)
-	else:
-		UI.text(h, Vector2(640, 590), "Prêt ! On attend les autres...", 28, UI.WHITE, 9)
-	var w := 52.0
-	var x0 := 640.0 - ids.size() * w / 2.0
-	for i in ids.size():
-		var id: int = ids[i]
-		var c := Vector2(x0 + i * w + w / 2.0, 650)
-		var ok := ready.has(id)
-		h.draw_circle(c, 22, UI.WHITE)
-		h.draw_circle(c, 18, Net.color_of(id).darkened(0.1) if ok else Color("#8f93a6"))
-		h.draw_set_transform(c + Vector2(0, 16), 0.0, Vector2(0.14, 0.14))
-		h.draw_texture(UI.char_tex(Net.color_idx(id), "idle"), Vector2(-128, -256), Color(1, 1, 1, 1.0 if ok else 0.45))
-		h.draw_set_transform(Vector2.ZERO)
-		if ok:
-			h.draw_circle(c + Vector2(15, 14), 10, UI.WHITE)
-			h.draw_circle(c + Vector2(15, 14), 8, UI.GREEN)
-			h.draw_polyline(PackedVector2Array([c + Vector2(10, 14), c + Vector2(14, 18), c + Vector2(20, 10)]), UI.WHITE, 2.5)
-
-
-## Bandeau « DUEL : A contre B » en haut de l'écran.
-static func draw_duel_banner(h: CanvasItem) -> void:
-	var ids: Array = Net.mg_data.get("players", [])
-	if ids.size() < 2:
-		return
-	var txt := "DUEL : %s contre %s  -  %d pièces en jeu" % [Net.name_of(ids[0]), Net.name_of(ids[1]), int(Net.mg_data.get("stake", 0))]
-	var w := UI.text_width(txt, 26) + 60.0
-	var r := Rect2(Vector2(640 - w / 2.0, 70), Vector2(w, 50))
-	UI.panel(h, r, Color("#8a4fd8"), UI.WHITE, 22, 5)
-	UI.text(h, r.get_center(), txt, 26, UI.WHITE, 6)
 
 
 ## Têtes des joueurs en haut (barrées quand ils sont éliminés), façon Mario Party.
@@ -560,18 +519,125 @@ static func draw_heads(h: CanvasItem, ids: Array, out: Dictionary) -> void:
 			UI.text(h, c + Vector2(0, 38), "TOI", 14, UI.YELLOW, 5)
 
 
-## Panneau d'explication avant un mini-jeu (titre en ruban, règles, commandes).
+## Écran de présentation d'un mini-jeu, façon Mario Party : titre, aperçu, explication,
+## encart « Commandes » à droite, puis les joueurs prêts et le bouton pour commencer.
+static var _previews := {}
+
 static func draw_intro(h: CanvasItem, ttl: String, lines: Array, ctrl: String) -> void:
-	h.draw_rect(Rect2(0, 0, 1280, 720), Color(0.16, 0.12, 0.3, 0.45))
-	var n := lines.size()
-	var r := Rect2(Vector2(230, 150), Vector2(820, 150 + n * 36))
-	UI.panel(h, r, UI.WHITE, Color("#ece9fb"), 30, 6)
-	UI.ribbon(h, Vector2(640, 152), ttl, 40, Color("#8e6cf0"), UI.YELLOW)
-	for i in n:
-		h.draw_string(UI.font(), Vector2(230, 232 + i * 36), str(lines[i]), HORIZONTAL_ALIGNMENT_CENTER, 820, 24, UI.DARK)
-	var cy := 232.0 + n * 36 + 10.0
-	var cw := UI.text_width(ctrl, 17, false) + 50.0
-	var cr := Rect2(Vector2(640 - cw / 2.0, cy - 4), Vector2(cw, 38))
-	var sb := UI.box(Color("#f1effc"), Color(0, 0, 0, 0), 0, 19)
-	h.draw_style_box(sb, cr)
-	h.draw_string(UI.font(), Vector2(640 - cw / 2.0, cy + 21), ctrl, HORIZONTAL_ALIGNMENT_CENTER, cw, 17, Color("#7a7394"))
+	# fond pastel à pois
+	h.draw_rect(Rect2(0, 0, 1280, 720), Color("#fbe3ec"))
+	for k in 7:
+		var c := Color("#fff4c9") if k % 2 == 0 else Color("#e6f1ff")
+		h.draw_circle(Vector2(1280 + 60 - k * 40, -60 + k * 30), 420.0 - k * 50.0, Color(c, 0.35))
+	for yy in range(0, 760, 46):
+		for xx in range(0, 1320, 46):
+			var off := 23.0 if (yy / 46) % 2 == 1 else 0.0
+			h.draw_circle(Vector2(xx + off, yy), 4.0, Color(1, 1, 1, 0.55))
+	# carte de gauche
+	var card := Rect2(Vector2(36, 26), Vector2(790, 668))
+	UI.panel(h, card, Color("#fffaf2"), UI.WHITE, 28, 6)
+	UI.text(h, Vector2(card.get_center().x, 66), ttl, 42, UI.DARK, 0)
+	# aperçu
+	var typ := str(Net.mg_data.get("type", ""))
+	if not _previews.has(typ):
+		var path := "res://assets/previews/%s.png" % typ
+		_previews[typ] = load(path) if ResourceLoader.exists(path) else null
+	var pv: Texture2D = _previews[typ]
+	var pr := Rect2(Vector2(card.position.x + 40, 100), Vector2(card.size.x - 80, (card.size.x - 80) * 9.0 / 16.0))
+	h.draw_style_box(UI.box(Color(0.13, 0.1, 0.25, 0.2), Color(0, 0, 0, 0), 0, 20), Rect2(pr.position + Vector2(0, 6), pr.size))
+	h.draw_style_box(UI.box(UI.WHITE, Color(0, 0, 0, 0), 0, 20), pr.grow(6))
+	if pv:
+		h.draw_texture_rect(pv, pr, false)
+	else:
+		h.draw_style_box(UI.box(Color("#c9e8f7"), Color(0, 0, 0, 0), 0, 16), pr)
+		UI.text(h, pr.get_center(), ttl, 34, UI.WHITE, 8)
+	# explication
+	var y := pr.end.y + 34.0
+	var fs := 21 if lines.size() <= 4 else 19
+	var step := (card.end.y - 18.0 - y) / maxf(1.0, float(lines.size()))
+	step = minf(step, 30.0)
+	for i in lines.size():
+		h.draw_string(UI.font(), Vector2(card.position.x + 20, y + i * step + 6), str(lines[i]), HORIZONTAL_ALIGNMENT_CENTER, card.size.x - 40, fs, UI.DARK)
+	# commandes
+	var cx := 856.0
+	UI.text(h, Vector2(cx + 120, 66), "Commandes", 36, UI.DARK, 0)
+	_pad_icon(h, Vector2(cx + 280, 66))
+	h.draw_line(Vector2(cx, 98), Vector2(1250, 98), UI.DARK, 4.0)
+	var yy2 := 132.0
+	for part in ctrl.split("·"):
+		var e := str(part).strip_edges()
+		if e == "":
+			continue
+		var act := e
+		var keys := ""
+		var ci := e.find(":")
+		if ci >= 0:
+			act = e.substr(0, ci).strip_edges()
+			keys = e.substr(ci + 1).strip_edges()
+		h.draw_string(UI.font(true), Vector2(cx + 4, yy2), act, HORIZONTAL_ALIGNMENT_LEFT, 380, 22, UI.DARK)
+		yy2 += 8.0
+		for k in 38:
+			h.draw_circle(Vector2(cx + 8 + k * 10.0, yy2), 1.6, Color(UI.DARK, 0.5))
+		if keys != "":
+			var kw := minf(UI.text_width(keys, 19, false) + 30.0, 390.0)
+			var kr := Rect2(Vector2(cx + 4, yy2 + 10), Vector2(kw, 34))
+			h.draw_style_box(UI.box(Color("#8e6cf0"), Color(0, 0, 0, 0), 0, 17), kr)
+			h.draw_string(UI.font(true), kr.position + Vector2(15, 24), keys, HORIZONTAL_ALIGNMENT_LEFT, kw - 20, 19, UI.WHITE)
+			yy2 += 60.0
+		else:
+			yy2 += 20.0
+		yy2 += 18.0
+
+
+static func _pad_icon(h: CanvasItem, c: Vector2) -> void:
+	h.draw_style_box(UI.box(UI.DARK, Color(0, 0, 0, 0), 0, 14), Rect2(c - Vector2(32, 14), Vector2(64, 28)))
+	h.draw_rect(Rect2(c + Vector2(-22, -2), Vector2(14, 4)), UI.WHITE)
+	h.draw_rect(Rect2(c + Vector2(-17, -7), Vector2(4, 14)), UI.WHITE)
+	h.draw_circle(c + Vector2(12, -4), 3.5, UI.WHITE)
+	h.draw_circle(c + Vector2(20, 3), 3.5, UI.WHITE)
+
+
+## Bas à droite : les joueurs (cochés quand ils sont prêts) et le gros bouton.
+static func draw_ready_row(h: CanvasItem, mine: bool, ready: Array, all_ids: Array, tt: float, watch := false) -> void:
+	var ids := all_ids.duplicate()
+	ids.sort()
+	var cx := 1053.0
+	# têtes
+	var w := minf(54.0, 390.0 / maxf(1.0, float(ids.size())))
+	var x0 := cx - ids.size() * w / 2.0
+	for i in ids.size():
+		var id: int = ids[i]
+		var c := Vector2(x0 + i * w + w / 2.0, 560)
+		var ok := ready.has(id)
+		h.draw_circle(c + Vector2(0, 3), 24, Color(0.13, 0.1, 0.25, 0.2))
+		h.draw_circle(c, 24, UI.WHITE)
+		h.draw_circle(c, 20, Net.color_of(id).darkened(0.1) if ok else Color("#a3a7b8"))
+		h.draw_texture_rect_region(UI.char_tex(Net.color_idx(id), "front"), Rect2(c - Vector2(18, 19), Vector2(36, 32)), Rect2(66, 104, 124, 96), Color(1, 1, 1, 1.0 if ok else 0.5))
+		if ok:
+			h.draw_circle(c + Vector2(16, 15), 11, UI.WHITE)
+			h.draw_circle(c + Vector2(16, 15), 8, UI.GREEN)
+			h.draw_polyline(PackedVector2Array([c + Vector2(11, 15), c + Vector2(15, 19), c + Vector2(21, 11)]), UI.WHITE, 2.5)
+	# bouton
+	var r := Rect2(Vector2(860, 610), Vector2(390, 66))
+	if watch:
+		UI.panel(h, r, Color("#9aa0b4"), UI.WHITE, 33, 5)
+		UI.text(h, r.get_center(), "C'est un duel : tu regardes !", 24, UI.WHITE, 6)
+	elif not mine:
+		var k := 1.0 + 0.03 * sin(tt * 6.0)
+		var rr := Rect2(r.get_center() - r.size * k / 2.0, r.size * k)
+		UI.panel(h, rr, Color("#ff7f8f"), UI.WHITE, 33, 5)
+		UI.text(h, rr.get_center(), "ESPACE : Commencer", 30, UI.WHITE, 7)
+	else:
+		UI.panel(h, r, Color("#7fcf6a"), UI.WHITE, 33, 5)
+		UI.text(h, r.get_center(), "Prêt ! On attend les autres...", 24, UI.WHITE, 6)
+
+
+## Bandeau « DUEL : A contre B » (colonne de droite).
+static func draw_duel_banner(h: CanvasItem) -> void:
+	var ids: Array = Net.mg_data.get("players", [])
+	if ids.size() < 2:
+		return
+	var r := Rect2(Vector2(860, 430), Vector2(390, 90))
+	UI.panel(h, r, Color("#8a4fd8"), UI.WHITE, 24, 5)
+	UI.text(h, r.position + Vector2(195, 28), "DUEL !", 30, Color("#ffe27a"), 7)
+	UI.text(h, r.position + Vector2(195, 62), "%s contre %s  ·  %d pièces" % [Net.name_of(ids[0]), Net.name_of(ids[1]), int(Net.mg_data.get("stake", 0))], 20, UI.WHITE, 5)

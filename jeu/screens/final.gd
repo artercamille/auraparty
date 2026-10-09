@@ -17,6 +17,7 @@ var buttons: HBoxContainer
 var awards: Array = []
 var reveal_at := 0.0
 var last_phase := ""
+var show_stats := false
 
 
 func _ready() -> void:
@@ -36,10 +37,12 @@ func _ready() -> void:
 	buttons.add_theme_constant_override("separation", 16)
 	if Net.is_host():
 		buttons.add_child(UI.btn("Rejouer", Net.back_to_lobby, UI.GREEN))
+	buttons.add_child(UI.btn("Stats de la partie", func(): show_stats = not show_stats, Color("#8e6cf0")))
 	buttons.add_child(UI.btn("Menu principal", func(): Net.leave(), UI.RED))
 	add_child(buttons)
 	buttons.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM, Control.PRESET_MODE_MINSIZE, 20)
 	buttons.visible = false
+	show_stats = OS.get_environment("SHOW_STATS") != ""
 
 
 func _phase() -> String:
@@ -94,6 +97,9 @@ func _burst(p: Vector2) -> void:
 func _draw_final() -> void:
 	var r: Array = Net.final_ranking
 	if r.is_empty():
+		return
+	if show_stats and _phase() == "win":
+		_draw_stats(r)
 		return
 	match _phase():
 		"award":
@@ -245,3 +251,43 @@ func _icons(ci: Control, c: Vector2, stars: int, coins: int) -> void:
 	ci.draw_texture(tex_coin, Vector2(-64, -64))
 	ci.draw_set_transform(Vector2.ZERO)
 	ci.draw_string(UI.font(true), c + Vector2(18, 8), str(coins), HORIZONTAL_ALIGNMENT_LEFT, -1, 20, UI.DARK)
+
+
+## Tableau des stats rigolotes de la partie (le meilleur de chaque colonne est en jaune).
+func _draw_stats(r: Array) -> void:
+	var ci := layer
+	ci.draw_rect(Rect2(0, 0, 1280, 720), Color(0.16, 0.12, 0.3, 0.45))
+	var cols := [["coins_won", "Pièces\ngagnées"], ["mg_wins", "Mini-jeux\ngagnés"], ["steps", "Cases\nparcourues"], ["used", "Objets\nutilisés"], ["reds", "Cases\nrouges"]]
+	var n := r.size()
+	var panel := Rect2(Vector2(140, 90), Vector2(1000, 150 + n * 56))
+	UI.panel(ci, panel, UI.WHITE, Color("#ece9fb"), 30, 6)
+	UI.ribbon(ci, Vector2(640, 92), "Stats de la partie", 36, Color("#8e6cf0"), UI.YELLOW)
+	var best := {}
+	for c in cols:
+		var m := -1
+		for p in r:
+			m = maxi(m, int(Net.players.get(int(p["id"]), {}).get(str(c[0]), 0)))
+		best[c[0]] = m
+	for j in cols.size():
+		var x := panel.position.x + 380 + j * 125
+		ci.draw_multiline_string(UI.font(true), Vector2(x - 60, panel.position.y + 70), str(cols[j][1]), HORIZONTAL_ALIGNMENT_CENTER, 120, 18, 2, UI.GREY)
+	for i in n:
+		var p: Dictionary = r[i]
+		var pid := int(p["id"])
+		var y := panel.position.y + 130 + i * 56
+		var col: Color = Net.COLORS[int(p["color"])]
+		var row := Rect2(Vector2(panel.position.x + 24, y), Vector2(panel.size.x - 48, 46))
+		ci.draw_style_box(UI.box(Color(col, 0.18), Color(0, 0, 0, 0), 0, 14), row)
+		ci.draw_set_transform(row.position + Vector2(30, 44), 0.0, Vector2(0.17, 0.17))
+		ci.draw_texture(UI.char_tex(int(p["color"]), "idle"), Vector2(-128, -256))
+		ci.draw_set_transform(Vector2.ZERO)
+		ci.draw_string(UI.font(true), row.position + Vector2(62, 31), str(p["name"]), HORIZONTAL_ALIGNMENT_LEFT, 200, 22, col.darkened(0.25))
+		var pl: Dictionary = Net.players.get(pid, {})
+		for j in cols.size():
+			var key := str(cols[j][0])
+			var v := int(pl.get(key, 0))
+			var x2 := panel.position.x + 380 + j * 125
+			var top := v == int(best[key]) and v > 0
+			if top:
+				ci.draw_circle(Vector2(x2, y + 23), 20.0, Color("#ffe066"))
+			UI.text(ci, Vector2(x2, y + 23), str(v), 24, UI.DARK, 0)

@@ -17,7 +17,7 @@ signal mg_go
 signal mg_msg(from_id: int, data: Dictionary)   # reçu par l'hôte
 signal mg_state(data: Dictionary)               # envoyé par l'hôte à tous
 
-const VERSION := "0.18"
+const VERSION := "0.19"
 const PORT := 7777
 const MAX_PLAYERS := 8
 const COLOR_IDS := ["rouge", "orange", "jaune", "vert", "turquoise", "bleu", "violet", "rose"]
@@ -74,6 +74,8 @@ var _mg_ending := false
 var _last_mg := ""
 var _recent_mg: Array = []   # mini-jeux déjà joués dans la partie (pioche : pas de répétition avant d'avoir tout joué)
 var practice := false   # mini-jeu lancé depuis le salon (sans plateau)
+var opt_bonus := true      # étoiles bonus à la fin
+var opt_excluded: Array = []   # mini-jeux retirés par l'hôte
 var _last_order: Array = []
 var bonus_awards: Array = []
 var mg_ready_ids: Array = []
@@ -84,6 +86,7 @@ var mg_parts: Array = []   # joueurs qui participent au mini-jeu en cours (tous,
 func _ready() -> void:
 	randomize()
 	_setup_inputs()
+	load_party_options()
 	multiplayer.connected_to_server.connect(_on_connected_ok)
 	multiplayer.connection_failed.connect(_on_connection_failed)
 	multiplayer.server_disconnected.connect(_on_server_disconnected)
@@ -473,6 +476,8 @@ func start_game(rounds: int) -> void:
 		players[id]["mg_wins"] = 0
 		players[id]["coins_won"] = 0
 		players[id]["reds"] = 0
+		players[id]["steps"] = 0
+		players[id]["used"] = 0
 	_last_order = []
 	_last_mg = ""
 	_recent_mg.clear()
@@ -521,7 +526,29 @@ func start_duel(a: int, b: int, stake: int) -> void:
 
 ## Pioche : on retire les mini-jeux déjà joués. Quand tout est passé, on repart de zéro
 ## (sans reprendre celui qu'on vient juste de jouer).
+func load_party_options() -> void:
+	var cfg := ConfigFile.new()
+	if cfg.load("user://settings.cfg") == OK:
+		opt_bonus = bool(cfg.get_value("party", "bonus", true))
+		opt_excluded = Array(cfg.get_value("party", "excluded", []))
+
+
+func save_party_options() -> void:
+	var cfg := ConfigFile.new()
+	cfg.load("user://settings.cfg")
+	cfg.set_value("party", "bonus", opt_bonus)
+	cfg.set_value("party", "excluded", opt_excluded)
+	cfg.save("user://settings.cfg")
+
+
 func _drop_recent(types: Array, can_reset := true) -> void:
+	# mini-jeux retirés par l'hôte (s'il en reste au moins un)
+	var kept := types.duplicate()
+	for x in opt_excluded:
+		kept.erase(x)
+	if kept.size() > 0:
+		types.clear()
+		types.append_array(kept)
 	var left := types.duplicate()
 	for r in _recent_mg:
 		left.erase(r)
@@ -546,6 +573,8 @@ func _start_minigame(force := "", parts: Array = [], mode := "round", stake := 0
 	if autotest != "" and OS.get_environment("DUEL_MG") != "" and mode == "duel":
 		t = OS.get_environment("DUEL_MG")
 	_last_mg = t
+	if autotest != "":
+		print("[mg] ", t, " ", mode)
 	if not practice and not _recent_mg.has(t):
 		_recent_mg.append(t)
 	_mg_id += 1
@@ -815,9 +844,9 @@ func _after_minigame() -> void:
 
 func _end_game() -> void:
 	var awards := []
-	for a in [["mg_wins", "Roi des mini-jeux", "le plus de mini-jeux gagnés"],
+	for a in ([] if not opt_bonus else [["mg_wins", "Roi des mini-jeux", "le plus de mini-jeux gagnés"],
 			["coins_won", "Pluie de pièces", "le plus de pièces gagnées"],
-			["reds", "Pas de chance", "le plus de cases rouges"]]:
+			["reds", "Pas de chance", "le plus de cases rouges"]]):
 		var best := 0
 		for id in players:
 			best = maxi(best, int(players[id].get(a[0], 0)))

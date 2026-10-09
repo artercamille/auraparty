@@ -42,6 +42,8 @@ func _on_state(s: String) -> void:
 	current = load(path).new()
 	add_child(current)
 	move_child(current, 0)
+	if s in ["board", "minigame", "mg_results", "final", "lobby"]:
+		_iris_open()
 	var shots := OS.get_environment("SHOTS")
 	if shots != "":
 		var delays := [2.0]
@@ -84,3 +86,36 @@ func _show_toast(msg: String) -> void:
 	await get_tree().create_timer(4.5).timeout
 	if is_instance_valid(pc):
 		pc.queue_free()
+
+
+# ------------------------------------------------------------------ transition « rond » façon Mario Party
+var _iris: ColorRect
+
+
+func _iris_open() -> void:
+	if _iris == null:
+		var layer := CanvasLayer.new()
+		layer.layer = 60
+		add_child(layer)
+		_iris = ColorRect.new()
+		_iris.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		_iris.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var sh := Shader.new()
+		sh.code = """shader_type canvas_item;
+uniform float r = 0.0;
+void fragment() {
+	vec2 p = (UV - 0.5) * vec2(1.7778, 1.0);
+	float d = length(p);
+	COLOR = vec4(0.36, 0.29, 0.62, 1.0 - smoothstep(r - 0.004, r + 0.004, d));
+	COLOR.a = 1.0 - COLOR.a;
+}"""
+		var m := ShaderMaterial.new()
+		m.shader = sh
+		_iris.material = m
+		layer.add_child(_iris)
+	_iris.visible = true
+	var mat := _iris.material as ShaderMaterial
+	mat.set_shader_parameter("r", 0.0)
+	var tw := create_tween()
+	tw.tween_method(func(v): mat.set_shader_parameter("r", v), 0.0, 1.15, 0.6).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	tw.tween_callback(func(): _iris.visible = false)

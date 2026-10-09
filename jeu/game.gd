@@ -27,6 +27,7 @@ var _ask_id := 0
 var _ask_what := ""
 var _duel_done := false
 var _forced_i := 0
+var _order_rolled := false
 
 
 func _ready() -> void:
@@ -129,6 +130,7 @@ func reset() -> void:
 	cur = 0
 	turn_idx = 0
 	ask = {}
+	_order_rolled = false
 	for id in Net.players:
 		var p: Dictionary = Net.players[id]
 		p["pos"] = BoardMap.start()
@@ -151,7 +153,58 @@ func start_round() -> void:
 		return
 	_flow += 1
 	turn_idx = 0
+	if Net.round_num <= 1 and not _order_rolled:
+		_order_roll(_flow)
+		return
+	if Net.total_rounds >= 10 and Net.round_num == Net.total_rounds - 4:
+		_last_five(_flow)
+		return
 	_next_turn(_flow)
+
+
+## Vrai pendant les 5 derniers tours (cases bleues et rouges doublées).
+func final_turns() -> bool:
+	return Net.total_rounds >= 10 and Net.round_num > Net.total_rounds - 5
+
+
+## « Plus que 5 tours ! » : le dernier du classement reçoit un coup de pouce.
+func _last_five(flow: int) -> void:
+	var ids := Net.players.keys()
+	ids.sort_custom(func(a, b):
+		var pa: Dictionary = Net.players[a]
+		var pb: Dictionary = Net.players[b]
+		return int(pa["stars"]) * 1000 + int(pa["coins"]) < int(pb["stars"]) * 1000 + int(pb["coins"]))
+	var last: int = ids[0] if ids.size() > 0 else 0
+	if last != 0:
+		_coins(last, 10)
+	_send({"k": "last5", "last": last, "bonus": 10})
+	if not await _wait(6.5, flow):
+		return
+	_next_turn(flow)
+
+
+## Début de partie : chacun tape un bloc, le plus grand nombre joue en premier.
+func _order_roll(flow: int) -> void:
+	var ids := Net.players.keys()
+	var nums := []
+	for v in range(1, 11):
+		nums.append(v)
+	nums.shuffle()
+	var rolls := {}
+	for i in ids.size():
+		rolls[ids[i]] = int(nums[i % nums.size()]) if i < nums.size() else rng.randi_range(1, 10)
+	var order := ids.duplicate()
+	order.sort_custom(func(a, b): return int(rolls[a]) > int(rolls[b]))
+	_send({"k": "order_roll", "rolls": rolls, "order": order})
+	if not await _wait(3.0 + ids.size() * 0.45 + 2.4, flow):
+		return
+	Net.order = order
+	Net._broadcast_players()
+	_order_rolled = true
+	_send({"k": "announce", "text": "%s commence !" % Net.name_of(int(order[0]))})
+	if not await _wait(2.0, flow):
+		return
+	_next_turn(flow)
 
 
 func player_left(id: int) -> void:
@@ -262,6 +315,7 @@ func _move(id: int, steps: int, flow: int) -> void:
 				if not await _wait(1.0, flow):
 					return
 		p["pos"] = to
+		p["steps"] = int(p.get("steps", 0)) + 1
 		steps -= 1
 		_send({"k": "step", "id": id, "node": to, "left": steps})
 		if not await _wait(0.32, flow):
@@ -338,10 +392,10 @@ func _land(id: int, flow: int) -> void:
 		_forced_i += 1
 	match kind:
 		"B", "S":
-			_send({"k": "coins", "id": id, "delta": _coins(id, 3), "text": "", "land": true})
+			_send({"k": "coins", "id": id, "delta": _coins(id, 6 if final_turns() else 3), "text": "", "land": true})
 		"R":
 			p["reds"] = int(p.get("reds", 0)) + 1
-			_send({"k": "coins", "id": id, "delta": _coins(id, -3), "text": "", "land": true})
+			_send({"k": "coins", "id": id, "delta": _coins(id, -6 if final_turns() else -3), "text": "", "land": true})
 		"E":
 			await _zone_event(id, flow)
 		"C":
@@ -599,6 +653,7 @@ func _use_item(id: int, a: Dictionary, mods: Dictionary, flow: int) -> String:
 			return ""
 		target = others[rng.randi() % others.size()]
 	items.erase(k)
+	p["used"] = int(p.get("used", 0)) + 1
 	var text := ""
 	var res := "ok"
 	match k:

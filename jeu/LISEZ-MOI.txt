@@ -1,4 +1,4 @@
-AURA PARTY - v0.18 (plateau plus lisible, 4 boutiques, nouvelle boutique)
+AURA PARTY - v0.19 (qui commence ?, 5 derniers tours, options, stats)
 ==========================================
 Jusqu'à 8 joueurs, chacun sur son PC.
 Tout le monde doit avoir CETTE version du jeu (sinon la connexion est refusée).
@@ -23,6 +23,7 @@ POUR JOUER
 
 RÈGLES (comme Mario Party)
 - Chacun commence avec 10 pièces au village (case DÉPART).
+- Au début, chacun tape un bloc (Espace) : le plus grand nombre joue en premier.
 - À ton tour : Lancer le dé (Espace), utiliser un Objet, ou regarder la Carte.
   Tab = carte de l'île à tout moment (avec la légende des cases).
 - Aux carrefours, choisis ta route avec ← → puis Espace (le pont du château
@@ -52,6 +53,8 @@ RÈGLES (comme Mario Party)
   pas tant que tous les autres ne sont pas passés) Chacun appuie sur Espace
   quand il est prêt. Les meilleurs gagnent des pièces (1er +8, 2e +5, 3e +3,
   4e +2, puis +1). Le gagnant du mini-jeu joue en premier au tour suivant.
+- Plus que 5 tours (parties de 10 tours ou plus) : le dernier reçoit +10 pièces
+  et les cases bleues/rouges valent +6/-6 jusqu'à la fin.
 - Dernier mini-jeu de la partie : le gagnant remporte une ÉTOILE !
 - À la fin, 3 étoiles bonus : Roi des mini-jeux, Pluie de pièces (le plus de
   pièces gagnées) et Pas de chance (le plus de cases rouges).
@@ -95,6 +98,10 @@ LES MINI-JEUX
 - Boules-tamponneuses ! (Bumper Balls) : chacun roule sur une boule dans
   une arène ronde (flèches ou ZQSD), Maj/X/clic pour un boost. Éjecte les
   autres ! L'arène rétrécit à la fin. Le dernier dessus gagne.
+
+OPTIONS (salon) : volume de la musique et des bruitages ; pour l'hôte,
+étoiles bonus oui/non et choix des mini-jeux à retirer.
+À la fin de la partie, « Stats de la partie » montre qui a fait quoi.
 
 TESTER UN MINI-JEU : dans le salon, l'hôte clique sur « Tester un mini-jeu
 (sans plateau) » et choisit le jeu. Retour au salon après les résultats.

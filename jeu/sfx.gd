@@ -77,6 +77,8 @@ var streams := {}
 var pool: Array[AudioStreamPlayer] = []
 var idx := 0
 var music_on := true
+var music_vol := 0.8   # 0..1
+var sfx_vol := 0.9
 var _mus: Array[AudioStreamPlayer] = []
 var _cur := 0
 var _cur_name := ""
@@ -100,6 +102,8 @@ func _ready() -> void:
 	var cfg := ConfigFile.new()
 	if cfg.load("user://settings.cfg") == OK:
 		music_on = bool(cfg.get_value("audio", "music", true))
+		music_vol = float(cfg.get_value("audio", "music_vol", 0.8))
+		sfx_vol = float(cfg.get_value("audio", "sfx_vol", 0.9))
 	if OS.get_cmdline_user_args().has("--checkall") or DisplayServer.get_name() == "headless":
 		music_on = false
 	Net.state_changed.connect(_on_phase)
@@ -119,7 +123,9 @@ func play(name: String, volume_db := 0.0, pitch_var := 0.08) -> void:
 	var p := pool[idx]
 	idx = (idx + 1) % pool.size()
 	p.stream = streams[name]
-	p.volume_db = volume_db - 4.0
+	if sfx_vol <= 0.01:
+		return
+	p.volume_db = volume_db - 4.0 + linear_to_db(sfx_vol)
 	p.pitch_scale = randf_range(1.0 - pitch_var, 1.0 + pitch_var)
 	p.play()
 
@@ -136,6 +142,24 @@ func _unhandled_input(event: InputEvent) -> void:
 		var k := event as InputEventKey
 		if k.keycode == KEY_M or k.key_label == KEY_M:
 			toggle_music()
+
+
+func music_db() -> float:
+	return MUSIC_DB + linear_to_db(maxf(0.02, music_vol * 1.25))
+
+
+## Règle les volumes (0..1), appliqué tout de suite et retenu pour la prochaine fois.
+func set_volumes(m: float, s: float) -> void:
+	music_vol = clampf(m, 0.0, 1.0)
+	sfx_vol = clampf(s, 0.0, 1.0)
+	var cfg := ConfigFile.new()
+	cfg.load("user://settings.cfg")
+	cfg.set_value("audio", "music_vol", music_vol)
+	cfg.set_value("audio", "sfx_vol", sfx_vol)
+	cfg.save("user://settings.cfg")
+	if music_on and _mus[_cur].playing:
+		_fade.erase(_mus[_cur])
+		_mus[_cur].volume_db = music_db() if music_vol > 0.01 else -80.0
 
 
 func toggle_music() -> void:
@@ -172,7 +196,7 @@ func music(name: String, loop := true) -> void:
 	p.stream = st
 	p.volume_db = -30.0
 	p.play()
-	_fade_to(p, MUSIC_DB, 1.0)
+	_fade_to(p, music_db(), 1.0)
 
 
 func _fade_to(p: AudioStreamPlayer, target: float, dur: float) -> void:

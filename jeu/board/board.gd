@@ -522,6 +522,13 @@ func _on_event(d: Dictionary) -> void:
 				burst(vis[id] + Vector2(0, -50), "flare_01", 6, Color("#c79bff"), 200.0)
 			show_emote(id, "anger")
 			show_emote(target, "exclamations")
+		"last5":
+			panel = {"kind": "last5", "last": int(d.get("last", 0)), "bonus": int(d.get("bonus", 10)), "t0": t, "dur": 6.2}
+			Sfx.voice("hurry_up")
+			Sfx.play("jingle_star", 0.0, 0.0)
+		"order_roll":
+			panel = {"kind": "order", "rolls": d.get("rolls", {}), "order": d.get("order", []), "t0": t, "dur": 3.0 + (d.get("order", []) as Array).size() * 0.45 + 2.4, "stopped": {}}
+			Sfx.play("dice_shuffle", -2.0)
 		"announce":
 			_show_banner(str(d.get("text", "")), UI.YELLOW, 3.0)
 			phase = "idle"
@@ -726,6 +733,13 @@ func _input(event: InputEvent) -> void:
 		elif b >= 0:
 			Sfx.play("ui_error", -6.0, 0.0)
 		return
+	if not panel.is_empty() and str(panel.get("kind", "")) == "order" and event.is_action_pressed("jump"):
+		var st: Dictionary = panel["stopped"]
+		var me_id := Net.my_id()
+		if not st.has(me_id) and (panel["rolls"] as Dictionary).has(me_id):
+			st[me_id] = t - float(panel["t0"])
+			Sfx.play("die_hit", 0.0)
+		return
 	if menu == "" or buttons.is_empty():
 		return
 	var nav := 0
@@ -860,7 +874,7 @@ func _draw_hud() -> void:
 	var me := Net.my_id()
 	# tour, étoile, banque (façon Mario Party)
 	var r := Rect2(Vector2(20, 14), Vector2(190, 64))
-	UI.panel(hud, r, Color("#8e6cf0"), UI.WHITE, 22, 5)
+	UI.panel(hud, r, Color("#ff6f6f") if Game.final_turns() else Color("#8e6cf0"), UI.WHITE, 22, 5)
 	UI.text(hud, r.position + Vector2(48, 32), "TOUR", 20, Color("#e6dcff"), 0)
 	UI.text(hud, r.position + Vector2(128, 32), "%d/%d" % [mini(Net.round_num, Net.total_rounds), Net.total_rounds], 32, UI.WHITE, 7)
 	var r2 := Rect2(Vector2(1280 - 240, 14), Vector2(220, 56))
@@ -1010,6 +1024,25 @@ func _draw_panel() -> void:
 	var a := minf(appear, out)
 	var center := Vector2(640, 330)
 	match str(panel["kind"]):
+		"order":
+			_draw_order(k, a)
+		"last5":
+			hud.draw_rect(Rect2(0, 0, 1280, 720), Color(0.16, 0.12, 0.3, 0.5 * a))
+			var pop := 1.0 + maxf(0.0, 0.4 - k) * 1.2
+			UI.ribbon(hud, Vector2(640, 170), "PLUS QUE 5 TOURS !", int(52 * pop), Color("#ff6f6f"), UI.WHITE)
+			var r5 := Rect2(Vector2(290, 250), Vector2(700, 300))
+			UI.panel(hud, r5, Color(UI.WHITE, a), Color(Color("#ffd0d0"), a), 30, 6)
+			if k > 1.0:
+				var lid := int(panel["last"])
+				hud.draw_set_transform(r5.position + Vector2(130, 200), 0.0, Vector2(0.55, 0.55))
+				hud.draw_texture(UI.char_tex(Net.color_idx(lid), "jump" if fmod(k, 0.8) < 0.4 else "idle"), Vector2(-128, -256), Color(1, 1, 1, a))
+				hud.draw_set_transform(Vector2.ZERO)
+				UI.text(hud, r5.position + Vector2(130, 228), Net.name_of(lid), 24, Color(Net.color_of(lid), a), 6)
+				hud.draw_string(UI.font(true), r5.position + Vector2(250, 80), "Coup de pouce pour le dernier :", HORIZONTAL_ALIGNMENT_LEFT, 420, 24, Color(UI.DARK, a))
+				UI.text(hud, r5.position + Vector2(460, 125), "+%d pièces !" % int(panel["bonus"]), 40, Color(Color("#ffc93c"), a), 8)
+			if k > 2.4:
+				hud.draw_string(UI.font(true), r5.position + Vector2(250, 200), "Jusqu'à la fin :", HORIZONTAL_ALIGNMENT_LEFT, 420, 24, Color(UI.DARK, a))
+				hud.draw_string(UI.font(), r5.position + Vector2(250, 240), "cases bleues +6 et cases rouges -6 !", HORIZONTAL_ALIGNMENT_LEFT, 440, 22, Color(UI.DARK, a))
 		"card":
 			var flip := clampf((k - 0.5) * 4.0, 0.0, 1.0)
 			var sx := absf(cos(flip * PI))
@@ -1029,7 +1062,7 @@ func _draw_panel() -> void:
 		"duel":
 			var w := 760.0
 			var rr2 := Rect2(center - Vector2(w / 2.0, 120), Vector2(w, 240))
-			hud.draw_style_box(UI.box(Color(Color("#8a4fd8"), a), Color(UI.DARK, a), 6, 26), rr2)
+			UI.panel(hud, rr2, Color(Color("#8a4fd8"), a), Color(1, 1, 1, a), 30, 6)
 			UI.text(hud, center + Vector2(0, -80), "DUEL !", 54, Color(Color("#ffe27a"), a), 10)
 			var ida := int(panel["a"])
 			var idb := int(panel["b"])
@@ -1046,7 +1079,7 @@ func _draw_panel() -> void:
 			var w2 := 600.0
 			var it := str(panel.get("item", ""))
 			var rr3 := Rect2(center - Vector2(w2 / 2.0, 100), Vector2(w2, 200))
-			hud.draw_style_box(UI.box(Color(UI.WHITE, a), Color(UI.DARK, a), 6, 24), rr3)
+			UI.panel(hud, rr3, Color(UI.WHITE, a), Color(Color(panel.get("col", UI.BLUE)).lightened(0.45), a), 28, 6)
 			UI.text(hud, center + Vector2(0, -58), str(panel["title"]), 34, Color(panel.get("col", UI.BLUE), a), 0)
 			var tx := center + Vector2(-260, -12)
 			var tw := 520.0
@@ -1055,6 +1088,56 @@ func _draw_panel() -> void:
 				tx = center + Vector2(-170, -12)
 				tw = 430.0
 			hud.draw_multiline_string(UI.font(), tx, str(panel["text"]), HORIZONTAL_ALIGNMENT_CENTER, tw, 24, 4, Color(UI.DARK, a))
+
+
+## « Qui commence ? » : un bloc par joueur, les chiffres défilent puis s'arrêtent.
+func _draw_order(k: float, a: float) -> void:
+	hud.draw_rect(Rect2(0, 0, 1280, 720), Color(0.16, 0.12, 0.3, 0.45 * a))
+	UI.ribbon(hud, Vector2(640, 150), "Qui commence ?", 40, Color("#8e6cf0"), UI.YELLOW)
+	var rolls: Dictionary = panel["rolls"]
+	var ids := rolls.keys()
+	ids.sort()
+	var n := ids.size()
+	var w := minf(150.0, 1100.0 / maxf(1.0, float(n)))
+	var x0 := 640.0 - n * w / 2.0
+	var stopped: Dictionary = panel["stopped"]
+	var all_done := true
+	var order: Array = panel["order"]
+	for i in n:
+		var id = ids[i]
+		var stop_t := 1.6 + i * 0.45
+		if int(id) == Net.my_id() and not stopped.has(id):
+			stop_t = 2.6 + n * 0.45   # c'est toi qui tapes (ESPACE), sinon ça s'arrête tout seul
+		if stopped.has(id):
+			stop_t = float(stopped[id])
+		var done := k >= stop_t
+		if done and not stopped.has(id):
+			stopped[id] = k
+			Sfx.play("die_hit", -2.0)
+		if not done:
+			all_done = false
+		var c := Vector2(x0 + i * w + w / 2.0, 430)
+		# perso
+		var jump := -absf(sin((k - stop_t) * 10.0)) * 22.0 if done and k - stop_t < 0.3 else 0.0
+		hud.draw_set_transform(c + Vector2(0, 120 + jump), 0.0, Vector2(0.42, 0.42))
+		hud.draw_texture(UI.char_tex(Net.color_idx(int(id)), "jump" if jump < -4.0 else "idle"), Vector2(-128, -256), Color(1, 1, 1, a))
+		hud.draw_set_transform(Vector2.ZERO)
+		UI.text(hud, c + Vector2(0, 148), Net.name_of(int(id)), 18, Color(Net.color_of(int(id)), a), 5)
+		# bloc
+		var br := Rect2(c + Vector2(-42, -110), Vector2(84, 84))
+		var val := int(rolls[id]) if done else 1 + int(t * 18.0 + i * 3) % 10
+		UI.panel(hud, br, Color(Color("#ffc93c") if not done else UI.WHITE, a), Color(1, 1, 1, a), 16, 5)
+		UI.text(hud, br.get_center(), str(val), 44, Color(UI.DARK if done else UI.WHITE, a), 0 if done else 7)
+		if k > 3.0 + n * 0.45:
+			var rk := order.find(id)
+			if rk >= 0 and k > stop_t + 0.3:
+				var badge := c + Vector2(0, -150)
+				var mc: Color = [Color("#ffc93c"), Color("#c9d3e3"), Color("#e8a061")][rk] if rk < 3 else Color("#9aa3b8")
+				hud.draw_circle(badge, 22.0, Color(1, 1, 1, a))
+				hud.draw_circle(badge, 18.0, Color(mc, a))
+				UI.text(hud, badge, str(rk + 1), 22, Color(1, 1, 1, a), 5)
+	if not stopped.has(Net.my_id()) and rolls.has(Net.my_id()):
+		UI.text(hud, Vector2(640, 640), "ESPACE : tape ton bloc !", 30, Color(UI.YELLOW, a), 8)
 
 
 func _title(txt: String, y: float) -> void:

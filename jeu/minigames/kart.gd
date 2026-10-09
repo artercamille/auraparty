@@ -338,7 +338,7 @@ func _process(delta: float) -> void:
 	match state:
 		"intro":
 			if not my_ready and t > 0.6:
-				if (Net.autotest != "" and t > 1.0) or Input.is_action_just_pressed("jump") or Input.is_action_just_pressed("push"):
+				if (Net.autotest != "" and t > 1.0 and OS.get_environment("NOREADY") == "") or Input.is_action_just_pressed("jump") or Input.is_action_just_pressed("push"):
 					my_ready = true
 					Net.mg_set_ready()
 					Sfx.play("select", -4.0)
