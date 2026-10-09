@@ -32,6 +32,7 @@ func _ready() -> void:
 
 
 func _on_state(s: String) -> void:
+	toast_box.position = Vector2(90, 112) if s == "minigame" else Vector2(1280 - 340 - 20, 400)
 	var path: String = SCREENS.get(s, "")
 	if s == "minigame":
 		path = str(Net.MINIGAMES.get(str(Net.mg_data.get("type", "")), {}).get("path", ""))
