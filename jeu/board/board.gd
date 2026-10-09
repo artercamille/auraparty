@@ -1109,19 +1109,13 @@ func _btn(r: Rect2, a: String, on := true, visible_box := true) -> void:
 func _draw_hud() -> void:
 	buttons.clear()
 	var me := Net.my_id()
-	# tour, étoile, banque (façon Mario Party)
-	var r := Rect2(Vector2(20, 14), Vector2(190, 64))
+	# tour, étoile, banque : mêmes panneaux du kit, même hauteur, icône qui déborde à gauche
+	var r := Rect2(Vector2(20, 14), Vector2(196, 62))
 	UI.panel(hud, r, Color("#ff6f6f") if Game.final_turns() else Color("#8e6cf0"), UI.WHITE, 22, 5)
-	UI.text(hud, r.position + Vector2(48, 32), "TOUR", 20, Color("#e6dcff"), 0)
-	UI.text(hud, r.position + Vector2(128, 32), "%d/%d" % [mini(Net.round_num, Net.total_rounds), Net.total_rounds], 32, UI.WHITE, 7)
-	var r2 := Rect2(Vector2(1280 - 240, 14), Vector2(220, 56))
-	UI.panel(hud, r2, Color("#ffc93c"), UI.WHITE, 22, 5)
-	hud.draw_texture_rect(UI.gui("ic_star"), Rect2(r2.position + Vector2(10, 4), Vector2(48, 48)), false)
-	UI.text(hud, r2.position + Vector2(132, 28), "= %d pièces" % Game.STAR_COST, 22, UI.WHITE, 6)
-	var r3 := Rect2(Vector2(1280 - 220, 80), Vector2(200, 44))
-	UI.panel(hud, r3, Color("#4fc3e8"), UI.WHITE, 18, 4)
-	UI.text(hud, r3.position + Vector2(84, 22), "Banque : %d" % Game.bank, 20, UI.WHITE, 6)
-	hud.draw_texture_rect(UI.gui("ic_coin"), Rect2(r3.position + Vector2(160, 6), Vector2(32, 32)), false)
+	UI.text(hud, r.position + Vector2(50, 29), "TOUR", 19, Color("#efe8ff"), 5)
+	UI.text(hud, r.position + Vector2(134, 29), "%d/%d" % [mini(Net.round_num, Net.total_rounds), Net.total_rounds], 32, UI.WHITE, 7)
+	_info_panel(Rect2(Vector2(1280 - 238, 14), Vector2(218, 62)), Color("#ffc93c"), "ic_star", "Prix d'une étoile", str(Game.STAR_COST))
+	_info_panel(Rect2(Vector2(1280 - 238, 86), Vector2(218, 62)), Color("#4fc3e8"), "ic_bag", "Banque", str(Game.bank))
 	if not (menu == "shop" and shop_step == 1) and not map_view:
 		_draw_cards()
 	if map_view:
@@ -1172,13 +1166,23 @@ func _draw_hud() -> void:
 					msg = "%s choisit son adversaire..." % Net.name_of(who)
 			if msg != "":
 				var mw := UI.text_width(msg, 22) + 50.0
-				hud.draw_style_box(UI.box(Color(UI.DARK, 0.75), UI.DARK, 0, 16), Rect2(Vector2(640 - mw / 2.0, 556), Vector2(mw, 42)))
+				UI.panel(hud, Rect2(Vector2(640 - mw / 2.0, 554), Vector2(mw, 46)), Color("#3d4470"), UI.WHITE, 18, 4)
 				UI.text(hud, Vector2(640, 577), msg, 22, Net.color_of(who), 5)
 	if sel >= buttons.size():
 		sel = maxi(0, buttons.size() - 1)
-	UI.text(hud, Vector2(84, 98), "Tab : carte", 17, UI.WHITE, 5)
-	UI.text(hud, Vector2(84, 122), "1 à 6 : émotes", 17, UI.WHITE, 5)
+	if not map_view:
+		UI.key_chip(hud, Vector2(24, 100), "Tab", "carte")
+		UI.key_chip(hud, Vector2(24, 136), "1-6", "émotes")
 	_draw_star_cele()
+
+
+## Panneau d'info du HUD : grosse icône du kit à gauche, petite étiquette, valeur en gros + pièce.
+func _info_panel(r: Rect2, col: Color, icon: String, label: String, value: String) -> void:
+	UI.panel(hud, r, col, UI.WHITE, 22, 5)
+	hud.draw_texture_rect(UI.gui(icon), Rect2(r.position + Vector2(-12, 4), Vector2(56, 56)), false)
+	UI.text_left(hud, r.position + Vector2(52, 20), label, 15, Color(1, 1, 1, 0.95), 4)
+	var w := UI.text_left(hud, r.position + Vector2(52, 42), value, 26, UI.WHITE, 7)
+	hud.draw_texture_rect(UI.gui("ic_coin"), Rect2(r.position + Vector2(58 + w, 29), Vector2(26, 26)), false)
 
 
 func _draw_cards() -> void:
@@ -1206,11 +1210,8 @@ func _draw_cards() -> void:
 		var col := Net.color_of(id)
 		UI.panel(hud, cr, col.lightened(0.08), Color("#fff6c9") if active else UI.WHITE, 20, 6 if active else 5)
 		# portrait dans un rond blanc
-		var pc := cr.position + Vector2(34, 42)
-		hud.draw_circle(pc, 27.0, UI.WHITE)
-		hud.draw_circle(pc, 23.0, col.darkened(0.18))
-		var face: Texture2D = UI.char_tex(Net.color_idx(id), "front")
-		hud.draw_texture_rect_region(face, Rect2(pc - Vector2(22, 22), Vector2(44, 38)), Rect2(66, 104, 124, 96))
+		var pc := cr.position + Vector2(36, 42)
+		UI.portrait(hud, pc, 27.0, Net.color_idx(id), Color("#fff2a8") if active else UI.WHITE)
 		# rang
 		var rk_col: Color = [Color("#ffc93c"), Color("#c9d3e3"), Color("#e8a061")][rank] if rank < 3 else Color("#9aa3b8")
 		var badge := cr.position + Vector2(6, 2)
@@ -1218,7 +1219,7 @@ func _draw_cards() -> void:
 		var nm := str(disp[id]["name"])
 		if nm.length() > 9:
 			nm = nm.substr(0, 8) + "."
-		UI.text(hud, cr.position + Vector2(112, 16), nm, 16, UI.WHITE, 5)
+		UI.text(hud, cr.position + Vector2(112, 17), nm, 17, UI.WHITE, 5)
 		for ic2 in [[74.0, UI.gui("ic_star"), str(int(disp[id]["stars"]))], [cw - 48.0, UI.gui("ic_coin"), str(int(round(float(shown_coins.get(id, 0.0)))))]]:
 			var ip := cr.position + Vector2(float(ic2[0]), 41)
 			hud.draw_texture_rect(ic2[1], Rect2(ip - Vector2(14, 14), Vector2(28, 28)), false)
@@ -1226,7 +1227,8 @@ func _draw_cards() -> void:
 		var items: Array = disp[id].get("items", [])
 		for j in Items.MAX_HELD:
 			var ic := cr.position + Vector2(80 + j * 26, 64)
-			hud.draw_circle(ic, 10.0, Color(1, 1, 1, 0.75))
+			hud.draw_circle(ic, 11.0, col.darkened(0.3))
+			hud.draw_circle(ic + Vector2(0, 1), 9.5, col.darkened(0.12))
 			if j < items.size():
 				Items.draw_icon(hud, str(items[j]), ic, 0.38)
 		if disp[id].get("poison", false):
@@ -1237,8 +1239,8 @@ func _draw_cards() -> void:
 
 func _draw_legend() -> void:
 	var r := Rect2(Vector2(20, 140), Vector2(296, 34 + LEGEND.size() * 38 + 30))
-	hud.draw_style_box(UI.box(Color(UI.WHITE, 0.95), UI.DARK, 4, 16), r)
-	UI.text(hud, r.position + Vector2(148, 22), "Carte de l'île", 22, UI.DARK, 0)
+	UI.panel(hud, r, UI.PAPER, UI.WHITE, 20, 5)
+	UI.text(hud, r.position + Vector2(148, 24), "Carte de l'île", 22, UI.INK, 0)
 	for i in LEGEND.size():
 		var y := r.position.y + 58 + i * 38
 		Island.draw_space(hud, Vector2(r.position.x + 30, y), str(LEGEND[i][0]), 14.0, true)

@@ -71,18 +71,21 @@ func _shot(dir: String, n: String, d: float) -> void:
 
 func _show_toast(msg: String) -> void:
 	var pc := PanelContainer.new()
-	var sb := UI.box(UI.WHITE, UI.DARK, 4, 16)
+	var sb := UI.KitBox.new()
+	sb.col = UI.PAPER
+	sb.radius = 16
 	sb.set_content_margin_all(12)
 	sb.content_margin_left = 20
 	sb.content_margin_right = 20
 	pc.add_theme_stylebox_override("panel", sb)
 	pc.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var l := UI.lbl(msg, 18)
+	var l := UI.lbl(msg, 18, UI.INK)
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	l.custom_minimum_size.x = 360
+	l.custom_minimum_size.x = 300
 	pc.add_child(l)
 	toast_box.add_child(pc)
-	toast_box.position = Vector2(1280 - 400 - 20, 90)
+	# en mini-jeu : sur l'aperçu (l'encart Commandes reste lisible) ; ailleurs : à droite
+	toast_box.position = Vector2(90, 112) if Net.phase == "minigame" else Vector2(1280 - 340 - 20, 400)
 	await get_tree().create_timer(4.5).timeout
 	if is_instance_valid(pc):
 		pc.queue_free()

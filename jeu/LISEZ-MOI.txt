@@ -1,4 +1,4 @@
-AURA PARTY - v0.26 (nouvelle île plus grande, persos détourés, 20 mini-jeux)
+AURA PARTY - v0.27 (plateau peaufiné : sol, zones, falaises, chemin et interface)
 ==========================================
 Jusqu'à 8 joueurs, chacun sur son PC.
 Tout le monde doit avoir CETTE version du jeu (sinon la connexion est refusée).

@@ -60,9 +60,7 @@ func _draw_results(ci: Control) -> void:
 			UI.text(ci, md, str(rank + 1), 24, Color(1, 1, 1, appear), 6)
 		# portrait
 		var pc := row.position + Vector2(92, 27)
-		ci.draw_circle(pc, 23.0, Color(1, 1, 1, appear))
-		ci.draw_circle(pc, 19.0, Color(col.darkened(0.18), appear))
-		ci.draw_texture_rect_region(UI.char_tex(int(r["color"]), "front"), Rect2(pc - Vector2(18, 19), Vector2(36, 32)), Rect2(66, 104, 124, 96), Color(1, 1, 1, appear))
+		UI.portrait(ci, pc, 21.0, int(r["color"]), UI.WHITE, Color(1, 1, 1, appear))
 		UI.text(ci, row.position + Vector2(196, 27), str(r["name"]), 24, Color(1, 1, 1, appear), 6)
 		if int(r.get("star", 0)) > 0:
 			UI.text(ci, row.position + Vector2(440, 27), "+1 ÉTOILE !", 22, UI.YELLOW, 6)

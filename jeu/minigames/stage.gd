@@ -508,10 +508,7 @@ static func draw_heads(h: CanvasItem, ids: Array, out: Dictionary) -> void:
 		var id: int = ids[i]
 		var c := Vector2(x0 + i * w + w / 2.0, 44)
 		var o := out.has(id)
-		h.draw_circle(c + Vector2(0, 4), 28, Color(0.13, 0.1, 0.25, 0.2))
-		h.draw_circle(c, 28, UI.WHITE)
-		h.draw_circle(c, 23, Net.color_of(id).darkened(0.15) if not o else Color("#9a9eb0"))
-		h.draw_texture_rect_region(UI.char_tex(Net.color_idx(id), "front"), Rect2(c - Vector2(21, 22), Vector2(42, 38)), Rect2(66, 104, 124, 96), Color(1, 1, 1, 0.45 if o else 1.0))
+		UI.portrait(h, c, 25.0, Net.color_idx(id), UI.WHITE, Color(0.6, 0.6, 0.66, 1.0) if o else Color.WHITE)
 		if o:
 			h.draw_line(c + Vector2(-15, -15), c + Vector2(15, 15), UI.RED, 6.0)
 			h.draw_line(c + Vector2(15, -15), c + Vector2(-15, 15), UI.RED, 6.0)
@@ -580,14 +577,38 @@ static func draw_intro(h: CanvasItem, ttl: String, lines: Array, ctrl: String) -
 		for k in 38:
 			h.draw_circle(Vector2(cx + 8 + k * 10.0, yy2), 1.6, Color(UI.DARK, 0.5))
 		if keys != "":
-			var kw := minf(UI.text_width(keys, 19, false) + 30.0, 390.0)
-			var kr := Rect2(Vector2(cx + 4, yy2 + 10), Vector2(kw, 34))
-			h.draw_style_box(UI.box(Color("#8e6cf0"), Color(0, 0, 0, 0), 0, 17), kr)
-			h.draw_string(UI.font(true), kr.position + Vector2(15, 24), keys, HORIZONTAL_ALIGNMENT_LEFT, kw - 20, 19, UI.WHITE)
-			yy2 += 60.0
+			yy2 += _keys(h, Vector2(cx + 4, yy2 + 30), keys, 392.0) + 66.0
 		else:
 			yy2 += 20.0
 		yy2 += 18.0
+
+
+## Touches dessinées comme de vraies touches (blanches, contour encre) ; les mots de liaison
+## (« ou », « en l'air »...) restent en texte simple. Renvoie la hauteur en plus si ça passe à la ligne.
+const KEY_WORDS := ["Espace", "Entrée", "Tab", "Maj", "Ctrl", "Échap", "flèches", "←", "→", "↑", "↓", "Clic"]
+
+static func _keys(h: CanvasItem, at: Vector2, keys: String, maxw: float) -> float:
+	var x := at.x
+	var y := at.y
+	for tok in keys.split(" ", false):
+		var tk := str(tok)
+		var is_key := tk in KEY_WORDS or (tk.length() == 1 and tk != "/" and tk != "+" and tk.to_upper() == tk and tk.to_lower() != tk) or tk.is_valid_int()
+		var lab := "← ↑ ↓ →" if tk == "flèches" else tk
+		var w := (maxf(34.0, UI.text_width(lab, 18) + 20.0) if is_key else UI.text_width(tk, 18, false)) + 7.0
+		if x + w > at.x + maxw:
+			x = at.x
+			y += 42.0
+		if is_key:
+			var kr := Rect2(Vector2(x, y - 17), Vector2(w - 7.0, 34))
+			var kb := UI.KitBox.new()
+			kb.col = UI.PAPER
+			kb.radius = 9
+			h.draw_style_box(kb, kr)
+			UI.text(h, kr.get_center() + Vector2(0, -2), lab, 18, UI.INK, 0)
+		else:
+			h.draw_string(UI.font(), Vector2(x, y + 7), tk, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(UI.INK, 0.8))
+		x += w
+	return y - at.y
 
 
 static func _pad_icon(h: CanvasItem, c: Vector2) -> void:
@@ -610,10 +631,7 @@ static func draw_ready_row(h: CanvasItem, mine: bool, ready: Array, all_ids: Arr
 		var id: int = ids[i]
 		var c := Vector2(x0 + i * w + w / 2.0, 560)
 		var ok := ready.has(id)
-		h.draw_circle(c + Vector2(0, 3), 24, Color(0.13, 0.1, 0.25, 0.2))
-		h.draw_circle(c, 24, UI.WHITE)
-		h.draw_circle(c, 20, Net.color_of(id).darkened(0.1) if ok else Color("#a3a7b8"))
-		h.draw_texture_rect_region(UI.char_tex(Net.color_idx(id), "front"), Rect2(c - Vector2(18, 19), Vector2(36, 32)), Rect2(66, 104, 124, 96), Color(1, 1, 1, 1.0 if ok else 0.5))
+		UI.portrait(h, c, 22.0, Net.color_idx(id), UI.GREEN.lightened(0.3) if ok else UI.WHITE, Color.WHITE if ok else Color(0.62, 0.62, 0.68, 1.0))
 		if ok:
 			h.draw_circle(c + Vector2(16, 15), 11, UI.WHITE)
 			h.draw_circle(c + Vector2(16, 15), 8, UI.GREEN)

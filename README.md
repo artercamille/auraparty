@@ -7,7 +7,7 @@ Une grande île volante avec des carrefours, des objets, une boutique, des duels
 
 ## ⬇️ Télécharger
 
-### **[Télécharger Aura PARTY v0.26 pour Windows](https://github.com/artercamille/auraparty/raw/main/telecharger/AuraParty.zip)**
+### **[Télécharger Aura PARTY v0.27 pour Windows](https://github.com/artercamille/auraparty/raw/main/telecharger/AuraParty.zip)**
 
 Dézippe le fichier, puis lance `AuraParty.exe`.
 Si Windows affiche « Windows a protégé votre ordinateur » : *Informations complémentaires* → *Exécuter quand même*.

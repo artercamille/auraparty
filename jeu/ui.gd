@@ -11,6 +11,8 @@ const GREEN := Color("#5fcd55")
 const BLUE := Color("#4b87f5")
 const RED := Color("#f04650")
 const GREY := Color("#8a8fa8")
+## Encre commune : contour des textes, des panneaux et des icônes (même teinte partout).
+const INK := Color("#2b3150")
 
 static var _font: Font
 static var _font_bold: Font
@@ -43,7 +45,7 @@ static func make_theme() -> Theme:
 	for c in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color", "font_hover_pressed_color"]:
 		t.set_color(c, "Button", WHITE)
 	t.set_color("font_disabled_color", "Button", Color(1, 1, 1, 0.7))
-	t.set_color("font_outline_color", "Button", DARK)
+	t.set_color("font_outline_color", "Button", INK)
 	t.set_constant("outline_size", "Button", 7)
 	t.set_font("font", "Button", font(true))
 	# champs texte
@@ -87,7 +89,7 @@ static func gui(n: String) -> Texture2D:
 
 ## Contour sombre façon kit (bleu nuit teinté par la couleur du fond).
 static func outline_of(col: Color) -> Color:
-	return col.darkened(0.55).lerp(Color("#2c3655"), 0.5)
+	return col.darkened(0.55).lerp(INK, 0.55)
 
 
 static func box(bg: Color, border := DARK, bw := 4, radius := 16) -> StyleBoxFlat:
@@ -129,7 +131,7 @@ static func lbl(text: String, size := 24, color := DARK, align := HORIZONTAL_ALI
 		l.add_theme_font_override("font", font(true))
 	if outline > 0:
 		l.add_theme_constant_override("outline_size", outline)
-		l.add_theme_color_override("font_outline_color", DARK)
+		l.add_theme_color_override("font_outline_color", INK)
 	return l
 
 
@@ -202,8 +204,47 @@ static func text(ci: CanvasItem, center: Vector2, s: String, size := 24, col := 
 	var w := f.get_string_size(s, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
 	var pos := Vector2(center.x - w / 2.0, center.y + size * 0.36)
 	if outline > 0:
-		ci.draw_string_outline(f, pos, s, HORIZONTAL_ALIGNMENT_LEFT, -1, size, outline, DARK)
+		ci.draw_string_outline(f, pos, s, HORIZONTAL_ALIGNMENT_LEFT, -1, size, outline, INK)
 	ci.draw_string(f, pos, s, HORIZONTAL_ALIGNMENT_LEFT, -1, size, col)
+
+
+## Même chose, aligné à gauche (x = début du texte, y = milieu).
+static func text_left(ci: CanvasItem, left_mid: Vector2, s: String, size := 24, col := WHITE, outline := 8, bold := true) -> float:
+	var w := text_width(s, size, bold)
+	text(ci, left_mid + Vector2(w / 2.0, 0), s, size, col, outline, bold)
+	return w
+
+
+## Touche du clavier (petite touche blanche du kit) suivie de sa légende. Renvoie la largeur totale.
+static func key_chip(ci: CanvasItem, left_mid: Vector2, key: String, label: String, size := 16) -> float:
+	var kw := maxf(30.0, text_width(key, size) + 18.0)
+	var kr := Rect2(left_mid - Vector2(0, 15), Vector2(kw, 30))
+	var kb := KitBox.new()
+	kb.col = PAPER
+	kb.radius = 8
+	ci.draw_style_box(kb, kr)
+	text(ci, kr.get_center() + Vector2(0, -2), key, size, INK, 0)
+	var lw := text_left(ci, left_mid + Vector2(kw + 8.0, 0), label, size, WHITE, 5)
+	return kw + 8.0 + lw
+
+
+## Rond portrait du perso (casque entier, sur fond clair pour que la visière reste lisible).
+static func portrait(ci: CanvasItem, c: Vector2, r: float, color_idx: int, ring := WHITE, mod := Color.WHITE) -> void:
+	ci.draw_circle(c + Vector2(0, 3), r + 3.0, Color(0.12, 0.1, 0.25, 0.25 * mod.a))
+	ci.draw_circle(c, r + 3.0, INK * mod)
+	ci.draw_circle(c, r, ring * mod)
+	ci.draw_circle(c, r - 3.0, Color("#d9efff") * mod)
+	# visage découpé en rond (sans le cercle du casque) : polygone texturé
+	var face := char_tex(color_idx, "front")
+	var pts := PackedVector2Array()
+	var uvs := PackedVector2Array()
+	var fc := Vector2(127, 144)
+	var fr := 50.0
+	for i in 40:
+		var d := Vector2.from_angle(TAU * i / 40.0)
+		pts.append(c + d * (r - 3.0))
+		uvs.append((fc + d * fr) / 256.0)
+	ci.draw_polygon(pts, PackedColorArray([mod]), uvs, face)
 
 
 static func text_width(s: String, size: int, bold := true) -> float:
@@ -257,7 +298,7 @@ class KitBox extends StyleBox:
 			_flat(Color(0.12, 0.1, 0.25, 0.22), rad).draw(ci, Rect2(rr.position + Vector2(0, 5), rr.size))
 		if ring.a > 0.0:
 			_flat(ring, rad + 4.0).draw(ci, rr.grow(4.0))
-		_flat(UI.outline_of(col), rad).draw(ci, rr)
+		_flat(UI.outline_of(col), rad).draw(ci, rr)  # même encre que les textes
 		var inner := rr.grow(-ow)
 		var irad := maxf(2.0, rad - ow)
 		_flat(col.darkened(0.16), irad).draw(ci, inner)

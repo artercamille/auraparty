@@ -1,4 +1,4 @@
-# Aura PARTY — état du projet (v0.26)
+# Aura PARTY — état du projet (v0.27)
 
 Party game 2D façon Mario Party, Godot 4.3 (GL Compatibility), GDScript, 2 à 8 joueurs en ligne
 (ENet UDP 7777, via Radmin VPN). Export Windows .exe. L'utilisateur (Camille) ne code pas : réponses
@@ -52,7 +52,7 @@ Début de partie : « Qui commence ? » (blocs). Parties de 10 tours ou plus : �
 Stats suivies dans `players[id]` : coins_won, mg_wins, reds, steps, used.
 **Échelle** : `BoardMap.K = 1.25` multiplie toutes les positions (JUNCTIONS, SEGMENTS écrits en coordonnées « non agrandies ») ; dans `island.gd` les positions absolues sont `Vector2(...) * K` mais les tailles des bâtiments/décors et les décalages autour d'un sprite (château, volcan) ne sont PAS multipliés. `SIZE` = 5000x3375.
 **Côte** : `BoardMap.COAST` est générée par `tools/gen_coast.py` (épouse chemins + lieux, criques BAYS, cap du phare, bruit) → relancer le script si on bouge un chemin ou un lieu.
-Cases r=43, chemins 136 px, pions `TOKEN_SCALE` 0.42 ; carte (Tab) `MAP_ZOOM` 0.152 + `MAP_OFS` (île à droite de la légende, cartouches cachés).
+Cases r=47 (espacement régulier ~175 px : si on allonge un chemin, rajouter des cases), chemins 150 px avec petites flèches de sens (`_chevron`), pions `TOKEN_SCALE` 0.42 ; carte (Tab) `MAP_ZOOM` 0.152 + `MAP_OFS` (île à droite de la légende, cartouches cachés).
 Étoile gagnée (achat, bloc caché, fantôme) : grande animation plein écran `board.gd star_celebrate()` (rayons, confettis, étoile à yeux qui file vers le compteur du joueur).
 
 ## Les 20 mini-jeux (`Net.MINIGAMES`, fichiers dans `minigames/`)
@@ -131,7 +131,11 @@ gérer les robots (`Net.autotest != ""`), spectateurs/duel, puis faire son aper�
   `frame_plain` en 9-slice. `UI.ribbon()` = ruban du kit étiré et recoloré.
 - Plateau : menu d'action en barres penchées (↑ ↓), icônes étoile/pièce du kit, badges de rang 1-8.
 - `tools/decoupe_gui.py planche.png dossier` : découpe une planche (vrai alpha, faux damier ou vert #00FF00).
-- Pas encore converti : cartouche joueur du plateau (toujours dessiné), touches du clavier dans l'encart Commandes.
+- v0.27 : encre commune `UI.INK` (contour des textes = contour des panneaux), `UI.text_left`, `UI.key_chip` (touche + légende),
+  `UI.portrait` (visage en rond sur fond clair, utilisé par les cartes joueurs, `stage.gd` et `mg_results`),
+  HUD plateau : `_info_panel` (étoile/banque même taille), touches Tab / 1-6 ; encart Commandes = vraies touches (`stage.gd _keys`).
+- Décor v0.27 : `_grass_patches`, `_ground_details` (touffes, fleurs en prairies), falaises facettées (`_sky_island`),
+  volcan (`_lava_rock`, `_lava_cracks`, fumée/braises), rives (`_shore` : galets, nénuphars), reflets d'eau.
 
 ## À faire / à ne pas oublier
 - Camille veut des mini-jeux **copiés fidèlement** sur les vrais Mario Party (règles, vue, déroulé) : vérifier le vrai jeu avant de l'adapter.
@@ -142,5 +146,5 @@ gérer les robots (`Net.autotest != ""`), spectateurs/duel, puis faire son aper�
   « poupées russes », Le bon cliché, Carrousel hanté, Course aux drapeaux, Abris-sandwichs.
 - Jamais testé avec de vrais joueurs depuis v0.15 : équilibrage du triathlon, de la corde (TAP_CAP 11),
   de la mèche de la bombe, des rochers et du fantôme à vérifier.
-- Petit défaut : en mode test (bots qui rejoignent), les messages « X a rejoint » recouvrent l'encart Commandes.
+- Messages « X a rejoint » : à droite (y=400), ou sur l'aperçu pendant un mini-jeu.
 - Si on change un mini-jeu, refaire son aperçu (`assets/previews/<type>.png`, 1280×720).

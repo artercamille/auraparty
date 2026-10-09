@@ -57,6 +57,7 @@ var gh := 0
 const CELL := 20.0
 var isles: Array = []
 var shop_links: Array = []      # [cabane, case boutique]
+var lava_cracks: Array = []     # fissures de lave du volcan (lueur animée)
 
 
 func _ready() -> void:
@@ -263,6 +264,16 @@ func _mark_ell(c: Vector2, r: Vector2) -> void:
 				grid[gy * gw + gx] = 1
 
 
+## Libre si pas sur un chemin ni sur une case (l'eau et les monuments ne comptent pas).
+func _free_soft(p: Vector2) -> bool:
+	for c in BoardMap.curves:
+		var line: PackedVector2Array = c[0]
+		for i in range(0, line.size(), 3):
+			if line[i].distance_squared_to(p) < 120.0 * 120.0:
+				return false
+	return true
+
+
 func _free(p: Vector2) -> bool:
 	var gx := int(p.x / CELL)
 	var gy := int(p.y / CELL)
@@ -316,12 +327,12 @@ const SPR_H := {"tree": 180.0, "tree_autumn": 180.0, "pine": 210.0, "small_tree"
 	"dead": 160.0, "bush": 52.0, "grass": 44.0, "grass_orange": 44.0, "flower": 34.0, "rock": 48.0, "house": 205.0, "house_small": 95.0}
 const TALL := ["tree", "tree_autumn", "pine", "palm", "dead", "small_tree", "small_autumn", "house"]
 const ZONE_MIX := {
-	"foret": [["tree", 34], ["pine", 30], ["tree_autumn", 14], ["mushroom", 10], ["bush", 12]],
+	"foret": [["tree", 26], ["pine", 24], ["tree_autumn", 20], ["small_autumn", 8], ["small_tree", 6], ["mushroom", 8], ["bush", 8]],
 	"lac": [["tree", 45], ["bush", 35], ["rock", 20]],
 	"nord": [["pine", 65], ["rock", 20], ["small_tree", 15]],
 	"village": [["bush", 40], ["small_tree", 60]],
 	"chateau": [["bush", 50], ["small_tree", 50]],
-	"volcan": [["dead", 40], ["vrock", 60]],
+	"volcan": [["dead", 30], ["vrock", 70]],
 	"plage": [["palm", 70], ["shell", 15], ["starfish", 15]],
 	"prairie": [["tree", 45], ["small_tree", 20], ["bush", 35]],
 }
@@ -457,10 +468,16 @@ func _place_props() -> void:
 		props.append([CASTLE + fl, "banner", 1.0, false])
 	for u in [Vector2(2960, 2100), Vector2(3330, 2110), Vector2(3420, 1640), Vector2(2900, 1700)]:
 		props.append([u * K, "umbrella", 1.0, rng.randf() < 0.5])
-	for r in [Vector2(LAKE_C.x - 300, LAKE_C.y + 40), Vector2(LAKE_C.x + 290, LAKE_C.y - 90)]:
-		_add_spr(r, "grass", "", 1.3)
+	for w in [[LAKE_C, LAKE_R, 9], [POND_C, POND_R, 4], [LAGOON_C, LAGOON_R, 5]]:
+		var wc: Vector2 = w[0]
+		var wr: Vector2 = w[1]
+		for k in int(w[2]):
+			var a := rng.randf() * TAU
+			var q := wc + Vector2(cos(a) * (wr.x + 26.0), sin(a) * (wr.y + 20.0))
+			if _free_soft(q):
+				props.append([q, "reeds" if wc != LAGOON_C else "shell", rng.randf_range(0.9, 1.25), rng.randf() < 0.5])
 
-	var want := {"foret": 120, "lac": 26, "nord": 34, "village": 12, "chateau": 12, "volcan": 30, "plage": 30, "prairie": 90}
+	var want := {"foret": 250, "lac": 26, "nord": 40, "village": 12, "chateau": 12, "volcan": 44, "plage": 30, "prairie": 90}
 	var count := {}
 	for k in want:
 		count[k] = 0
@@ -489,8 +506,8 @@ func _place_props() -> void:
 				continue
 		var small := kind in ["flower", "shell", "starfish", "grass", "grass_orange", "rock"]
 		var min_d := 90.0 if small else 125.0
-		if z == "foret" and kind in ["tree", "pine", "tree_autumn"]:
-			min_d = 95.0
+		if z == "foret" and kind in ["tree", "pine", "tree_autumn", "small_autumn", "small_tree"]:
+			min_d = 66.0
 		var ok := true
 		for q in props:
 			if (q[0] as Vector2).distance_to(p) < min_d:
@@ -502,7 +519,7 @@ func _place_props() -> void:
 			"mushroom", "shell", "starfish", "fence":
 				props.append([p, kind, rng.randf_range(0.85, 1.2), rng.randf() < 0.5])
 			"vrock":
-				_add_spr(p, "rock", "", rng.randf_range(0.9, 1.5), Color("#8a7266"))
+				props.append([p, "lrock", rng.randf_range(0.9, 1.6), rng.randf() < 0.5])
 			"flower":
 				for f in 3:
 					_add_spr(p + Vector2(f * 18 - 18, (f % 2) * 8), "flower", "", rng.randf_range(0.8, 1.1))
@@ -544,59 +561,171 @@ func _draw_clouds() -> void:
 
 # ------------------------------------------------------------------ sol
 func _sky_island(ci: CanvasItem, top: PackedVector2Array, sc: float, big := true) -> void:
+	# Falaise sous l'île : face de terre (strates, rochers), puis roche en pointes facettées.
+	# Lumière venant d'en haut à gauche : faces tournées vers la gauche claires, vers la droite sombres.
+	var r := RandomNumberGenerator.new()
+	r.seed = int(top[0].x * 13.0 + top.size())
 	var xmin := 1e9
 	var xmax := -1e9
 	for p in top:
 		xmin = minf(xmin, p.x)
 		xmax = maxf(xmax, p.x)
-	var cliff_h := 110.0 * sc
-	var n := 70 if big else 24
+	var cliff_h := 120.0 * sc
+	var n := 120 if big else 26
+	var xs := []
 	var raw := []
 	for k in n + 1:
-		raw.append(_bottom_y(top, lerpf(xmin + 6.0, xmax - 6.0, k / float(n))))
+		var x := lerpf(xmin + 6.0, xmax - 6.0, k / float(n))
+		xs.append(x)
+		raw.append(_bottom_y(top, x))
 	var by := []
 	for k in n + 1:
 		var m := -1e9
-		for j in range(maxi(0, k - 4), mini(n, k + 4) + 1):
+		for j in range(maxi(0, k - 3), mini(n, k + 3) + 1):
 			m = maxf(m, float(raw[j]))
 		by.append(m)
-	var depth := 720.0 * sc
-	var under := PackedVector2Array()
+	# profondeur des pointes : grandes pointes irrégulières + petites entre elles
+	var depth := 780.0 * sc
+	var env := []
 	for k in n + 1:
-		under.append(Vector2(lerpf(xmin + 6.0, xmax - 6.0, k / float(n)), float(raw[k]) + cliff_h - 6.0))
-	var tips := PackedVector2Array()
-	for k in range(n, -1, -1):
-		var x := lerpf(xmin + 6.0, xmax - 6.0, k / float(n))
 		var u := k / float(n)
-		var dep: float = depth * pow(sin(u * PI), 0.7) * (0.75 + 0.25 * sin(k * 1.7))
-		tips.append(Vector2(x + sin(k * 2.3) * 10.0, float(by[k]) + cliff_h + dep))
-	var rock := under.duplicate()
-	rock.append_array(tips)
-	_poly(ci, rock, Color("#7d5a3e"), EDGE, 7.0 * sc + 1.0)
-	for f in [0.68, 0.38]:
-		var band := under.duplicate()
-		for k in range(n, -1, -1):
-			var x := lerpf(xmin + 6.0, xmax - 6.0, k / float(n))
-			var u := k / float(n)
-			var dep: float = depth * pow(sin(u * PI), 0.7) * (0.75 + 0.25 * sin(k * 1.7)) * f
-			band.append(Vector2(x, maxf(float(raw[k]) + cliff_h, float(by[k]) + cliff_h + dep - 20.0)))
-		_poly(ci, band, Color("#916a48") if f > 0.5 else Color("#a87c52"), OUT, 0.0)
-	for k in range(2, n - 1, 3):
-		var x := lerpf(xmin, xmax, k / float(n))
-		var y0 := float(by[k]) + cliff_h + depth * pow(sin(k / float(n) * PI), 0.7) * 0.3
-		var ln := 50.0 + fmod(k * 37.0, 110.0) * sc
-		ci.draw_line(Vector2(x, y0), Vector2(x + 6.0, y0 + ln), Color("#72a334"), 6.0 * sc + 1.0)
-		ci.draw_circle(Vector2(x + 6.0, y0 + ln), 8.0 * sc + 2.0, Color("#8cc446"))
+		env.append(pow(sin(u * PI), 0.65))
+	var tip_k := []
+	var k0 := 0
+	while k0 < n:
+		var step := r.randi_range(3, 6) if big else 2
+		k0 += step
+		if k0 < n:
+			tip_k.append(k0)
+	var base_y := func(k: int) -> float: return float(raw[k]) + cliff_h - 6.0
+	var bot := PackedVector2Array()       # contour bas (pointes), de droite à gauche
+	var tips := []                         # [x, y, x0, x1] pour le facettage
+	var last := n
+	bot.append(Vector2(xs[n], base_y.call(n)))
+	for ti in range(tip_k.size() - 1, -1, -1):
+		var k: int = tip_k[ti]
+		var big_tip := r.randf() < 0.35
+		var dep: float = depth * float(env[k]) * (r.randf_range(0.75, 1.05) if big_tip else r.randf_range(0.3, 0.62))
+		var tx := float(xs[k]) + r.randf_range(-12, 12) * sc
+		var ty := float(by[k]) + cliff_h + dep
+		# creux entre deux pointes
+		var mk := int((k + last) / 2)
+		var vy := float(by[mk]) + cliff_h + depth * float(env[mk]) * r.randf_range(0.08, 0.2)
+		bot.append(Vector2(xs[mk], vy))
+		bot.append(Vector2(tx, ty))
+		tips.append([tx, ty, float(xs[mk]), vy])
+		last = k
+	bot.append(Vector2(xs[0], base_y.call(0)))
+	# la roche, découpée en tranches simples (chaque tranche : du dessous de la terre jusqu'à la pointe)
+	var bl := []      # bas de la roche de gauche à droite
+	for i in range(bot.size() - 1, -1, -1):
+		bl.append(bot[i])
+	var under_y := func(x: float) -> float: return _bottom_y(top, x) + cliff_h - 6.0
+	var bottom_at := func(x: float) -> float:
+		for i in range(bl.size() - 1):
+			var p0: Vector2 = bl[i]
+			var p1: Vector2 = bl[i + 1]
+			if x >= p0.x and x <= p1.x:
+				return lerpf(p0.y, p1.y, (x - p0.x) / maxf(0.001, p1.x - p0.x))
+		return -1e9
+	var lit := Color("#a07552")
+	var mid_c := Color("#7e5a3f")
+	var dark := Color("#5b402c")
+	var outline := PackedVector2Array()
+	for i in range(bl.size() - 1):
+		var p0: Vector2 = bl[i]
+		var p1: Vector2 = bl[i + 1]
+		var t0 := Vector2(p0.x, minf(float(under_y.call(p0.x)), p0.y))
+		var t1 := Vector2(p1.x, minf(float(under_y.call(p1.x)), p1.y))
+		var quad := PackedVector2Array([t0, t1, p1, p0])
+		# face qui monte vers la droite = tournée vers la gauche (éclairée)
+		var col := lit if p1.y < p0.y else dark
+		ci.draw_colored_polygon(quad, mid_c)
+		ci.draw_colored_polygon(quad, Color(col, 0.75))
+		# plus sombre vers le bas
+		var mid0 := t0.lerp(p0, 0.55)
+		var mid1 := t1.lerp(p1, 0.55)
+		ci.draw_colored_polygon(PackedVector2Array([mid0, mid1, p1, p0]), Color(0.12, 0.06, 0.03, 0.18))
+		outline.append(p0)
+	outline.append(bl[bl.size() - 1])
+	ci.draw_polyline(outline, EDGE, 7.0 * sc + 1.0, true)
+	# arêtes claires au bout de chaque pointe
+	for tp in tips:
+		var tip := Vector2(float(tp[0]), float(tp[1]))
+		ci.draw_line(tip, tip.lerp(Vector2(tip.x - 4.0, float(under_y.call(tip.x))), 0.5), Color(1, 0.92, 0.8, 0.2), 6.0 * sc)
+	if big:
+		# blocs de roche incrustés
+		for i in 60:
+			var x := r.randf_range(xmin + 60.0, xmax - 60.0)
+			var top_y: float = under_y.call(x)
+			var bot_y: float = bottom_at.call(x)
+			if bot_y < top_y + 90.0:
+				continue
+			var rr := r.randf_range(16, 36) * sc
+			var y := r.randf_range(top_y + rr + 10.0, minf(bot_y - rr * 1.5, top_y + 260.0))
+			if y <= top_y:
+				continue
+			var blob := _blob(Vector2(x, y), Vector2(rr * 1.3, rr), 7, 0.22)
+			_poly(ci, blob, Color("#664833"), Color(0.15, 0.08, 0.05, 0.35), 3.0)
+			ci.draw_colored_polygon(_blob(Vector2(x - rr * 0.25, y - rr * 0.3), Vector2(rr * 0.75, rr * 0.45), 6, 0.2), Color("#94704f"))
+		# lianes et racines qui pendent
+		for i in 34:
+			var x := r.randf_range(xmin + 40.0, xmax - 40.0)
+			var y0: float = float(under_y.call(x)) + 2.0
+			var bot_y2: float = bottom_at.call(x)
+			if bot_y2 < y0 + 60.0:
+				continue
+			var ln := minf(r.randf_range(60, 220) * sc, bot_y2 - y0 - 10.0)
+			var pts := PackedVector2Array()
+			for j in 7:
+				var u := j / 6.0
+				pts.append(Vector2(x + sin(u * 3.0 + x) * 10.0, y0 + ln * u))
+			ci.draw_polyline(pts, Color("#5f9a2c"), 5.0 * sc + 1.0, true)
+			for j in 3:
+				ci.draw_circle(pts[2 + j * 2] + Vector2(6, 0), 6.0 * sc + 1.5, Color("#86c142"))
+			ci.draw_circle(pts[6], 8.0 * sc + 2.0, Color("#86c142"))
+	# face de terre : facettes éclairées selon leur orientation
 	var cliff := PackedVector2Array()
 	for p in top:
 		cliff.append(p + Vector2(0, cliff_h))
-	_poly(ci, cliff, Color("#d98f5a"), EDGE, 7.0 * sc + 1.0)
+	_poly(ci, cliff, Color("#d08a57"), EDGE, 7.0 * sc + 1.0)
+	for i in top.size():
+		var a := top[i]
+		var b := top[(i + 1) % top.size()]
+		var mid := (a + b) / 2.0
+		if Geometry2D.is_point_in_polygon(mid + Vector2(0, 14), top):
+			continue
+		var d := (b - a).normalized()
+		var nrm := Vector2(d.y, -d.x)
+		if Geometry2D.is_point_in_polygon(mid + nrm * 6.0, top):
+			nrm = -nrm
+		var light := -nrm.x * 0.5 + 0.1
+		var col := Color("#e6a06a") if light > 0.0 else Color("#b06c42")
+		var quad := PackedVector2Array([a, b, b + Vector2(0, cliff_h), a + Vector2(0, cliff_h)])
+		ci.draw_colored_polygon(quad, Color(col, clampf(absf(light) * 1.4, 0.0, 0.7)))
 	for k in 2:
-		var bl := PackedVector2Array()
+		var strata := PackedVector2Array()
 		for p in top:
-			bl.append(p + Vector2(0, cliff_h * (0.42 + k * 0.28)))
-		bl.append(bl[0])
-		ci.draw_polyline(bl, Color("#c27a48"), 5.0, true)
+			strata.append(p + Vector2(0, cliff_h * (0.4 + k * 0.3)))
+		strata.append(strata[0])
+		ci.draw_polyline(strata, Color("#b87046"), 5.0 * sc, true)
+	if big:
+		# cailloux et racines dans la terre
+		for i in 120:
+			var x := r.randf_range(xmin, xmax)
+			var y := _bottom_y(top, x)
+			if y < -1e8:
+				continue
+			var q := Vector2(x, y + r.randf_range(0.3, 0.85) * cliff_h)
+			var rr2 := r.randf_range(5, 13)
+			ci.draw_circle(q + Vector2(1, 2), rr2, Color(0.3, 0.15, 0.05, 0.3))
+			ci.draw_circle(q, rr2, Color("#c9b49a") if i % 3 else Color("#a5927e"))
+			ci.draw_circle(q + Vector2(-rr2 * 0.3, -rr2 * 0.3), rr2 * 0.4, Color(1, 1, 1, 0.35))
+	# ombre portée du rebord d'herbe sur la terre
+	var sh := PackedVector2Array()
+	for p in top:
+		sh.append(p + Vector2(0, 22.0 * sc))
+	ci.draw_colored_polygon(sh, Color(0.2, 0.08, 0.02, 0.28))
 	# herbe qui déborde sur la falaise (petites vagues), seulement sur les bords tournés vers nous
 	var acc := 0.0
 	var scal := []
@@ -629,14 +758,18 @@ func _sky_island(ci: CanvasItem, top: PackedVector2Array, sc: float, big := true
 func _draw_ground() -> void:
 	var ci: Node2D = layers["ground"]
 	_sky_island(ci, coast, 1.0)
+	_grass_patches(ci, false)
 	# zones
 	_poly(ci, forest, Color("#84c03c"), OUT, 0.0)
-	_poly(ci, _offset(forest, -30.0), Color("#7ab336"), OUT, 0.0)
+	_poly(ci, _offset(forest, -30.0), Color("#78b235"), OUT, 0.0)
+	_grass_patches(ci, true)
 	_poly(ci, sand, Color("#efd08a"), OUT, 0.0)
 	_poly(ci, _offset(sand, -26.0), Color("#f6dc9e"), OUT, 0.0)
 	_tex_poly(ci, _offset(sand, -26.0), "deco/tex_tile_68", Color(1, 0.97, 0.9, 0.9), 1.6)
-	_poly(ci, ash, Color("#9c8270"), OUT, 0.0)
-	_poly(ci, _offset(ash, -30.0), Color("#8a7060"), OUT, 0.0)
+	_poly(ci, ash, Color("#7e6a60"), OUT, 0.0)
+	_poly(ci, _offset(ash, -30.0), Color("#6c5a52"), OUT, 0.0)
+	_poly(ci, _offset(ash, -120.0), Color("#5f4f49"), OUT, 0.0)
+	_lava_cracks(ci)
 	# champs
 	for f in _fields():
 		_field(ci, f)
@@ -659,6 +792,8 @@ func _draw_ground() -> void:
 	_poly(ci, _ell(LAGOON_C, LAGOON_R + Vector2(56, 46)), Color("#fbe7b4"), Color("#e8c98a"), 4.0)
 	_poly(ci, _ell(LAGOON_C, LAGOON_R), Color("#25c4d8"), Color("#1a95a8"), 7.0)
 	_tex_poly(ci, _ell(LAGOON_C, LAGOON_R - Vector2(4, 4)), "deco/tex_tile_73", Color(0.75, 1.0, 0.98, 0.95), 1.6)
+	_shore(ci, LAKE_C, LAKE_R, 11)
+	_shore(ci, POND_C, POND_R, 4)
 	# ruisseaux
 	for s in streams:
 		var sl: PackedVector2Array = s
@@ -668,13 +803,183 @@ func _draw_ground() -> void:
 	# places
 	_plaza(ci, START, Vector2(200, 112))
 	_plaza(ci, STATUE + Vector2(0, -10), Vector2(170, 96))
+	_ground_details(ci)
 	# chemins
 	for c in BoardMap.curves:
 		_path(ci, c[0], str(c[1]))
 	_bridges(ci)
+	# petites flèches de sens entre les cases (on suit le parcours d'un coup d'œil)
+	for i in BoardMap.count():
+		for j in BoardMap.nodes[i]["next"]:
+			_chevron(ci, BoardMap.pos(i), BoardMap.pos(int(j)))
 	# cases
 	for i in BoardMap.count():
 		draw_space(ci, BoardMap.pos(i), BoardMap.kind(i))
+
+
+## Grandes taches de verts différents (l'herbe n'est plus uniforme).
+func _grass_patches(ci: CanvasItem, in_forest: bool) -> void:
+	var r := RandomNumberGenerator.new()
+	r.seed = 501 if in_forest else 500
+	var greens := [Color("#97d24c"), Color("#b2e566"), Color("#8ccb45"), Color("#a9df5a"), Color("#c0eb76")]
+	var fgreens := [Color("#6ea832"), Color("#86c23e"), Color("#5f9c2c"), Color("#7cb93a")]
+	var n := 120 if in_forest else 420
+	for i in n:
+		var p := Vector2(r.randf_range(0, BoardMap.SIZE.x), r.randf_range(0, BoardMap.SIZE.y))
+		if not Geometry2D.is_point_in_polygon(p, inner):
+			continue
+		var inf := Geometry2D.is_point_in_polygon(p, forest)
+		if inf != in_forest:
+			continue
+		var col: Color = (fgreens[i % fgreens.size()] if in_forest else greens[i % greens.size()])
+		var rad := Vector2(r.randf_range(110, 320), r.randf_range(70, 190))
+		var poly := BoardMap.smooth(Array(_ring(p, rad, 10, 0.28, r)), 4, true)
+		var clip := Geometry2D.intersect_polygons(poly, forest if in_forest else inner)
+		for cp in clip:
+			ci.draw_colored_polygon(cp, Color(col, r.randf_range(0.35, 0.6)))
+
+
+func _ring(c: Vector2, rad: Vector2, n: int, jit: float, r: RandomNumberGenerator) -> PackedVector2Array:
+	var p := PackedVector2Array()
+	for k in n:
+		var a := k * TAU / n
+		p.append(c + Vector2(cos(a) * rad.x, sin(a) * rad.y) * (1.0 + r.randf_range(-jit, jit)))
+	return p
+
+
+## Touffes d'herbe, petites fleurs, trèfles et cailloux, loin du parcours (zones calmes autour des chemins).
+func _ground_details(ci: CanvasItem) -> void:
+	var r := RandomNumberGenerator.new()
+	r.seed = 909
+	var flower_cols := [Color("#ffffff"), Color("#ffe066"), Color("#ff8fb1"), Color("#c49cff"), Color("#ff9a5a"), Color("#7fd0ff")]
+	var tries := 0
+	var placed := 0
+	while tries < 26000 and placed < 2300:
+		tries += 1
+		var p := Vector2(r.randf_range(0, BoardMap.SIZE.x), r.randf_range(0, BoardMap.SIZE.y))
+		if not Geometry2D.is_point_in_polygon(p, inner) or not _free(p):
+			continue
+		var z := zone_at(p)
+		if z == "volcan":
+			# cendres : petits cailloux sombres et fissures
+			if r.randf() < 0.5:
+				ci.draw_circle(p + Vector2(2, 3), r.randf_range(4, 9), Color(0, 0, 0, 0.15))
+				ci.draw_circle(p, r.randf_range(4, 8), Color("#5a4842"))
+			placed += 1
+			continue
+		if z == "plage":
+			if r.randf() < 0.45:
+				ci.draw_circle(p, r.randf_range(2.5, 4.5), Color("#e3bd78"))
+				if r.randf() < 0.2:
+					ci.draw_circle(p + Vector2(8, 3), 3.0, Color("#fff4dc"))
+			placed += 1
+			continue
+		var roll := r.randf()
+		var dark := Color("#5e9d2a") if z == "foret" else Color("#6fae2f")
+		# les fleurs poussent par prairies (pas partout)
+		var meadow := sin(p.x * 0.0021 + 1.3) * cos(p.y * 0.0027 - 0.4) + sin(p.x * 0.0051 + p.y * 0.0033) * 0.35
+		if roll >= 0.55 and roll < 0.8 and meadow < 0.15:
+			roll = r.randf_range(0.0, 0.55) if r.randf() < 0.6 else 0.85
+		if roll < 0.55:
+			# touffe d'herbe (3 à 5 brins)
+			var nb := r.randi_range(3, 5)
+			var h := r.randf_range(12, 22)
+			for b in nb:
+				var a := lerpf(-0.6, 0.6, b / float(nb - 1)) + r.randf_range(-0.1, 0.1)
+				var tip := p + Vector2(sin(a) * h * 0.7, -cos(a) * h)
+				ci.draw_line(p, tip, dark, 3.2)
+			ci.draw_line(p + Vector2(-1, 0), p + Vector2(1, -h * 0.7), Color("#9fdc57"), 2.0)
+		elif roll < 0.8:
+			# petites fleurs (bouquet de 2 à 4)
+			var col: Color = flower_cols[r.randi_range(0, flower_cols.size() - 1)]
+			for f in r.randi_range(2, 4):
+				var q := p + Vector2(r.randf_range(-16, 16), r.randf_range(-8, 8))
+				ci.draw_line(q, q + Vector2(0, 8), dark, 2.0)
+				for k in 5:
+					var a2 := k * TAU / 5.0
+					ci.draw_circle(q + Vector2(cos(a2), sin(a2)) * 3.6, 3.0, col)
+				ci.draw_circle(q, 2.2, Color("#ffb020") if col != Color("#ffe066") else Color("#ff8a2a"))
+		elif roll < 0.92:
+			# trèfles / petites feuilles
+			for k in 3:
+				var a3 := k * TAU / 3.0 - PI / 2.0
+				ci.draw_circle(p + Vector2(cos(a3), sin(a3)) * 5.0, 5.0, Color(dark, 0.7))
+		else:
+			# caillou
+			var rr := r.randf_range(5, 10)
+			ci.draw_circle(p + Vector2(1.5, 2.5), rr, Color(0, 0, 0, 0.14))
+			ci.draw_circle(p, rr, Color("#c9c3b5"))
+			ci.draw_circle(p + Vector2(-rr * 0.3, -rr * 0.35), rr * 0.4, Color(1, 1, 1, 0.5))
+		placed += 1
+	# brins clairs fins (texture d'herbe) un peu partout, même près des chemins mais pas dessus
+	for i in 2600:
+		var p := Vector2(r.randf_range(0, BoardMap.SIZE.x), r.randf_range(0, BoardMap.SIZE.y))
+		if not Geometry2D.is_point_in_polygon(p, inner) or not _free(p):
+			continue
+		var z2 := zone_at(p)
+		if z2 == "volcan" or z2 == "plage":
+			continue
+		var col2 := Color(1, 1, 0.85, 0.22) if i % 2 == 0 else Color(0.2, 0.4, 0.05, 0.14)
+		ci.draw_arc(p, 8.0, PI * 1.15, PI * 1.85, 6, col2, 2.5)
+
+
+## Fissures de lave dans la cendre du volcan (le fond sombre est dessiné ici, la lueur est animée).
+func _lava_cracks(ci: CanvasItem) -> void:
+	var r := RandomNumberGenerator.new()
+	r.seed = 33
+	var inner_ash := _offset(ash, -90.0)
+	lava_cracks.clear()
+	var tries := 0
+	while lava_cracks.size() < 16 and tries < 400:
+		tries += 1
+		var p := Vector2(r.randf_range(0, BoardMap.SIZE.x), r.randf_range(0, BoardMap.SIZE.y))
+		if not Geometry2D.is_point_in_polygon(p, inner_ash) or not _free(p):
+			continue
+		var line := PackedVector2Array([p])
+		var a := r.randf() * TAU
+		for k in r.randi_range(4, 8):
+			a += r.randf_range(-0.9, 0.9)
+			var q := line[line.size() - 1] + Vector2(cos(a), sin(a) * 0.6) * r.randf_range(24, 46)
+			if not Geometry2D.is_point_in_polygon(q, inner_ash) or not _free(q):
+				break
+			line.append(q)
+		if line.size() < 3:
+			continue
+		lava_cracks.append(line)
+		ci.draw_polyline(line, Color("#2e2321"), 11.0, true)
+		ci.draw_polyline(line, Color("#ff6a2b"), 5.0, true)
+
+
+## Rive d'un plan d'eau : sable mouillé, galets et nénuphars.
+func _shore(ci: CanvasItem, c: Vector2, rad: Vector2, pads: int) -> void:
+	var r := RandomNumberGenerator.new()
+	r.seed = int(c.x)
+	var n := int((rad.x + rad.y) * 0.22)
+	for i in n:
+		var a := r.randf() * TAU
+		var d := r.randf_range(1.02, 1.12)
+		var q := c + Vector2(cos(a) * rad.x * d, sin(a) * rad.y * d)
+		var rr := r.randf_range(5, 11)
+		ci.draw_circle(q + Vector2(1.5, 2.5), rr, Color(0, 0, 0, 0.15))
+		ci.draw_circle(q, rr, Color("#cfc8bb") if i % 3 else Color("#aaa196"))
+		ci.draw_circle(q + Vector2(-rr * 0.3, -rr * 0.35), rr * 0.4, Color(1, 1, 1, 0.55))
+	for i in pads:
+		var a := r.randf() * TAU
+		var d := r.randf_range(0.55, 0.85)
+		var q := c + Vector2(cos(a) * rad.x * d, sin(a) * rad.y * d)
+		var rr := r.randf_range(14, 22)
+		var start := r.randf() * TAU
+		var pts := PackedVector2Array([q])
+		for k in 13:
+			var a2 := start + 0.5 + k * (TAU - 1.0) / 12.0
+			pts.append(q + Vector2(cos(a2), sin(a2) * 0.7) * rr)
+		ci.draw_colored_polygon(pts, Color("#4f9a3a"))
+		ci.draw_polyline(pts, Color("#2f6e2a"), 2.0, true)
+		if i % 3 == 0:
+			for k in 5:
+				var a3 := k * TAU / 5.0
+				ci.draw_circle(q + Vector2(cos(a3), sin(a3) * 0.7) * 6.0 + Vector2(0, -3), 4.5, Color("#ff9ac2"))
+			ci.draw_circle(q + Vector2(0, -3), 3.0, Color("#ffe066"))
 
 
 ## Polygone rempli avec une texture qui se répète (eau, sable).
@@ -725,6 +1030,19 @@ func _field(ci: CanvasItem, f: Rect2) -> void:
 			ci.draw_circle(q + Vector2(-2, -3), 4.0, Color("#b1e669"))
 
 
+func _chevron(ci: CanvasItem, a: Vector2, b: Vector2) -> void:
+	if a.distance_to(b) < 150.0:
+		return
+	var d := (b - a).normalized()
+	var nn := Vector2(-d.y, d.x)
+	var m := (a + b) * 0.5
+	for k in 2:
+		var sh := Vector2(0, 3) if k == 0 else Vector2.ZERO
+		var col := Color(0.2, 0.15, 0.1, 0.25) if k == 0 else Color(1, 1, 1, 0.85)
+		var tip := m + d * 9.0 + sh
+		ci.draw_polyline(PackedVector2Array([tip - d * 14.0 + nn * 13.0, tip, tip - d * 14.0 - nn * 13.0]), col, 7.0, true)
+
+
 func _plaza(ci: CanvasItem, c: Vector2, r: Vector2) -> void:
 	_poly(ci, _ell(c, r), Color("#d9cbb0"), Color("#b9a988"), 6.0)
 	var rr := RandomNumberGenerator.new()
@@ -742,11 +1060,11 @@ func _path(ci: CanvasItem, line: PackedVector2Array, zone: String) -> void:
 	var sh := PackedVector2Array()
 	for q in line:
 		sh.append(q + Vector2(0, 10))
-	ci.draw_polyline(sh, Color(0.1, 0.12, 0.05, 0.16), 142.0, true)
-	ci.draw_polyline(line, Color(0.15, 0.17, 0.3, 0.35), 142.0, true)
-	ci.draw_polyline(line, st[0], 136.0, true)
-	ci.draw_polyline(line, st[1], 118.0, true)
-	ci.draw_polyline(line, Color(st[2], 0.8), 54.0, true)
+	ci.draw_polyline(sh, Color(0.1, 0.12, 0.05, 0.2), 156.0, true)
+	ci.draw_polyline(line, Color(0.15, 0.17, 0.3, 0.42), 156.0, true)
+	ci.draw_polyline(line, st[0], 150.0, true)
+	ci.draw_polyline(line, st[1], 130.0, true)
+	ci.draw_polyline(line, Color(st[2], 0.8), 58.0, true)
 	if zone == "plage":
 		# planches discrètes
 		var acc := 0.0
@@ -785,7 +1103,7 @@ func _bridges(ci: CanvasItem) -> void:
 
 
 ## Une case façon Mario Party : socle en pierre, pastille bombée et brillante, symbole en relief.
-static func draw_space(ci: CanvasItem, p: Vector2, ty: String, r := 43.0, flat := false) -> void:
+static func draw_space(ci: CanvasItem, p: Vector2, ty: String, r := 47.0, flat := false) -> void:
 	var col: Color = SPACE_COL.get(ty, SPACE_COL["B"])
 	var s := r / 34.0
 	if ty == "S":
@@ -860,6 +1178,28 @@ func _draw_water() -> void:
 			var al := 0.35 + 0.3 * sin(t * 1.6 + i)
 			ci.draw_arc(p, 18.0, PI * 1.15, PI * 1.85, 8, Color(1, 1, 1, al), 4.0)
 			ci.draw_arc(p + Vector2(30, 6), 13.0, PI * 1.15, PI * 1.85, 8, Color(1, 1, 1, al * 0.8), 3.0)
+	# reflets du ciel qui glissent doucement sur l'eau + petites étincelles
+	for w in [[LAKE_C, LAKE_R], [LAGOON_C, LAGOON_R], [POND_C, POND_R]]:
+		var c2: Vector2 = w[0]
+		var r2: Vector2 = w[1]
+		for i in 3:
+			var off := Vector2(sin(t * 0.25 + i * 2.1) * r2.x * 0.35, (i - 1) * r2.y * 0.38)
+			var wdt := r2.x * (0.42 - i * 0.08)
+			_ellipse(ci, c2 + off, Vector2(wdt, 7.0), Color(1, 1, 1, 0.16 + 0.06 * sin(t * 1.3 + i)))
+		for i in 5:
+			var sp := c2 + Vector2(cos(i * 1.9 + 0.4) * r2.x * 0.6, sin(i * 2.7) * r2.y * 0.55)
+			var tw := maxf(0.0, sin(t * 2.2 + i * 1.7))
+			if tw > 0.1:
+				ci.draw_line(sp - Vector2(9, 0) * tw, sp + Vector2(9, 0) * tw, Color(1, 1, 1, tw), 3.0)
+				ci.draw_line(sp - Vector2(0, 9) * tw, sp + Vector2(0, 9) * tw, Color(1, 1, 1, tw), 3.0)
+	# fissures de lave qui palpitent
+	for i in lava_cracks.size():
+		var gl := 0.45 + 0.45 * sin(t * 2.4 + i * 0.9)
+		ci.draw_polyline(lava_cracks[i], Color(1.0, 0.5, 0.15, 0.25 * gl), 16.0, true)
+		ci.draw_polyline(lava_cracks[i], Color(1.0, 0.85, 0.3, gl), 2.5, true)
+	# halo autour du bassin de lave
+	for k in 3:
+		_ellipse(ci, LAVA_C, Vector2(150, 92) + Vector2(30, 18) * k, Color(1.0, 0.45, 0.1, (0.12 - k * 0.035) * (0.8 + 0.2 * sin(t * 2.0))))
 	# lave qui bouillonne
 	var g := 0.5 + 0.5 * sin(t * 2.0)
 	_ellipse(ci, LAVA_C, Vector2(78, 42), Color("#ff8a2a").lerp(Color("#ffd23f"), g * 0.6))
@@ -894,11 +1234,19 @@ func _draw_water() -> void:
 func _draw_top() -> void:
 	var ci: Node2D = layers["top"]
 	var top := VOLCANO + Vector2(0, -430)
-	for k in 7:
-		var u := fposmod(t * 0.12 + k / 7.0, 1.0)
-		var p := top + Vector2(sin(u * 5.0 + k) * 40.0 + u * 120.0, -u * 520.0)
-		var r := 30.0 + u * 90.0
-		ci.draw_circle(p, r, Color(0.45, 0.42, 0.45, 0.42 * (1.0 - u)))
+	for k in 12:
+		var u := fposmod(t * 0.1 + k / 12.0, 1.0)
+		var p := top + Vector2(sin(u * 5.0 + k) * 46.0 + u * 150.0, -u * 600.0)
+		var r := 34.0 + u * 110.0
+		ci.draw_circle(p + Vector2(8, 10), r, Color(0.3, 0.27, 0.3, 0.25 * (1.0 - u)))
+		ci.draw_circle(p, r, Color(0.55, 0.52, 0.55, 0.38 * (1.0 - u)))
+		ci.draw_circle(p + Vector2(-r * 0.3, -r * 0.3), r * 0.5, Color(0.75, 0.72, 0.75, 0.25 * (1.0 - u)))
+	# braises qui s'échappent du cratère et du bassin
+	for k in 16:
+		var u2 := fposmod(t * 0.35 + k * 0.137, 1.0)
+		var src := top if k % 3 != 0 else LAVA_C
+		var ep := src + Vector2(sin(k * 7.3 + u2 * 4.0) * (60.0 + u2 * 60.0), -u2 * (320.0 if k % 3 != 0 else 160.0))
+		ci.draw_circle(ep, 6.0 * (1.0 - u2) + 2.0, Color(1.0, 0.6 + 0.3 * (1.0 - u2), 0.2, 1.0 - u2))
 	ci.draw_circle(top + Vector2(0, 8), 34.0 + 6.0 * sin(t * 3.0), Color(1.0, 0.55, 0.15, 0.35))
 	for pr in props:
 		if pr[1] == "windmill":
@@ -933,6 +1281,10 @@ func _draw_props() -> void:
 				_starfish(ci, p, s)
 			"mushroom":
 				_mushroom(ci, p, s)
+			"reeds":
+				_reeds(ci, p, s * 1.3)
+			"lrock":
+				_lava_rock(ci, p, s)
 			"fence":
 				_spr(ci, "deco/fence", p, 0.42 * s, fl, Color.WHITE, 30.0)
 			"lamp":
@@ -1053,6 +1405,33 @@ func _rock(ci: CanvasItem, p: Vector2, s: float, col: Color, lava := false) -> v
 	ci.draw_colored_polygon(PackedVector2Array([p + Vector2(-22, -24) * s, p + Vector2(-6, -34) * s, p + Vector2(8, -28) * s, p + Vector2(-12, -18) * s]), col.lightened(0.2))
 	if lava:
 		ci.draw_polyline(PackedVector2Array([p + Vector2(-14, -4) * s, p + Vector2(-4, -18) * s, p + Vector2(6, -14) * s, p + Vector2(16, -28) * s]), Color("#ff7b2e"), 3.0 * s + 1.0)
+
+
+## Roche volcanique : forme différente à chaque fois, parfois un petit rocher à côté, rarement une fissure de lave.
+func _lava_rock(ci: CanvasItem, p: Vector2, s: float) -> void:
+	var r := RandomNumberGenerator.new()
+	r.seed = int(p.x * 7.0 + p.y * 13.0)
+	var parts := [[p, s]]
+	if r.randf() < 0.55:
+		parts.append([p + Vector2(r.randf_range(30, 46) * (1 if r.randf() < 0.5 else -1), r.randf_range(4, 12)) * 1.0, s * r.randf_range(0.4, 0.6)])
+	for pr in parts:
+		var c: Vector2 = pr[0]
+		var k: float = pr[1]
+		_shadow(ci, c, 34.0 * k)
+		var n := r.randi_range(5, 7)
+		var poly := PackedVector2Array([c + Vector2(-32, 0) * k])
+		for i in n:
+			var a := PI + PI * (i + 0.5) / float(n)
+			var rad := r.randf_range(24, 38)
+			poly.append(c + Vector2(cos(a) * 34.0, sin(a) * rad * r.randf_range(0.9, 1.25)) * k)
+		poly.append(c + Vector2(32, 0) * k)
+		var col := Color("#4c3d3a").lerp(Color("#5d4943"), r.randf())
+		_poly(ci, poly, col, OUT, 5.0)
+		# face éclairée (à gauche) et arête claire
+		var lit := PackedVector2Array([c + Vector2(-26, -4) * k, poly[1].lerp(c, 0.18), poly[2].lerp(c, 0.18), c + Vector2(-4, -8) * k])
+		ci.draw_colored_polygon(lit, col.lightened(0.18))
+		if r.randf() < 0.3 and k > 1.0:
+			ci.draw_polyline(PackedVector2Array([c + Vector2(-10, -3) * k, c + Vector2(-2, -14) * k, c + Vector2(8, -12) * k, c + Vector2(14, -22) * k]), Color("#ff7b2e"), 3.0 * k + 1.0)
 
 
 func _shell(ci: CanvasItem, p: Vector2, s: float) -> void:
@@ -1290,8 +1669,8 @@ func _volcano(ci: CanvasItem, p: Vector2) -> void:
 	_ellipse(ci, p + Vector2(0, -h), Vector2(tw, 18), Color("#ff6a2b"))
 	_ellipse(ci, p + Vector2(0, -h + 2), Vector2(tw - 26, 10), Color("#ffd23f"))
 	for k in 5:
-		var rp := p + Vector2(-w * 0.75 + k * 120.0, -10.0 - (k % 2) * 16.0)
-		_rock(ci, rp, 0.9, Color("#5c4e4a"), true)
+		var rp := p + Vector2(-w * 0.75 + k * 120.0 + (k * 37) % 30, -6.0 - (k % 2) * 18.0)
+		_lava_rock(ci, rp, 0.7 + (k % 3) * 0.2)
 
 
 func _statue(ci: CanvasItem, p: Vector2) -> void:
