@@ -1,4 +1,4 @@
-AURA PARTY - v0.25 (nouvelle interface, 20 mini-jeux dont 2 jeux COOP)
+AURA PARTY - v0.26 (nouvelle île plus grande, persos détourés, 20 mini-jeux)
 ==========================================
 Jusqu'à 8 joueurs, chacun sur son PC.
 Tout le monde doit avoir CETTE version du jeu (sinon la connexion est refusée).

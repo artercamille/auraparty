@@ -3,19 +3,25 @@ extends Node2D
 ## Presque tout est dessiné une seule fois ; l'eau, la lave, la fumée et les nuages bougent.
 
 const OUT := Color(0.16, 0.2, 0.12, 0.16)   # bord très doux (style pastel, sans contour)
-const LAKE_C := Vector2(820, 750)
-const LAKE_R := Vector2(300, 225)
-const CASTLE := Vector2(1520, 800)      # pied du château
-const VOLCANO := Vector2(3080, 900)     # pied du volcan
-const LAGOON_C := Vector2(3120, 1820)
-const LAGOON_R := Vector2(285, 215)
-const POND_C := Vector2(770, 1910)
-const POND_R := Vector2(150, 98)
-const LAVA_C := Vector2(2790, 1170)
-const STATUE := Vector2(2060, 1660)
-const SHOP := Vector2(1705, 2578)
-const BANK := Vector2(1660, 2070)
-const TOLL := Vector2(790, 1195)
+const EDGE := Color(0.17, 0.2, 0.33, 0.5)   # contour bleu nuit de l'île (style du kit d'interface)
+# positions en coordonnées « non agrandies », multipliées par K (BoardMap.K) ; les tailles des
+# bâtiments et du décor ne changent pas, seules les distances grandissent.
+const K := BoardMap.K
+const LAKE_C := Vector2(820, 750) * K
+const LAKE_R := Vector2(300, 225) * K
+const CASTLE := Vector2(1520, 800) * K      # pied du château
+const VOLCANO := Vector2(3080, 900) * K     # pied du volcan
+const LAGOON_C := Vector2(3120, 1820) * K
+const LAGOON_R := Vector2(285, 215) * K
+const POND_C := Vector2(770, 1910) * K
+const POND_R := Vector2(150, 98) * K
+const LAVA_C := VOLCANO + Vector2(-290, 270)
+const LAVA_MID := VOLCANO + Vector2(-200, 110)
+const STATUE := Vector2(2060, 1660) * K
+const SHOP := Vector2(1705, 2578) * K
+const BANK := Vector2(1660, 2070) * K
+const TOLL := Vector2(790, 1195) * K
+const START := Vector2(1953, 2290) * K
 
 # chemins : [bord, remplissage, milieu] — clairs et bien contrastés pour qu'on les lise d'un coup d'œil
 const PATH_STYLE := {
@@ -70,19 +76,22 @@ func _ready() -> void:
 	(layers["water"] as Node2D).draw.connect(_draw_water)
 	(layers["props"] as Node2D).draw.connect(_draw_props)
 	(layers["top"] as Node2D).draw.connect(_draw_top)
-	ash = _clip(_blob(Vector2(3170, 760), Vector2(720, 600), 22, 0.08))
-	sand = _clip(_blob(Vector2(3260, 1980), Vector2(760, 620), 22, 0.08))
-	forest = _clip(_blob(Vector2(720, 1880), Vector2(600, 560), 22, 0.1))
-	var s1 := [Vector2(880, 950), Vector2(945, 1170), Vector2(990, 1330), Vector2(1015, 1470), Vector2(935, 1650), Vector2(820, 1830)]
-	var s2 := [Vector2(745, 1990), Vector2(705, 2200), Vector2(692, 2400)]
-	var s3 := [Vector2(3150, 2020), Vector2(3165, 2250), Vector2(3175, 2450)]
-	for x in [692.0, 3175.0]:
+	ash = _clip(_blob(Vector2(3170, 760) * K, Vector2(720, 600) * K, 22, 0.08))
+	sand = _clip(_blob(Vector2(3260, 1980) * K, Vector2(780, 640) * K, 22, 0.08))
+	forest = _clip(_blob(Vector2(720, 1880) * K, Vector2(600, 560) * K, 22, 0.1))
+	var s1 := []
+	for q in [Vector2(880, 950), Vector2(945, 1170), Vector2(990, 1330), Vector2(1015, 1470), Vector2(935, 1650), Vector2(820, 1830)]:
+		s1.append(q * K)
+	var s2 := [Vector2(745, 1990) * K, Vector2(705, 2200) * K, Vector2(692, 2400) * K]
+	var s3 := [Vector2(3150, 2020) * K, Vector2(3165, 2250) * K, Vector2(3175, 2450) * K]
+	for x in [692.0 * K, 3175.0 * K]:
 		var by := _bottom_y(coast, x)
 		falls.append([x, by])
-		(s2 if x < 1000.0 else s3).append(Vector2(x, by + 40.0))
+		(s2 if x < 1000.0 * K else s3).append(Vector2(x, by + 40.0))
 	for s in [s1, s2, s3]:
 		streams.append(BoardMap.smooth(s, 10))
-	isles = [[Vector2(-330, 520), 190.0], [Vector2(4330, 820), 210.0], [Vector2(4270, 2280), 150.0], [Vector2(-280, 2050), 160.0], [Vector2(2000, -330), 140.0]]
+	isles = [[Vector2(-520, 600), 200.0], [Vector2(5650, 900), 220.0], [Vector2(5600, 2950), 160.0], [Vector2(-470, 2600), 170.0], [Vector2(3300, -760), 150.0],
+		[Vector2(5350, 1650), 110.0], [Vector2(-300, 1650), 100.0]]
 	_preload_textures()
 	_add_statue_sprite()
 	_build_grid()
@@ -213,9 +222,9 @@ func _build_grid() -> void:
 	for c in BoardMap.curves:
 		var line: PackedVector2Array = c[0]
 		for i in line.size():
-			_mark(line[i], 135.0)
+			_mark(line[i], 150.0)
 	for i in BoardMap.count():
-		_mark(BoardMap.pos(i), 150.0)
+		_mark(BoardMap.pos(i), 165.0)
 	for s in streams:
 		var sl: PackedVector2Array = s
 		for p in sl:
@@ -229,7 +238,7 @@ func _build_grid() -> void:
 	_mark_ell(STATUE, Vector2(190, 120))
 	_mark_ell(SHOP + Vector2(0, -50), Vector2(150, 90))
 	_mark_ell(BANK + Vector2(0, -60), Vector2(140, 100))
-	_mark_ell(Vector2(1953, 2290), Vector2(180, 130))
+	_mark_ell(START, Vector2(180, 130))
 	_mark_ell(TOLL, Vector2(60, 60))
 	for f in _fields():
 		var r: Rect2 = f
@@ -263,7 +272,8 @@ func _free(p: Vector2) -> bool:
 
 
 func _fields() -> Array:
-	return [Rect2(1420, 1440, 300, 170), Rect2(2230, 1230, 280, 160)]
+	return [Rect2(Vector2(1420, 1440) * K, Vector2(300, 170)), Rect2(Vector2(2230, 1230) * K, Vector2(280, 160)),
+		Rect2(Vector2(1300, 1620) * K, Vector2(220, 130))]
 
 
 func zone_at(p: Vector2) -> String:
@@ -271,13 +281,13 @@ func zone_at(p: Vector2) -> String:
 		return "volcan"
 	if Geometry2D.is_point_in_polygon(p, sand):
 		return "plage"
-	if Geometry2D.is_point_in_polygon(p, forest) or (p.x < 330.0 and p.y > 1100.0):
+	if Geometry2D.is_point_in_polygon(p, forest) or (p.x < 330.0 * K and p.y > 1100.0 * K):
 		return "foret"
 	if _in_ell(p, LAKE_C, LAKE_R * 1.9):
 		return "lac"
-	if p.y < 330.0:
+	if p.y < 330.0 * K:
 		return "nord"
-	if p.y > 1980.0 and p.x > 1300.0 and p.x < 2750.0:
+	if p.y > 1980.0 * K and p.x > 1300.0 * K and p.x < 2750.0 * K:
 		return "village"
 	if _in_ell(p, CASTLE + Vector2(0, -80), Vector2(520, 420)):
 		return "chateau"
@@ -429,28 +439,28 @@ func _place_props() -> void:
 	_place_shops()
 	props.append([BANK, "bank", 1.0, false])
 	props.append([TOLL, "toll", 1.0, false])
-	props.append([Vector2(1953, 2236), "start_arch", 1.0, false])
-	props.append([Vector2(3790, 2300), "lighthouse", 1.0, false])
-	props.append([Vector2(1880, 1480), "windmill", 1.15, false])
+	props.append([START + Vector2(0, -54), "start_arch", 1.0, false])
+	props.append([Vector2(3860, 2350) * K, "lighthouse", 1.0, false])
+	props.append([Vector2(1880, 1480) * K, "windmill", 1.15, false])
 	props.append([Vector2(LAKE_C.x + 90, LAKE_C.y + 20), "boat", 1.0, false])
 	props.append([Vector2(LAGOON_C.x - 120, LAGOON_C.y + 60), "boat", 0.8, true])
 	var houses := ["deco/houseAlt1", "deco/house1", "deco/houseAlt2", "deco/house2", "deco/houseAlt1", "deco/house2", "deco/houseAlt2", "deco/house1"]
 	var hp := [Vector2(1450, 2560), Vector2(2000, 2090), Vector2(2190, 2115), Vector2(2380, 2150), Vector2(1985, 2595), Vector2(2215, 2600),
 		Vector2(2445, 2585), Vector2(1280, 2505)]
 	for i in hp.size():
-		_add_spr(hp[i], "house", houses[i], 0.95 if i % 3 == 0 else 1.0, Color.WHITE, i % 2)
+		_add_spr(hp[i] * K, "house", houses[i], 0.95 if i % 3 == 0 else 1.0, Color.WHITE, i % 2)
 	for lp in [Vector2(1860, 2160), Vector2(2080, 2180)]:
-		props.append([lp, "lamp", 1.0, false])
+		props.append([lp * K, "lamp", 1.0, false])
 	for b in [Vector2(1845, 2560), Vector2(1575, 2585)]:
-		props.append([b, "crate", 1.0, rng.randf() < 0.5])
-	for fl in [Vector2(1250, 700), Vector2(1790, 700), Vector2(1330, 990), Vector2(1720, 990)]:
-		props.append([fl, "banner", 1.0, false])
-	for u in [Vector2(2960, 2100), Vector2(3330, 2110), Vector2(3420, 1640)]:
-		props.append([u, "umbrella", 1.0, rng.randf() < 0.5])
+		props.append([b * K, "crate", 1.0, rng.randf() < 0.5])
+	for fl in [Vector2(-270, -100), Vector2(270, -100), Vector2(-190, 190), Vector2(200, 190)]:
+		props.append([CASTLE + fl, "banner", 1.0, false])
+	for u in [Vector2(2960, 2100), Vector2(3330, 2110), Vector2(3420, 1640), Vector2(2900, 1700)]:
+		props.append([u * K, "umbrella", 1.0, rng.randf() < 0.5])
 	for r in [Vector2(LAKE_C.x - 300, LAKE_C.y + 40), Vector2(LAKE_C.x + 290, LAKE_C.y - 90)]:
 		_add_spr(r, "grass", "", 1.3)
 
-	var want := {"foret": 75, "lac": 14, "nord": 18, "village": 6, "chateau": 6, "volcan": 18, "plage": 18, "prairie": 46}
+	var want := {"foret": 120, "lac": 26, "nord": 34, "village": 12, "chateau": 12, "volcan": 30, "plage": 30, "prairie": 90}
 	var count := {}
 	for k in want:
 		count[k] = 0
@@ -562,7 +572,7 @@ func _sky_island(ci: CanvasItem, top: PackedVector2Array, sc: float, big := true
 		tips.append(Vector2(x + sin(k * 2.3) * 10.0, float(by[k]) + cliff_h + dep))
 	var rock := under.duplicate()
 	rock.append_array(tips)
-	_poly(ci, rock, Color("#7d5a3e"), OUT, 8.0)
+	_poly(ci, rock, Color("#7d5a3e"), EDGE, 7.0 * sc + 1.0)
 	for f in [0.68, 0.38]:
 		var band := under.duplicate()
 		for k in range(n, -1, -1):
@@ -580,14 +590,35 @@ func _sky_island(ci: CanvasItem, top: PackedVector2Array, sc: float, big := true
 	var cliff := PackedVector2Array()
 	for p in top:
 		cliff.append(p + Vector2(0, cliff_h))
-	_poly(ci, cliff, Color("#d98f5a"), OUT, 8.0)
+	_poly(ci, cliff, Color("#d98f5a"), EDGE, 7.0 * sc + 1.0)
 	for k in 2:
 		var bl := PackedVector2Array()
 		for p in top:
 			bl.append(p + Vector2(0, cliff_h * (0.42 + k * 0.28)))
 		bl.append(bl[0])
 		ci.draw_polyline(bl, Color("#c27a48"), 5.0, true)
-	_poly(ci, top, Color("#a3db57"), OUT, 8.0)
+	# herbe qui déborde sur la falaise (petites vagues), seulement sur les bords tournés vers nous
+	var acc := 0.0
+	var scal := []
+	for i in top.size():
+		var a := top[i]
+		var b := top[(i + 1) % top.size()]
+		var seg := a.distance_to(b)
+		var d := (b - a) / maxf(0.001, seg)
+		var pos := 0.0
+		while acc + (seg - pos) >= 44.0 * sc:
+			pos += 44.0 * sc - acc
+			acc = 0.0
+			var q := a + d * pos
+			if not Geometry2D.is_point_in_polygon(q + Vector2(0, 24), top):
+				scal.append(q)
+		acc += seg - pos
+	for q in scal:
+		ci.draw_circle(q + Vector2(0, 10) * sc, 25.0 * sc, EDGE)
+	for q in scal:
+		ci.draw_circle(q + Vector2(0, 8) * sc, 21.0 * sc, Color("#86c142"))
+	_poly(ci, top, Color("#a3db57"), OUT, 0.0)
+	ci.draw_polyline(_closed(top), EDGE, 7.0 * sc + 1.0, true)
 	if not big:
 		return
 	var hi := _offset(top, -18.0)
@@ -615,8 +646,8 @@ func _draw_ground() -> void:
 	_poly(ci, _ell(CASTLE + Vector2(0, -90), Vector2(300, 205)), Color("#aadc63"), Color("#88ba44"), 6.0)
 	_poly(ci, _ell(CASTLE + Vector2(0, -95), Vector2(250, 165)), Color("#d8d2c6"), Color("#b8b0a2"), 6.0)
 	# volcan : coulée et bassin de lave
-	ci.draw_polyline(PackedVector2Array([VOLCANO + Vector2(-110, -60), Vector2(2880, 1010), LAVA_C]), OUT, 54.0, true)
-	ci.draw_polyline(PackedVector2Array([VOLCANO + Vector2(-110, -60), Vector2(2880, 1010), LAVA_C]), Color("#e8531f"), 42.0, true)
+	ci.draw_polyline(PackedVector2Array([VOLCANO + Vector2(-110, -60), LAVA_MID, LAVA_C]), OUT, 54.0, true)
+	ci.draw_polyline(PackedVector2Array([VOLCANO + Vector2(-110, -60), LAVA_MID, LAVA_C]), Color("#e8531f"), 42.0, true)
 	_poly(ci, _ell(LAVA_C, Vector2(105, 62)), Color("#e8531f"), OUT, 7.0)
 	# eau : lac, étang, lagon (sable autour)
 	_poly(ci, _ell(LAKE_C, LAKE_R + Vector2(34, 30)), Color("#f2dfb0"), Color("#d9bf86"), 5.0)
@@ -635,7 +666,7 @@ func _draw_ground() -> void:
 		ci.draw_polyline(sl, Color("#4fb4f0"), 58.0, true)
 		ci.draw_polyline(sl, Color("#8fd6fb"), 22.0, true)
 	# places
-	_plaza(ci, Vector2(1953, 2290), Vector2(200, 112))
+	_plaza(ci, START, Vector2(200, 112))
 	_plaza(ci, STATUE + Vector2(0, -10), Vector2(170, 96))
 	# chemins
 	for c in BoardMap.curves:
@@ -711,10 +742,11 @@ func _path(ci: CanvasItem, line: PackedVector2Array, zone: String) -> void:
 	var sh := PackedVector2Array()
 	for q in line:
 		sh.append(q + Vector2(0, 10))
-	ci.draw_polyline(sh, Color(0.1, 0.12, 0.05, 0.16), 124.0, true)
-	ci.draw_polyline(line, st[0], 118.0, true)
-	ci.draw_polyline(line, st[1], 100.0, true)
-	ci.draw_polyline(line, Color(st[2], 0.8), 46.0, true)
+	ci.draw_polyline(sh, Color(0.1, 0.12, 0.05, 0.16), 142.0, true)
+	ci.draw_polyline(line, Color(0.15, 0.17, 0.3, 0.35), 142.0, true)
+	ci.draw_polyline(line, st[0], 136.0, true)
+	ci.draw_polyline(line, st[1], 118.0, true)
+	ci.draw_polyline(line, Color(st[2], 0.8), 54.0, true)
 	if zone == "plage":
 		# planches discrètes
 		var acc := 0.0
@@ -740,7 +772,7 @@ func _bridges(ci: CanvasItem) -> void:
 			var sl: PackedVector2Array = s
 			for i in range(0, line.size() - 1):
 				var p := line[i]
-				if _dist_line(p, sl) > 52.0:
+				if _dist_line(p, sl) > 60.0:
 					continue
 				var d := (line[i + 1] - p).normalized()
 				var nn := Vector2(-d.y, d.x)
@@ -753,7 +785,7 @@ func _bridges(ci: CanvasItem) -> void:
 
 
 ## Une case façon Mario Party : socle en pierre, pastille bombée et brillante, symbole en relief.
-static func draw_space(ci: CanvasItem, p: Vector2, ty: String, r := 37.0, flat := false) -> void:
+static func draw_space(ci: CanvasItem, p: Vector2, ty: String, r := 43.0, flat := false) -> void:
 	var col: Color = SPACE_COL.get(ty, SPACE_COL["B"])
 	var s := r / 34.0
 	if ty == "S":
@@ -766,6 +798,7 @@ static func draw_space(ci: CanvasItem, p: Vector2, ty: String, r := 37.0, flat :
 		_e(ci, p + Vector2(0, 4) * s, Vector2(r + 10.0 * s, r + 7.0 * s), Color("#ece6da"))
 		ci.draw_circle(p + Vector2(0, 7) * s, r + 4.0 * s, col.darkened(0.45))
 		ci.draw_circle(p + Vector2(0, 7) * s, r, col.darkened(0.35))
+	ci.draw_circle(p, r + 6.5 * s, Color(0.15, 0.17, 0.3, 0.55) if not flat else col.darkened(0.45))
 	ci.draw_circle(p, r + 4.0 * s, col.darkened(0.28))
 	ci.draw_circle(p, r, col)
 	ci.draw_circle(p + Vector2(0, -3) * s, r - 5.0 * s, col.lightened(0.12))
@@ -835,7 +868,7 @@ func _draw_water() -> void:
 		var br := 6.0 + 5.0 * absf(sin(t * 2.5 + k))
 		ci.draw_circle(bp, br + 2.0, Color("#c8401a"))
 		ci.draw_circle(bp, br, Color("#ffd23f"))
-	var flow := PackedVector2Array([VOLCANO + Vector2(-110, -60), Vector2(2880, 1010), LAVA_C])
+	var flow := PackedVector2Array([VOLCANO + Vector2(-110, -60), LAVA_MID, LAVA_C])
 	for k in 6:
 		var u := fposmod(t * 0.25 + k / 6.0, 1.0)
 		var q := flow[0].lerp(flow[1], u * 2.0) if u < 0.5 else flow[1].lerp(flow[2], (u - 0.5) * 2.0)

@@ -6,7 +6,9 @@ extends RefCounted
 ## I objet, D duel, T piège, K banque, H boutique, P tuyau (téléporte vers l'autre tuyau), S départ,
 ## W Roi Grognon (malus), G fantôme (vole des pièces ou une étoile).
 
-const SIZE := Vector2(4000, 2700)
+## Échelle du plateau : les positions ci-dessous sont multipliées par K (île plus grande et plus aérée).
+const K := 1.25
+const SIZE := Vector2(4000, 2700) * K
 
 # carrefours : nom -> [position, type, zone]
 const JUNCTIONS := {
@@ -39,10 +41,18 @@ const SEGMENTS := [
 const ZONE_NAMES := {"village": "Village", "foret": "Forêt", "lac": "Lac", "chateau": "Château", "volcan": "Volcan", "plage": "Plage"}
 
 # île : contour (lissé ensuite)
-const COAST := [Vector2(120, 230), Vector2(700, 60), Vector2(1450, 110), Vector2(2150, 50), Vector2(2900, 60),
-	Vector2(3500, 150), Vector2(3900, 420), Vector2(3960, 950), Vector2(3830, 1420), Vector2(3950, 1950),
-	Vector2(3780, 2430), Vector2(3150, 2620), Vector2(2500, 2560), Vector2(1850, 2650), Vector2(1150, 2590),
-	Vector2(520, 2520), Vector2(150, 2080), Vector2(60, 1350), Vector2(80, 700)]
+const COAST := [Vector2(5210, 3096), Vector2(5080, 3196), Vector2(4872, 3235), Vector2(4704, 3213), Vector2(4520, 3119), Vector2(4424, 3100),
+	Vector2(3952, 3161), Vector2(3512, 3105), Vector2(3288, 3164), Vector2(3048, 3316), Vector2(2880, 3378), Vector2(2384, 3430),
+	Vector2(2016, 3396), Vector2(1840, 3332), Vector2(1680, 3237), Vector2(1480, 3189), Vector2(1040, 3227), Vector2(848, 3190),
+	Vector2(672, 3118), Vector2(480, 2986), Vector2(321, 2816), Vector2(205, 2616), Vector2(134, 2392), Vector2(122, 2192),
+	Vector2(169, 1952), Vector2(212, 1888), Vector2(387, 1752), Vector2(432, 1648), Vector2(381, 1536), Vector2(164, 1368),
+	Vector2(93, 1168), Vector2(62, 992), Vector2(66, 816), Vector2(99, 648), Vector2(161, 496), Vector2(296, 311),
+	Vector2(472, 174), Vector2(704, 71), Vector2(968, 17), Vector2(1520, 46), Vector2(2048, 13), Vector2(2528, 34),
+	Vector2(2792, 86), Vector2(3040, 244), Vector2(3208, 285), Vector2(3395, 248), Vector2(3616, 92), Vector2(3728, 62),
+	Vector2(4043, 80), Vector2(4232, 123), Vector2(4360, 179), Vector2(4532, 288), Vector2(4696, 449), Vector2(4837, 736),
+	Vector2(4875, 984), Vector2(4845, 1152), Vector2(4774, 1296), Vector2(4712, 1342), Vector2(4573, 1392), Vector2(4311, 1624),
+	Vector2(4502, 1800), Vector2(4600, 1923), Vector2(4728, 1975), Vector2(4776, 2021), Vector2(4833, 2208), Vector2(4864, 2541),
+	Vector2(5004, 2792), Vector2(5211, 2952), Vector2(5231, 3024)]
 
 static var nodes: Array = []      # {pos, type, zone, next, cost, seg}
 static var curves: Array = []     # [polyline lissée, zone, nom] par chemin
@@ -56,13 +66,14 @@ static func build() -> void:
 	for k in J_ORDER:
 		var j: Array = JUNCTIONS[k]
 		jid[k] = nodes.size()
-		nodes.append({"pos": j[0], "type": j[1], "zone": j[2], "next": [], "cost": {}, "seg": -1})
+		nodes.append({"pos": (j[0] as Vector2) * K, "type": j[1], "zone": j[2], "next": [], "cost": {}, "seg": -1})
 	for si in SEGMENTS.size():
 		var sg: Array = SEGMENTS[si]
 		var a: int = jid[sg[0]]
 		var b: int = jid[sg[1]]
 		var pts: Array = [nodes[a]["pos"]]
-		pts.append_array(sg[3])
+		for q in sg[3]:
+			pts.append((q as Vector2) * K)
 		pts.append(nodes[b]["pos"])
 		var c := smooth(pts, 24)
 		curves.append([c, sg[2], sg[6]])

@@ -1,4 +1,4 @@
-# Aura PARTY — état du projet (v0.25)
+# Aura PARTY — état du projet (v0.26)
 
 Party game 2D façon Mario Party, Godot 4.3 (GL Compatibility), GDScript, 2 à 8 joueurs en ligne
 (ENet UDP 7777, via Radmin VPN). Export Windows .exe. L'utilisateur (Camille) ne code pas : réponses
@@ -50,6 +50,9 @@ Bloc caché : 6 % sur B/R (pièces / objet / étoile). Rochers-péages à l'entr
 (segments 2 et 9) : prix 5, +5 par passage (max 30), `Game.rocks`. Étoile 20 pièces.
 Début de partie : « Qui commence ? » (blocs). Parties de 10 tours ou plus : « Plus que 5 tours ! » (+10 pièces au dernier).
 Stats suivies dans `players[id]` : coins_won, mg_wins, reds, steps, used.
+**Échelle** : `BoardMap.K = 1.25` multiplie toutes les positions (JUNCTIONS, SEGMENTS écrits en coordonnées « non agrandies ») ; dans `island.gd` les positions absolues sont `Vector2(...) * K` mais les tailles des bâtiments/décors et les décalages autour d'un sprite (château, volcan) ne sont PAS multipliés. `SIZE` = 5000x3375.
+**Côte** : `BoardMap.COAST` est générée par `tools/gen_coast.py` (épouse chemins + lieux, criques BAYS, cap du phare, bruit) → relancer le script si on bouge un chemin ou un lieu.
+Cases r=43, chemins 136 px, pions `TOKEN_SCALE` 0.42 ; carte (Tab) `MAP_ZOOM` 0.152 + `MAP_OFS` (île à droite de la légende, cartouches cachés).
 Étoile gagnée (achat, bloc caché, fantôme) : grande animation plein écran `board.gd star_celebrate()` (rayons, confettis, étoile à yeux qui file vers le compteur du joueur).
 
 ## Les 20 mini-jeux (`Net.MINIGAMES`, fichiers dans `minigames/`)
@@ -96,7 +99,10 @@ gérer les robots (`Net.autotest != ""`), spectateurs/duel, puis faire son aper�
 - Le typage GDScript échoue sur `var x := expression non typée` → typer explicitement.
 - Assets : Kenney (CC0, style pastel « Platformer Remastered », sans contours), packs dans
   `/home/claude/kenney2` et `/home/claude/kmirror` (peuvent disparaître). Musiques FreePD (domaine public).
-  Persos = aliens Kenney recolorés (8 couleurs dans `assets/chars/<couleur>/`).
+  Persos = aliens Kenney recolorés (8 couleurs dans `assets/chars/<couleur>/`), avec un contour sombre de 5 px
+  ajouté (v0.26) ; originaux sans contour dans `tools/chars_sans_contour/`.
+  Packs reçus en v0.26 (`/home/claude/kpacks`) : game-icons, board-game-icons (déjà ceux de `assets/icons`),
+  board-game-info, input-prompts-pixel (pixel art : Camille n'aime pas, non utilisé).
 - Pas de personnages Nintendo dessinés : noms français neutres (Roi Grognon, fantôme générique, etc.).
 - **Logo `assets/ui/logo.png` = logo d'origine : NE PAS le modifier** (Camille a détesté la version retouchée).
 - Version : `Net.VERSION` (doit être identique chez tous les joueurs) + `version.txt` + LISEZ-MOI + README.

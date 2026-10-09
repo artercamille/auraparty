@@ -5,8 +5,9 @@ extends Node2D
 
 const Backdrop := preload("res://screens/backdrop.gd")
 const Island := preload("res://board/island.gd")
-const TOKEN_SCALE := 0.36
-const MAP_ZOOM := 0.212
+const TOKEN_SCALE := 0.42
+const MAP_ZOOM := 0.152
+const MAP_OFS := Vector2(-1000, 230)   # l'île à droite de la légende
 const LEGEND := [["B", "+3 pièces"], ["R", "-3 pièces"], ["E", "Événement de la zone"], ["C", "Carte chance"],
 	["I", "Objet gratuit"], ["D", "Duel 1 contre 1"], ["T", "Piège : -10 pièces"], ["K", "Banque"],
 	["H", "Boutique"], ["P", "Tuyau : téléportation"], ["W", "Roi Grognon : malus !"], ["G", "Fantôme : vole pièces/étoile"]]
@@ -123,7 +124,7 @@ func _ready() -> void:
 		overview = 2.6
 		cam_zoom_target = MAP_ZOOM
 		cam.zoom = Vector2(MAP_ZOOM, MAP_ZOOM)
-		cam.position = BoardMap.SIZE / 2.0 + Vector2(0, 150)
+		cam.position = BoardMap.SIZE / 2.0 + MAP_OFS
 		_show_banner("Tour %d / %d" % [Net.round_num, Net.total_rounds], UI.YELLOW)
 		if Net.round_num == Net.total_rounds:
 			_show_banner("Dernier tour !", UI.RED)
@@ -178,7 +179,7 @@ func _token_target(id: int) -> Vector2:
 		return base
 	var k := same.find(id)
 	var a := TAU * k / maxi(1, same.size()) + (0.6 if centered else -PI / 2.0)
-	var rad := Vector2(58.0, 26.0) if centered else Vector2(34.0, 16.0)
+	var rad := Vector2(66.0, 30.0) if centered else Vector2(40.0, 18.0)
 	return base + Vector2(cos(a) * rad.x, sin(a) * rad.y)
 
 
@@ -374,9 +375,10 @@ func _draw_world() -> void:
 			UI.text(board_fx, pos, pp["txt"], 36, Color(pp["c"], 1.0 - k3 * k3), 9)
 	# noms des zones en vue carte
 	if m > 1.6:
-		for z in [["FORÊT", Vector2(760, 1720)], ["LAC", Vector2(820, 760)], ["CHÂTEAU", Vector2(1520, 380)], ["VOLCAN", Vector2(3080, 980)],
-				["PLAGE", Vector2(3120, 1820)], ["VILLAGE", Vector2(2000, 2450)]]:
-			UI.text(board_fx, z[1], z[0], 84, Color(1, 1, 1, 0.85), 18)
+		var KK := BoardMap.K
+		for z in [["FORÊT", Vector2(760, 1720) * KK], ["LAC", Vector2(820, 760) * KK], ["CHÂTEAU", Vector2(1520, 800) * KK + Vector2(0, -420)], ["VOLCAN", Vector2(3080, 900) * KK + Vector2(0, 80)],
+				["PLAGE", Vector2(3120, 1820) * KK], ["VILLAGE", Vector2(2000, 2450) * KK]]:
+			UI.text(board_fx, z[1], z[0], 120, Color(1, 1, 1, 0.92), 26)
 
 
 var _etex := {}
@@ -1062,7 +1064,7 @@ func _process(delta: float) -> void:
 	var zoom := 0.9
 	if map_view or overview > 0.0:
 		overview -= delta
-		cam_target = BoardMap.SIZE / 2.0 + Vector2(0, 150)
+		cam_target = BoardMap.SIZE / 2.0 + (MAP_OFS if map_view else Vector2(0, 230))
 		zoom = MAP_ZOOM
 	elif star_fly > 0.0:
 		cam_target = star_vis
@@ -1120,7 +1122,7 @@ func _draw_hud() -> void:
 	UI.panel(hud, r3, Color("#4fc3e8"), UI.WHITE, 18, 4)
 	UI.text(hud, r3.position + Vector2(84, 22), "Banque : %d" % Game.bank, 20, UI.WHITE, 6)
 	hud.draw_texture_rect(UI.gui("ic_coin"), Rect2(r3.position + Vector2(160, 6), Vector2(32, 32)), false)
-	if not (menu == "shop" and shop_step == 1):
+	if not (menu == "shop" and shop_step == 1) and not map_view:
 		_draw_cards()
 	if map_view:
 		_draw_legend()
@@ -1234,14 +1236,14 @@ func _draw_cards() -> void:
 
 
 func _draw_legend() -> void:
-	var r := Rect2(Vector2(20, 140), Vector2(270, 34 + LEGEND.size() * 38))
+	var r := Rect2(Vector2(20, 140), Vector2(296, 34 + LEGEND.size() * 38 + 30))
 	hud.draw_style_box(UI.box(Color(UI.WHITE, 0.95), UI.DARK, 4, 16), r)
-	UI.text(hud, r.position + Vector2(135, 22), "Les cases", 22, UI.DARK, 0)
+	UI.text(hud, r.position + Vector2(148, 22), "Carte de l'île", 22, UI.DARK, 0)
 	for i in LEGEND.size():
 		var y := r.position.y + 58 + i * 38
 		Island.draw_space(hud, Vector2(r.position.x + 30, y), str(LEGEND[i][0]), 14.0, true)
 		hud.draw_string(UI.font(), Vector2(r.position.x + 56, y + 7), str(LEGEND[i][1]), HORIZONTAL_ALIGNMENT_LEFT, -1, 18, UI.DARK)
-	UI.text(hud, Vector2(640, 96), "Carte de l'île  (Tab pour revenir)", 24, UI.WHITE, 7)
+	UI.text(hud, Vector2(r.position.x + 148, r.end.y - 22), "Tab : revenir au jeu", 17, UI.GREY, 0)
 
 
 func _draw_panel() -> void:
