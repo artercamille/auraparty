@@ -3,11 +3,11 @@
 # Aura PARTY
 
 Un party game 2D façon Mario Party, jusqu'à **8 joueurs en ligne**, chacun sur son PC Windows.
-Une grande île volante avec des carrefours, des objets, une boutique, des duels, des étoiles à acheter, et 18 mini-jeux pour se trahir entre potes.
+Une grande île volante avec des carrefours, des objets, une boutique, des duels, des étoiles à acheter, et 20 mini-jeux pour se trahir (ou s'entraider) entre potes.
 
 ## ⬇️ Télécharger
 
-### **[Télécharger Aura PARTY v0.23 pour Windows](https://github.com/artercamille/auraparty/raw/main/telecharger/AuraParty.zip)**
+### **[Télécharger Aura PARTY v0.24 pour Windows](https://github.com/artercamille/auraparty/raw/main/telecharger/AuraParty.zip)**
 
 Dézippe le fichier, puis lance `AuraParty.exe`.
 Si Windows affiche « Windows a protégé votre ordinateur » : *Informations complémentaires* → *Exécuter quand même*.
@@ -59,6 +59,8 @@ Dans le salon, l'hôte peut aussi lancer directement un mini-jeu pour le tester,
 | Mémo-boum ! | (Memory Mash) En équipes : frappe le sol sur les cartes pour les retourner, la première équipe à 4 paires gagne. |
 | Le Capitaine a dit ! | (Shy Guy Says) Lève le même drapeau que le capitaine, sinon il coupe ta corde. Gare aux feintes ! |
 | Roulette-marteau ! | (Spin and Bear It) Choisis ta place sur la roue : celui qui s'arrête devant le marteau est écrasé. |
+| Pingouins perdus ! | **COOP** (Penguin Pushers) Rabattez ensemble les bébés pingouins vers leur parent avant la fin du temps. |
+| Cuisine en folie ! | **COOP** Façon Overcooked : coupez, cuisez, servez burgers et salades en équipe. |
 
 **Commandes** : plateau : Espace pour valider, ← → pour choisir, Tab pour la carte, 1 à 6 pour les émotes · M pour couper la musique · mini-jeux : bouger Q/D ou flèches · sauter Espace (double saut) · pousser Maj/X/E/clic · plein écran F11.
 Kart : Z/↑/Espace pour accélérer, S/↓ pour freiner, Q/D pour tourner, Maj/X/clic pour l'objet.

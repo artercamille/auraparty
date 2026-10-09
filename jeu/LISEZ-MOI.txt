@@ -1,4 +1,4 @@
-AURA PARTY - v0.23 (18 mini-jeux : nouveaux Capitaine a dit et Roulette-marteau)
+AURA PARTY - v0.24 (20 mini-jeux, dont 2 jeux COOP : Pingouins perdus et Cuisine en folie)
 ==========================================
 Jusqu'à 8 joueurs, chacun sur son PC.
 Tout le monde doit avoir CETTE version du jeu (sinon la connexion est refusée).
@@ -129,6 +129,16 @@ LES MINI-JEUX
   (← → puis Espace). Une flèche désigne le lanceur : il maintient Espace
   puis lâche. Celui qui s'arrête devant le marteau est écrasé. Une place
   de moins par manche, le dernier épargné gagne.
+
+JEUX COOP (tout le monde ensemble contre le jeu, tout le monde gagne les mêmes pièces)
+- Pingouins perdus ! (Penguin Pushers) : ramenez les bébés pingouins à leur
+  parent, derrière la fente en bas. Ils s'enfuient quand on s'approche : il faut
+  les rabattre ensemble. Rang S en 45 s (10 pièces chacun), A en 55 s (7), B en 60 s (4).
+- Cuisine en folie ! : prenez les ingrédients dans les caisses, coupez tomates et
+  oignons (Maj/X plusieurs fois), cuisez les steaks (ils brûlent !), mettez tout
+  dans une assiette (Espace) et servez à la passe. Burger = pain + steak,
+  Salade = tomate + oignon coupés, Burger garni = les 4. Le score de l'équipe
+  donne le rang S / A / B. Les jeux coop ne tombent jamais en duel.
 
 OPTIONS (salon) : volume de la musique et des bruitages ; pour l'hôte,
 étoiles bonus oui/non et choix des mini-jeux à retirer.

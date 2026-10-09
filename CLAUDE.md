@@ -1,4 +1,4 @@
-# Aura PARTY — état du projet (v0.23)
+# Aura PARTY — état du projet (v0.24)
 
 Party game 2D façon Mario Party, Godot 4.3 (GL Compatibility), GDScript, 2 à 8 joueurs en ligne
 (ENet UDP 7777, via Radmin VPN). Export Windows .exe. L'utilisateur (Camille) ne code pas : réponses
@@ -52,7 +52,7 @@ Début de partie : « Qui commence ? » (blocs). Parties de 10 tours ou plus : �
 Stats suivies dans `players[id]` : coins_won, mg_wins, reds, steps, used.
 Étoile gagnée (achat, bloc caché, fantôme) : grande animation plein écran `board.gd star_celebrate()` (rayons, confettis, étoile à yeux qui file vers le compteur du joueur).
 
-## Les 18 mini-jeux (`Net.MINIGAMES`, fichiers dans `minigames/`)
+## Les 20 mini-jeux (`Net.MINIGAMES`, fichiers dans `minigames/`)
 | clé | nom | type |
 |---|---|---|
 | blocks | Gare aux blocs ! | élimination (stage.gd) |
@@ -73,6 +73,10 @@ Stats suivies dans `players[id]` : coins_won, mg_wins, reds, steps, used.
 | memory | Mémo-boum ! | Memory Mash (MP DS) fidèle : vue de dessus, 18 cartes 6x3, 2 équipes (impair ⇒ arbitre), saut + frappe au sol, 1re équipe à 4 paires, hôte arbitre (`assets/cards/`) |
 | flags | Le Capitaine a dit ! | Shy Guy Says (Superstars) : l'hôte envoie les ordres (feintes), chacun juge sa réponse et `report_out(at de l'ordre)` ; minuteur 30 s à 45 s ⇒ survivants gagnent |
 | roulette | Roulette-marteau ! | Spin and Bear It : phases hôte choose/arrow/spin_wait/spin/smash, l'hôte élimine via `Net._on_out(victime, manche)` |
+| penguins | Pingouins perdus ! | **COOP** Penguin Pushers : l'hôte simule les pingouins (fuite), rang S/A/B selon le temps |
+| kitchen | Cuisine en folie ! | **COOP** façon Overcooked (choix de Camille, pas un vrai MP) : grille 14x8, l'hôte gère objets/planches/feux/commandes ; robots = burgers en boucle |
+
+**Jeux coop** : `"coop": true` dans `Net.MINIGAMES` ; jamais en duel ; fin avec `Net.mg_end_coop(pièces, texte)` → tout le monde gagne les mêmes pièces (S 10 / A 7 / B 4 / raté 0), pas d'étoile du dernier mini-jeu. Écran de rang commun : `penguins.gd _draw_result()`.
 
 Ajouter un mini-jeu : créer le .gd, l'ajouter à `Net.MINIGAMES` + à la liste `--checkall` dans net.gd,
 gérer les robots (`Net.autotest != ""`), spectateurs/duel, puis faire son aperçu HD dans `assets/previews/`.
@@ -84,7 +88,7 @@ gérer les robots (`Net.autotest != ""`), spectateurs/duel, puis faire son aper�
   `~/.config/godot/editor_settings-4.3.tres` (`export/windows/rcedit`, `export/windows/wine = /usr/lib/wine/wine64`).
 - Godot 4.3 en local (`godot`), export : `godot --headless --export-release "Windows Desktop" build/AuraParty.exe`
   (rcedit via wine), vérif : `WINEDEBUG=-all /usr/lib/wine/wine64 build/AuraParty.exe --headless -- --checkall`
-  (33 OK attendus), zip : `7z a -tzip -mx=9 -mm=Deflate`.
+  (35 OK attendus), zip : `7z a -tzip -mx=9 -mm=Deflate`.
 - **Toujours `godot --headless --import` après avoir ajouté des images**, sinon elles sont nulles (`null`).
 - **Textures : les charger AVANT de dessiner** (dans `_ready`), sinon blanches dans les couches dessinées une seule fois.
 - Imports par défaut en compression lossy 0.9 ; les aperçus (`assets/previews/*.import`) sont en

@@ -17,7 +17,7 @@ signal mg_go
 signal mg_msg(from_id: int, data: Dictionary)   # reçu par l'hôte
 signal mg_state(data: Dictionary)               # envoyé par l'hôte à tous
 
-const VERSION := "0.23"
+const VERSION := "0.24"
 const PORT := 7777
 const MAX_PLAYERS := 8
 const COLOR_IDS := ["rouge", "orange", "jaune", "vert", "turquoise", "bleu", "violet", "rose"]
@@ -51,6 +51,8 @@ const MINIGAMES := {
 	"memory": {"name": "Mémo-boum !", "path": "res://minigames/memory.gd", "max": 190.0},
 	"flags": {"name": "Le Capitaine a dit !", "path": "res://minigames/flags.gd", "max": 100.0},
 	"roulette": {"name": "Roulette-marteau !", "path": "res://minigames/roulette.gd", "max": 220.0},
+	"penguins": {"name": "Pingouins perdus !", "path": "res://minigames/penguins.gd", "max": 75.0, "coop": true},
+	"kitchen": {"name": "Cuisine en folie !", "path": "res://minigames/kitchen.gd", "max": 140.0, "coop": true},
 }
 
 var my_name := ""
@@ -77,6 +79,7 @@ var _mg_running := false
 var _mg_out: Dictionary = {}     # id -> [temps tenu, comment]
 var _mg_final: Dictionary = {}   # id -> [score, texte] fourni par le mini-jeu
 var _mg_ending := false
+var _mg_coop := -1                 # jeu coop : pièces gagnées par chacun (-1 = pas un jeu coop)
 var _last_mg := ""
 var _recent_mg: Array = []   # mini-jeux déjà joués dans la partie (pioche : pas de répétition avant d'avoir tout joué)
 var practice := false   # mini-jeu lancé depuis le salon (sans plateau)
@@ -102,7 +105,7 @@ func _ready() -> void:
 	if "--checkall" in args:
 		for f in ["res://main.gd", "res://ui.gd", "res://screens/menu.gd", "res://screens/lobby.gd",
 				"res://game.gd", "res://board/board.gd", "res://board/map.gd", "res://board/items.gd", "res://board/island.gd", "res://minigames/stage.gd", "res://minigames/blocks.gd",
-				"res://minigames/paint.gd", "res://minigames/keys.gd", "res://minigames/parcours.gd", "res://minigames/rock.gd", "res://minigames/logs.gd", "res://minigames/quiz.gd", "res://minigames/kart.gd", "res://minigames/triathlon.gd", "res://minigames/rocket.gd", "res://minigames/mushroom.gd", "res://minigames/bumper.gd", "res://minigames/bomb.gd", "res://minigames/tug.gd", "res://minigames/slots.gd", "res://minigames/memory.gd", "res://minigames/flags.gd", "res://minigames/roulette.gd",
+				"res://minigames/paint.gd", "res://minigames/keys.gd", "res://minigames/parcours.gd", "res://minigames/rock.gd", "res://minigames/logs.gd", "res://minigames/quiz.gd", "res://minigames/kart.gd", "res://minigames/triathlon.gd", "res://minigames/rocket.gd", "res://minigames/mushroom.gd", "res://minigames/bumper.gd", "res://minigames/bomb.gd", "res://minigames/tug.gd", "res://minigames/slots.gd", "res://minigames/memory.gd", "res://minigames/flags.gd", "res://minigames/roulette.gd", "res://minigames/penguins.gd", "res://minigames/kitchen.gd",
 				"res://arena/player.gd", "res://arena/fx.gd", "res://screens/backdrop.gd",
 				"res://screens/mg_results.gd", "res://screens/final.gd"]:
 			var s = load(f)
@@ -527,6 +530,9 @@ func start_duel(a: int, b: int, stake: int) -> void:
 		return
 	var types := MINIGAMES.keys()
 	types.erase("kart")   # trop long pour un duel
+	for k in MINIGAMES:
+		if MINIGAMES[k].get("coop", false):
+			types.erase(k)   # les jeux coop se jouent à plusieurs
 	_drop_recent(types, false)   # (si seul le kart reste dans la pioche, on ne la vide pas)
 	_start_minigame(types.pick_random(), [a, b], "duel", stake)
 
@@ -588,6 +594,7 @@ func _start_minigame(force := "", parts: Array = [], mode := "round", stake := 0
 	var my_mg := _mg_id
 	_mg_out.clear()
 	_mg_final.clear()
+	_mg_coop = 0 if MINIGAMES[t].get("coop", false) else -1
 	_mg_running = true
 	_mg_ending = false
 	mg_ready_ids = []
@@ -743,6 +750,19 @@ func mg_end_with_scores(scores: Dictionary) -> void:
 	_later(2.2, _finish_minigame)
 
 
+## Fin d'un jeu coop : tout le monde gagne les mêmes pièces.
+func mg_end_coop(coins: int, text: String) -> void:
+	if not is_host() or not _mg_running or _mg_ending:
+		return
+	_mg_coop = maxi(0, coins)
+	_mg_final = {}
+	for id in mg_parts:
+		_mg_final[id] = [0.0, text]
+	_mg_ending = true
+	_mg_end_soon.rpc()
+	_later(2.2, _finish_minigame)
+
+
 func _check_mg_end() -> void:
 	if not _mg_running or _mg_ending:
 		return
@@ -784,7 +804,12 @@ func _finish_minigame() -> void:
 			rank = i
 		var reward: int = REWARDS[mini(rank, REWARDS.size() - 1)]
 		var star_bonus := 0
-		if duel:
+		if _mg_coop >= 0 and not duel:
+			reward = _mg_coop
+			if not practice:
+				players[id]["coins"] = int(players[id]["coins"]) + reward
+				players[id]["coins_won"] = int(players[id].get("coins_won", 0)) + reward
+		elif duel:
 			reward = 0
 			if not tie and ids.size() == 2:
 				var loser: int = ids[1]
