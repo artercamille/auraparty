@@ -58,6 +58,8 @@ var cam_target := Vector2.ZERO
 var cam_zoom_target := 0.9
 var tex_star: Texture2D = load("res://assets/tiles/star.png")
 var tex_coin: Texture2D = load("res://assets/tiles/coin_gold.png")
+var tex_vendor: Texture2D = load("res://assets/chars/vendeur/idle.png")
+var shop_step := 0      # 0 : « Veux-tu acheter ? »  1 : l'étagère
 var tex_block: Texture2D = load("res://assets/tiles/block_exclamation.png")
 var tex_block_hit: Texture2D = load("res://assets/tiles/block_exclamation_active.png")
 var _debug_shot := false
@@ -402,6 +404,8 @@ func _on_event(d: Dictionary) -> void:
 			if id == me:
 				menu = what
 				sel = 0
+				if what == "shop":
+					shop_step = 0 if int(d.get("n", 0)) == 0 else 1
 				if what == "branch":
 					map_view = false
 				Sfx.play("ui_open", -6.0, 0.0)
@@ -679,7 +683,10 @@ func _activate(a: String) -> void:
 				Game.send_request({"what": "branch", "to": int(a.substr(3))})
 				_close_menu()
 		"shop":
-			if a == "leave":
+			if a == "yes":
+				shop_step = 1
+				sel = 0
+			elif a == "leave" or a == "no":
 				Game.send_request({"what": "shop", "buy": ""})
 				_close_menu()
 			elif a.begins_with("buy:"):
@@ -832,10 +839,12 @@ func _process(delta: float) -> void:
 
 
 # ------------------------------------------------------------------ HUD
-func _btn(r: Rect2, a: String, on := true) -> void:
+func _btn(r: Rect2, a: String, on := true, visible_box := true) -> void:
 	buttons.append({"r": r, "a": a, "on": on})
 	var i := buttons.size() - 1
 	var focus := i == sel
+	if not visible_box:
+		return
 	var col := UI.WHITE if on else Color("#d5d8e3")
 	if focus and on:
 		col = Color("#fff4c2")
@@ -868,7 +877,8 @@ func _draw_hud() -> void:
 	hud.draw_set_transform(r3.position + Vector2(176, 22), 0.0, Vector2(0.22, 0.22))
 	hud.draw_texture(tex_coin, Vector2(-64, -64))
 	hud.draw_set_transform(Vector2.ZERO)
-	_draw_cards()
+	if not (menu == "shop" and shop_step == 1):
+		_draw_cards()
 	if map_view:
 		_draw_legend()
 	# bandeau
@@ -930,7 +940,7 @@ func _draw_cards() -> void:
 		var kb := int(disp[b]["stars"]) * 100000 + int(disp[b]["coins"])
 		return ka > kb)
 	var n := ids.size()
-	var cw := 168.0 if n <= 6 else 148.0
+	var cw := 168.0 if n <= 6 else 140.0
 	var gap := 10.0 if n <= 6 else 6.0
 	var x0 := (1280.0 - (n * cw + (n - 1) * gap)) / 2.0
 	var rank := 0
@@ -950,7 +960,7 @@ func _draw_cards() -> void:
 		# portrait dans un rond blanc
 		var pc := cr.position + Vector2(34, 42)
 		hud.draw_circle(pc, 27.0, UI.WHITE)
-		hud.draw_circle(pc, 23.0, col.lightened(0.55))
+		hud.draw_circle(pc, 23.0, col.darkened(0.18))
 		var face: Texture2D = UI.char_tex(Net.color_idx(id), "front")
 		hud.draw_texture_rect_region(face, Rect2(pc - Vector2(22, 22), Vector2(44, 38)), Rect2(66, 104, 124, 96))
 		# rang
@@ -1165,35 +1175,117 @@ func _menu_branch() -> void:
 
 
 func _menu_shop() -> void:
-	var pr := Rect2(Vector2(150, 132), Vector2(980, 470))
-	hud.draw_style_box(UI.box(Color("#fff4fa"), UI.DARK, 6, 26), pr)
-	UI.text(hud, pr.position + Vector2(490, 36), "BOUTIQUE", 40, Color("#ff3d96"), 8)
+	if shop_step == 0:
+		_shop_intro()
+		return
 	var coins := int(disp.get(Net.my_id(), {}).get("coins", 0))
 	var full := _my_items().size() >= Items.MAX_HELD
-	hud.draw_string(UI.font(true), pr.position + Vector2(30, 46), "Tes pièces : %d" % coins, HORIZONTAL_ALIGNMENT_LEFT, -1, 22, UI.DARK)
-	hud.draw_string(UI.font(true), pr.position + Vector2(760, 46), "Sac : %d / %d" % [_my_items().size(), Items.MAX_HELD], HORIZONTAL_ALIGNMENT_LEFT, -1, 22, UI.RED if full else UI.DARK)
 	var stock: Array = ask.get("stock", Items.SHOP)
-	var w := 222.0
-	var h := 150.0
-	for i in stock.size():
+	# l'échoppe en bois
+	hud.draw_rect(Rect2(0, 0, 1280, 720), Color(0.16, 0.12, 0.3, 0.35))
+	var pr := Rect2(Vector2(110, 96), Vector2(1060, 500))
+	UI.panel(hud, pr, Color("#b07a48"), Color("#8a5a33"), 28, 8)
+	var wall := Rect2(pr.position + Vector2(14, 14), pr.size - Vector2(28, 28))
+	hud.draw_style_box(UI.box(Color("#9c6a3d"), Color(0, 0, 0, 0), 0, 20), wall)
+	var px := wall.position.x + 70.0
+	while px < wall.end.x - 20.0:
+		hud.draw_line(Vector2(px, wall.position.y + 4), Vector2(px, wall.end.y - 4), Color("#8d5d33"), 3.0)
+		px += 92.0
+	# auvent rayé en haut
+	for k in 14:
+		var x0 := pr.position.x + k * (pr.size.x / 14.0)
+		var cw := pr.size.x / 14.0
+		var col := Color("#ff6f91") if k % 2 == 0 else Color("#fff4e2")
+		hud.draw_rect(Rect2(Vector2(x0, pr.position.y - 26), Vector2(cw, 30)), col)
+		hud.draw_circle(Vector2(x0 + cw / 2.0, pr.position.y + 4), cw / 2.0, col)
+	# le vendeur et sa bulle
+	var vp := Vector2(1040, 470 + absf(sin(t * 3.0)) * -4.0)
+	hud.draw_set_transform(vp, 0.0, Vector2(0.72, 0.72))
+	hud.draw_texture(tex_vendor, Vector2(-128, -256))
+	hud.draw_set_transform(Vector2.ZERO)
+	var bought_any := int(ask.get("n", 0)) > 0
+	_bubble(Rect2(Vector2(760, 128), Vector2(360, 92)), "Merci ! Autre chose ?" if bought_any else "Qu'est-ce qui te tente ?", Vector2(1030, 228))
+	# objet choisi : grande image, nom, description
+	var cur := str(stock[clampi(sel, 0, stock.size() - 1)]) if sel < stock.size() else ""
+	if cur != "":
+		var ip := Vector2(230, 196)
+		hud.draw_circle(ip + Vector2(0, 6), 62.0, Color(0, 0, 0, 0.15))
+		hud.draw_circle(ip, 60.0, Color("#fff1d6"))
+		Items.draw_icon(hud, cur, ip, 2.2)
+		UI.text(hud, Vector2(500, 176), Items.item_name(cur), 38, UI.WHITE, 8)
+		hud.draw_line(Vector2(320, 214), Vector2(700, 214), Color(1, 1, 1, 0.85), 3.0)
+		hud.draw_string(UI.font(), Vector2(320, 250), Items.desc(cur), HORIZONTAL_ALIGNMENT_CENTER, 380, 21, UI.WHITE)
+	else:
+		UI.text(hud, Vector2(500, 196), "Tu repars sans rien ?", 32, UI.WHITE, 8)
+	# l'étagère et les objets
+	var shelf_y := 440.0
+	hud.draw_style_box(UI.box(Color("#d39a62"), Color(0, 0, 0, 0), 0, 8), Rect2(Vector2(wall.position.x + 8, shelf_y + 34), Vector2(wall.size.x - 16, 26)))
+	hud.draw_rect(Rect2(Vector2(wall.position.x + 8, shelf_y + 56), Vector2(wall.size.x - 16, 6)), Color("#8a5a33"))
+	var n := stock.size()
+	var step := 104.0
+	var x0b := 190.0
+	for i in n:
 		var k := str(stock[i])
-		var col := i % 4
-		var row := i / 4
-		var r := Rect2(pr.position + Vector2(30 + col * (w + 10.0), 70 + row * (h + 10.0)), Vector2(w, h))
+		var c := Vector2(x0b + i * step, shelf_y)
 		var ok := coins >= Items.price(k) and not full
-		_btn(r, "buy:" + k, ok)
-		Items.draw_icon(hud, k, r.position + Vector2(w / 2.0, 46), 1.25)
-		UI.text(hud, r.position + Vector2(w / 2.0, 96), Items.item_name(k), 21, UI.DARK if ok else UI.GREY, 0)
-		hud.draw_set_transform(r.position + Vector2(w / 2.0 - 22, 126), 0.0, Vector2(0.24, 0.24))
+		var r := Rect2(c - Vector2(44, 64), Vector2(88, 128))
+		_btn(r, "buy:" + k, ok, false)
+		var focus := sel == i
+		var lift := (-10.0 - absf(sin(t * 6.0)) * 8.0) if focus else 0.0
+		if focus:
+			hud.draw_circle(c + Vector2(0, -6 + lift), 50.0, Color(1, 0.95, 0.5, 0.5))
+		hud.draw_circle(c + Vector2(0, 30), 30.0, Color(0, 0, 0, 0.0))
+		Items.draw_icon(hud, k, c + Vector2(0, -6 + lift), 1.9 if focus else 1.55)
+		if not ok:
+			hud.draw_circle(c + Vector2(0, -6), 34.0, Color(0.3, 0.2, 0.15, 0.35))
+		# étiquette de prix
+		var tag := Rect2(c + Vector2(-38, 40), Vector2(76, 32))
+		hud.draw_style_box(UI.box(Color("#fff3d6") if not focus else Color("#ffe066"), Color(0, 0, 0, 0), 0, 6), tag)
+		hud.draw_set_transform(tag.position + Vector2(20, 16), 0.0, Vector2(0.2, 0.2))
 		hud.draw_texture(tex_coin, Vector2(-64, -64))
 		hud.draw_set_transform(Vector2.ZERO)
-		hud.draw_string(UI.font(true), r.position + Vector2(w / 2.0 - 4, 134), str(Items.price(k)), HORIZONTAL_ALIGNMENT_LEFT, -1, 22, UI.DARK if ok else UI.RED)
-	var rl := Rect2(pr.position + Vector2(780, 400), Vector2(170, 56))
+		UI.text(hud, tag.position + Vector2(50, 16), str(Items.price(k)), 22, UI.DARK if coins >= Items.price(k) else UI.RED, 0)
+	# bas : pièces, sac, partir
+	var info := Rect2(Vector2(150, 612), Vector2(330, 48))
+	UI.panel(hud, info, UI.WHITE, Color("#ece9fb"), 22, 4)
+	hud.draw_set_transform(info.position + Vector2(30, 24), 0.0, Vector2(0.24, 0.24))
+	hud.draw_texture(tex_coin, Vector2(-64, -64))
+	hud.draw_set_transform(Vector2.ZERO)
+	hud.draw_string(UI.font(true), info.position + Vector2(52, 32), "%d pièces   ·   Sac %d/%d" % [coins, _my_items().size(), Items.MAX_HELD], HORIZONTAL_ALIGNMENT_LEFT, -1, 21, UI.RED if full else UI.DARK)
+	var rl := Rect2(Vector2(1280 - 150 - 220, 610), Vector2(220, 52))
 	_btn(rl, "leave")
 	UI.text(hud, rl.get_center(), "Partir", 24, UI.DARK, 0)
-	if sel < stock.size():
-		var k2 := str(stock[sel])
-		hud.draw_string(UI.font(), pr.position + Vector2(36, 438), "%s : %s" % [Items.item_name(k2), Items.desc(k2)], HORIZONTAL_ALIGNMENT_LEFT, 720, 20, UI.GREY)
+	UI.text(hud, Vector2(640, 690), "← → : choisir  ·  ESPACE : acheter  ·  Échap : partir", 18, UI.WHITE, 5)
+
+
+## Bulle de dialogue blanche avec une petite pointe vers celui qui parle.
+func _bubble(r: Rect2, txt: String, tail: Vector2) -> void:
+	var tip := PackedVector2Array([Vector2(tail.x - 18, r.end.y - 4), Vector2(tail.x + 18, r.end.y - 4), tail])
+	hud.draw_style_box(UI.box(Color(0.13, 0.1, 0.25, 0.18), Color(0, 0, 0, 0), 0, int(r.size.y / 2.0)), Rect2(r.position + Vector2(0, 6), r.size))
+	hud.draw_colored_polygon(tip, UI.WHITE)
+	hud.draw_style_box(UI.box(UI.WHITE, Color(0, 0, 0, 0), 0, int(r.size.y / 2.0)), r)
+	hud.draw_multiline_string(UI.font(), r.position + Vector2(20, r.size.y / 2.0 - 4), txt, HORIZONTAL_ALIGNMENT_CENTER, r.size.x - 40, 24, 2, UI.DARK)
+
+
+## « Bienvenue à la boutique ! Veux-tu acheter quelque chose ? »  D'accord ! / Non, merci.
+func _shop_intro() -> void:
+	var vp := Vector2(250, 590 + absf(sin(t * 3.0)) * -5.0)
+	hud.draw_circle(vp + Vector2(0, -96), 92.0, Color(1, 1, 1, 0.35))
+	hud.draw_set_transform(vp, 0.0, Vector2(0.9, 0.9))
+	hud.draw_texture(tex_vendor, Vector2(-128, -256))
+	hud.draw_set_transform(Vector2.ZERO)
+	_bubble(Rect2(Vector2(330, 300), Vector2(560, 120)), "Bienvenue à la boutique !\nVeux-tu acheter quelque chose ?", Vector2(360, 470))
+	var opts := [["yes", "D'accord !"], ["no", "Non, merci."]]
+	for i in opts.size():
+		var r := Rect2(Vector2(920, 308 + i * 66), Vector2(250, 54))
+		_btn(r, opts[i][0], true, false)
+		var focus := sel == i
+		var rr := r if not focus else r.grow(3)
+		UI.panel(hud, rr, Color("#ff7f8f") if focus else UI.WHITE, UI.WHITE, 27, 4)
+		if focus:
+			hud.draw_circle(rr.position + Vector2(26, 27), 15.0, UI.DARK)
+			hud.draw_polyline(PackedVector2Array([rr.position + Vector2(22, 19), rr.position + Vector2(30, 27), rr.position + Vector2(22, 35)]), Color("#ffe066"), 4.0)
+		UI.text(hud, rr.get_center() + Vector2(10, 0), opts[i][1], 26, UI.WHITE if focus else UI.DARK, 5 if focus else 0)
 
 
 func _menu_duel() -> void:

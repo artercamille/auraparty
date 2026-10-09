@@ -537,7 +537,7 @@ func _chance(id: int, flow: int) -> void:
 
 func _shop(id: int, flow: int) -> void:
 	for n in 3:
-		var a = await _ask_and_wait(id, "shop", {"stock": Items.SHOP}, 15.0, flow)
+		var a = await _ask_and_wait(id, "shop", {"stock": Items.SHOP, "n": n}, 20.0, flow)
 		if flow != _flow or not Net.players.has(id):
 			return
 		if a == null or str(a.get("buy", "")) == "":

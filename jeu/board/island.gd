@@ -17,13 +17,14 @@ const SHOP := Vector2(1705, 2578)
 const BANK := Vector2(1660, 2070)
 const TOLL := Vector2(790, 1195)
 
+# chemins : [bord, remplissage, milieu] — clairs et bien contrastés pour qu'on les lise d'un coup d'œil
 const PATH_STYLE := {
-	"village": [Color("#c9b48c"), Color("#e9dcbd"), Color("#f4ead2")],
-	"foret": [Color("#8f6440"), Color("#c3915c"), Color("#d6a872")],
-	"lac": [Color("#c4a26a"), Color("#e8cf96"), Color("#f2dfb0")],
-	"chateau": [Color("#8f8a84"), Color("#cdc8c0"), Color("#e2ded7")],
-	"volcan": [Color("#3b302e"), Color("#6b5852"), Color("#7f6b64")],
-	"plage": [Color("#a86f3d"), Color("#d99a5c"), Color("#e6ad72")],
+	"village": [Color("#c49a6c"), Color("#fff0cf"), Color("#fff8e8")],
+	"foret": [Color("#9c6b3f"), Color("#f3d8a4"), Color("#fbe8c4")],
+	"lac": [Color("#b88e57"), Color("#f7e2b0"), Color("#fff1d2")],
+	"chateau": [Color("#8f8a84"), Color("#ecE8e1"), Color("#f8f6f2")],
+	"volcan": [Color("#4a3b36"), Color("#d2bdb0"), Color("#e3d6cd")],
+	"plage": [Color("#b07a45"), Color("#f2cf9a"), Color("#f9e0b8")],
 }
 
 const SPACE_COL := {
@@ -48,6 +49,7 @@ var gw := 0
 var gh := 0
 const CELL := 20.0
 var isles: Array = []
+var shop_links: Array = []      # [cabane, case boutique]
 
 
 func _ready() -> void:
@@ -210,9 +212,9 @@ func _build_grid() -> void:
 	for c in BoardMap.curves:
 		var line: PackedVector2Array = c[0]
 		for i in line.size():
-			_mark(line[i], 92.0)
+			_mark(line[i], 135.0)
 	for i in BoardMap.count():
-		_mark(BoardMap.pos(i), 100.0)
+		_mark(BoardMap.pos(i), 150.0)
 	for s in streams:
 		var sl: PackedVector2Array = s
 		for p in sl:
@@ -303,14 +305,14 @@ const SPR_H := {"tree": 180.0, "tree_autumn": 180.0, "pine": 210.0, "small_tree"
 	"dead": 160.0, "bush": 52.0, "grass": 44.0, "grass_orange": 44.0, "flower": 34.0, "rock": 48.0, "house": 205.0, "house_small": 95.0}
 const TALL := ["tree", "tree_autumn", "pine", "palm", "dead", "small_tree", "small_autumn", "house"]
 const ZONE_MIX := {
-	"foret": [["tree", 26], ["pine", 22], ["tree_autumn", 12], ["mushroom", 12], ["bush", 9], ["flower", 9], ["grass", 10]],
-	"lac": [["tree", 25], ["bush", 18], ["flower", 22], ["rock", 15], ["grass", 20]],
-	"nord": [["pine", 45], ["rock", 25], ["small_tree", 15], ["grass", 15]],
-	"village": [["flower", 30], ["bush", 25], ["small_tree", 25], ["fence", 10], ["grass", 10]],
-	"chateau": [["bush", 35], ["small_tree", 30], ["flower", 35]],
-	"volcan": [["dead", 30], ["vrock", 45], ["grass_orange", 15], ["small_autumn", 10]],
-	"plage": [["palm", 40], ["shell", 20], ["starfish", 15], ["rock", 10], ["grass", 15]],
-	"prairie": [["tree", 22], ["small_tree", 14], ["bush", 18], ["flower", 22], ["rock", 9], ["grass", 15]],
+	"foret": [["tree", 34], ["pine", 30], ["tree_autumn", 14], ["mushroom", 10], ["bush", 12]],
+	"lac": [["tree", 45], ["bush", 35], ["rock", 20]],
+	"nord": [["pine", 65], ["rock", 20], ["small_tree", 15]],
+	"village": [["bush", 40], ["small_tree", 60]],
+	"chateau": [["bush", 50], ["small_tree", 50]],
+	"volcan": [["dead", 40], ["vrock", 60]],
+	"plage": [["palm", 70], ["shell", 15], ["starfish", 15]],
+	"prairie": [["tree", 45], ["small_tree", 20], ["bush", 35]],
 }
 
 var _tc := {}
@@ -372,12 +374,58 @@ func _pick(mix: Array) -> String:
 	return str(mix[0][0])
 
 
+## Une cabane-boutique à côté de chaque case boutique (celle du village est déjà placée).
+func _place_shops() -> void:
+	# points des chemins (pour garder la cabane à distance)
+	var pts := PackedVector2Array()
+	for c in BoardMap.curves:
+		var line: PackedVector2Array = c[0]
+		for j in range(0, line.size(), 2):
+			pts.append(line[j])
+	for i in BoardMap.count():
+		pts.append(BoardMap.pos(i))
+	for i in BoardMap.count():
+		if BoardMap.kind(i) != "H" or BoardMap.pos(i).distance_to(SHOP) < 500.0:
+			continue
+		var p := BoardMap.pos(i)
+		var best := Vector2.ZERO
+		for dist in [190.0, 230.0, 270.0, 320.0, 380.0]:
+			for k in 16:
+				var ang := TAU * k / 16.0 + PI / 2.0
+				var foot: Vector2 = p + Vector2(cos(ang), sin(ang)) * float(dist)
+				var ok := true
+				for o: Vector2 in [Vector2(0, 0), Vector2(-85, -20), Vector2(85, -20), Vector2(0, -100), Vector2(-75, -150), Vector2(75, -150), Vector2(0, -190)]:
+					var q: Vector2 = foot + o
+					if not Geometry2D.is_point_in_polygon(q, inner) or _in_ell(q, LAKE_C, LAKE_R + Vector2(40, 40)) or _in_ell(q, LAGOON_C, LAGOON_R + Vector2(60, 60)) \
+							or _in_ell(q, CASTLE + Vector2(0, -90), Vector2(360, 260)) or _in_ell(q, POND_C, POND_R + Vector2(40, 40)):
+						ok = false
+						break
+					for pp in pts:
+						if pp.distance_squared_to(q) < 78.0 * 78.0:
+							ok = false
+							break
+					if not ok:
+						break
+				if ok:
+					best = foot
+					break
+			if best != Vector2.ZERO:
+				break
+		if best == Vector2.ZERO:
+			continue
+		props.append([best, "hut", 1.0, false])
+		_mark_ell(best + Vector2(0, -80), Vector2(130, 120))
+		# petit panneau-flèche vers la case
+		shop_links.append([best, p])
+
+
 func _place_props() -> void:
 	# monuments
 	props.append([CASTLE, "castle", 1.0, false])
 	props.append([VOLCANO, "volcano", 1.0, false])
 	props.append([STATUE, "statue", 1.0, false])
 	props.append([SHOP, "shop", 1.0, false])
+	_place_shops()
 	props.append([BANK, "bank", 1.0, false])
 	props.append([TOLL, "toll", 1.0, false])
 	props.append([Vector2(1953, 2236), "start_arch", 1.0, false])
@@ -390,7 +438,7 @@ func _place_props() -> void:
 		Vector2(2445, 2585), Vector2(1280, 2505)]
 	for i in hp.size():
 		_add_spr(hp[i], "house", houses[i], 0.95 if i % 3 == 0 else 1.0, Color.WHITE, i % 2)
-	for lp in [Vector2(1860, 2160), Vector2(2080, 2180), Vector2(1560, 2340), Vector2(2330, 2240)]:
+	for lp in [Vector2(1860, 2160), Vector2(2080, 2180)]:
 		props.append([lp, "lamp", 1.0, false])
 	for b in [Vector2(1845, 2560), Vector2(1575, 2585)]:
 		props.append([b, "crate", 1.0, rng.randf() < 0.5])
@@ -398,11 +446,10 @@ func _place_props() -> void:
 		props.append([fl, "banner", 1.0, false])
 	for u in [Vector2(2960, 2100), Vector2(3330, 2110), Vector2(3420, 1640)]:
 		props.append([u, "umbrella", 1.0, rng.randf() < 0.5])
-	for r in [Vector2(LAKE_C.x - 300, LAKE_C.y + 40), Vector2(LAKE_C.x + 260, LAKE_C.y + 150), Vector2(LAKE_C.x - 180, LAKE_C.y + 200),
-			Vector2(LAKE_C.x + 290, LAKE_C.y - 90), Vector2(POND_C.x + 150, POND_C.y + 30), Vector2(POND_C.x - 140, POND_C.y - 20)]:
+	for r in [Vector2(LAKE_C.x - 300, LAKE_C.y + 40), Vector2(LAKE_C.x + 290, LAKE_C.y - 90)]:
 		_add_spr(r, "grass", "", 1.3)
 
-	var want := {"foret": 170, "lac": 40, "nord": 46, "village": 26, "chateau": 20, "volcan": 50, "plage": 50, "prairie": 140}
+	var want := {"foret": 75, "lac": 14, "nord": 18, "village": 6, "chateau": 6, "volcan": 18, "plage": 18, "prairie": 46}
 	var count := {}
 	for k in want:
 		count[k] = 0
@@ -430,9 +477,9 @@ func _place_props() -> void:
 			if bad:
 				continue
 		var small := kind in ["flower", "shell", "starfish", "grass", "grass_orange", "rock"]
-		var min_d := 58.0 if small else 100.0
+		var min_d := 90.0 if small else 125.0
 		if z == "foret" and kind in ["tree", "pine", "tree_autumn"]:
-			min_d = 82.0
+			min_d = 95.0
 		var ok := true
 		for q in props:
 			if (q[0] as Vector2).distance_to(p) < min_d:
@@ -558,7 +605,6 @@ func _draw_ground() -> void:
 	_tex_poly(ci, _offset(sand, -26.0), "deco/tex_tile_68", Color(1, 0.97, 0.9, 0.9), 1.6)
 	_poly(ci, ash, Color("#9c8270"), OUT, 0.0)
 	_poly(ci, _offset(ash, -30.0), Color("#8a7060"), OUT, 0.0)
-	_speckles(ci)
 	# champs
 	for f in _fields():
 		_field(ci, f)
@@ -660,48 +706,30 @@ func _plaza(ci: CanvasItem, c: Vector2, r: Vector2) -> void:
 
 func _path(ci: CanvasItem, line: PackedVector2Array, zone: String) -> void:
 	var st: Array = PATH_STYLE.get(zone, PATH_STYLE["foret"])
-	ci.draw_polyline(line, (st[0] as Color).darkened(0.45), 90.0, true)
-	ci.draw_polyline(line, st[0], 80.0, true)
-	ci.draw_polyline(line, st[1], 66.0, true)
-	ci.draw_polyline(line, st[2], 30.0, true)
-	var r := RandomNumberGenerator.new()
-	r.seed = int(line[0].x * 3.0 + line[0].y)
-	match zone:
-		"village", "chateau":
-			# pavés
-			for i in range(0, line.size() - 1, 2):
-				var p := line[i]
-				var d := (line[i + 1] - p).normalized()
-				var nn := Vector2(-d.y, d.x)
-				for k in [-1.0, 0.0, 1.0]:
-					var q: Vector2 = p + nn * (k * 21.0 + r.randf_range(-3, 3))
-					var rr := r.randf_range(7.0, 10.0)
-					ci.draw_circle(q, rr + 2.0, Color(st[0], 0.8))
-					ci.draw_circle(q, rr, st[2] if zone == "village" else Color("#d9d5ce"))
-		"plage":
-			# planches
-			var acc := 0.0
-			for i in range(line.size() - 1):
-				var a := line[i]
-				var b := line[i + 1]
-				var seg := a.distance_to(b)
-				var d := (b - a).normalized()
-				var nn := Vector2(-d.y, d.x)
-				var s := 0.0
-				while acc + seg - s >= 22.0:
-					s += 22.0 - acc
-					acc = 0.0
-					var p := a + d * s
-					ci.draw_line(p - nn * 33.0, p + nn * 33.0, Color("#9c6235"), 3.0)
-				acc += seg - s
-		"volcan":
-			for i in range(0, line.size() - 1, 5):
-				var p := line[i] + Vector2(r.randf_range(-20, 20), r.randf_range(-20, 20))
-				ci.draw_line(p, p + Vector2(r.randf_range(-14, 14), r.randf_range(-14, 14)), Color("#ff7b2e"), 3.0)
-		_:
-			for i in range(0, line.size(), 3):
-				var p := line[i] + Vector2(r.randf_range(-22, 22), r.randf_range(-22, 22))
-				ci.draw_circle(p, r.randf_range(3, 6), Color(st[0], 0.7))
+	# ombre douce sous le chemin (effet passerelle)
+	var sh := PackedVector2Array()
+	for q in line:
+		sh.append(q + Vector2(0, 10))
+	ci.draw_polyline(sh, Color(0.1, 0.12, 0.05, 0.16), 124.0, true)
+	ci.draw_polyline(line, st[0], 118.0, true)
+	ci.draw_polyline(line, st[1], 100.0, true)
+	ci.draw_polyline(line, Color(st[2], 0.8), 46.0, true)
+	if zone == "plage":
+		# planches discrètes
+		var acc := 0.0
+		for i in range(line.size() - 1):
+			var a := line[i]
+			var b := line[i + 1]
+			var seg := a.distance_to(b)
+			var d := (b - a).normalized()
+			var nn := Vector2(-d.y, d.x)
+			var s2 := 0.0
+			while acc + seg - s2 >= 26.0:
+				s2 += 26.0 - acc
+				acc = 0.0
+				var p := a + d * s2
+				ci.draw_line(p - nn * 46.0, p + nn * 46.0, Color(st[0], 0.35), 2.0)
+			acc += seg - s2
 
 
 func _bridges(ci: CanvasItem) -> void:
@@ -724,7 +752,7 @@ func _bridges(ci: CanvasItem) -> void:
 
 
 ## Une case façon Mario Party : socle en pierre, pastille bombée et brillante, symbole en relief.
-static func draw_space(ci: CanvasItem, p: Vector2, ty: String, r := 34.0, flat := false) -> void:
+static func draw_space(ci: CanvasItem, p: Vector2, ty: String, r := 37.0, flat := false) -> void:
 	var col: Color = SPACE_COL.get(ty, SPACE_COL["B"])
 	var s := r / 34.0
 	if ty == "S":
@@ -892,6 +920,9 @@ func _draw_props() -> void:
 				_statue(ci, p)
 			"shop":
 				_shop(ci, p)
+			"hut":
+				_spr(ci, "deco/shop", p + Vector2(0, 6), 0.62, false, Color.WHITE, 95.0)
+				_sign(ci, p + Vector2(0, -162), "BOUTIQUE", Color("#ff3d96"), 20)
 			"bank":
 				_bank(ci, p)
 			"toll":

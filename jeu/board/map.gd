@@ -23,14 +23,14 @@ const J_ORDER := ["S", "J1", "J2", "J3", "J4", "J5", "J6", "J7"]
 # chemins : [départ, arrivée, zone, points intermédiaires, types des cases, péage, nom affiché]
 const SEGMENTS := [
 	["S", "J1", "village", [Vector2(1798, 2282), Vector2(1612, 2220)], "BHKB", 0, "Village"],
-	["J1", "J2", "foret", [Vector2(1178, 2282), Vector2(806, 2331), Vector2(496, 2158), Vector2(347, 1835), Vector2(434, 1519)], "BEBIBRBCBEBB", 0, "Grande forêt"],
+	["J1", "J2", "foret", [Vector2(1178, 2282), Vector2(806, 2331), Vector2(496, 2158), Vector2(347, 1835), Vector2(434, 1519)], "BEBIBRHCBEBB", 0, "Grande forêt"],
 	["J1", "J2", "foret", [Vector2(1240, 1829), Vector2(992, 1581)], "ETCRE", 0, "Sentier des champignons"],
 	["J2", "J3", "lac", [Vector2(403, 1085), Vector2(298, 713), Vector2(434, 403), Vector2(806, 260)], "BIBEBPBCBRBB", 0, "Rive du lac"],
 	["J2", "J4", "chateau", [Vector2(1054, 1240), Vector2(1519, 1178)], "BDBCBE", 5, "Pont du château"],
-	["J3", "J5", "lac", [Vector2(1674, 260), Vector2(2139, 298)], "BRBIBEBCB", 0, "Col du nord"],
+	["J3", "J5", "lac", [Vector2(1674, 260), Vector2(2139, 298)], "BRBIHEBCB", 0, "Col du nord"],
 	["J4", "J5", "chateau", [Vector2(2046, 775), Vector2(2294, 589)], "BDETB", 0, "Remparts"],
 	["J5", "J6", "volcan", [Vector2(3007, 298), Vector2(3441, 403), Vector2(3658, 775), Vector2(3441, 1116)], "BRERBTBCRBEBI", 0, "Volcan"],
-	["J6", "J7", "plage", [Vector2(3472, 1519), Vector2(3627, 1891), Vector2(3348, 2263)], "BIBEBPBCBDBB", 0, "Plage"],
+	["J6", "J7", "plage", [Vector2(3472, 1519), Vector2(3627, 1891), Vector2(3348, 2263)], "BIBEHPBCBDBB", 0, "Plage"],
 	["J6", "J7", "volcan", [Vector2(2728, 1519), Vector2(2604, 1891)], "RETCR", 0, "Coulée de lave"],
 	["J7", "S", "village", [Vector2(2356, 2368), Vector2(2108, 2306)], "BEB", 0, "Village"],
 ]

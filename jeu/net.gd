@@ -17,7 +17,7 @@ signal mg_go
 signal mg_msg(from_id: int, data: Dictionary)   # reçu par l'hôte
 signal mg_state(data: Dictionary)               # envoyé par l'hôte à tous
 
-const VERSION := "0.17"
+const VERSION := "0.18"
 const PORT := 7777
 const MAX_PLAYERS := 8
 const COLOR_IDS := ["rouge", "orange", "jaune", "vert", "turquoise", "bleu", "violet", "rose"]
@@ -72,6 +72,7 @@ var _mg_out: Dictionary = {}     # id -> [temps tenu, comment]
 var _mg_final: Dictionary = {}   # id -> [score, texte] fourni par le mini-jeu
 var _mg_ending := false
 var _last_mg := ""
+var _recent_mg: Array = []   # mini-jeux déjà joués dans la partie (pioche : pas de répétition avant d'avoir tout joué)
 var practice := false   # mini-jeu lancé depuis le salon (sans plateau)
 var _last_order: Array = []
 var bonus_awards: Array = []
@@ -474,6 +475,7 @@ func start_game(rounds: int) -> void:
 		players[id]["reds"] = 0
 	_last_order = []
 	_last_mg = ""
+	_recent_mg.clear()
 	Game.reset()
 	_broadcast_players()
 	_set_phase.rpc("board")
@@ -513,15 +515,29 @@ func start_duel(a: int, b: int, stake: int) -> void:
 		return
 	var types := MINIGAMES.keys()
 	types.erase("kart")   # trop long pour un duel
-	if types.size() > 1:
-		types.erase(_last_mg)
+	_drop_recent(types, false)   # (si seul le kart reste dans la pioche, on ne la vide pas)
 	_start_minigame(types.pick_random(), [a, b], "duel", stake)
+
+
+## Pioche : on retire les mini-jeux déjà joués. Quand tout est passé, on repart de zéro
+## (sans reprendre celui qu'on vient juste de jouer).
+func _drop_recent(types: Array, can_reset := true) -> void:
+	var left := types.duplicate()
+	for r in _recent_mg:
+		left.erase(r)
+	if left.is_empty():
+		if can_reset:
+			_recent_mg.clear()
+		left = types.duplicate()
+		if left.size() > 1:
+			left.erase(_last_mg)
+	types.clear()
+	types.append_array(left)
 
 
 func _start_minigame(force := "", parts: Array = [], mode := "round", stake := 0) -> void:
 	var types := MINIGAMES.keys()
-	if types.size() > 1:
-		types.erase(_last_mg)
+	_drop_recent(types)
 	var t: String = types.pick_random()
 	if force != "":
 		t = force
@@ -530,6 +546,8 @@ func _start_minigame(force := "", parts: Array = [], mode := "round", stake := 0
 	if autotest != "" and OS.get_environment("DUEL_MG") != "" and mode == "duel":
 		t = OS.get_environment("DUEL_MG")
 	_last_mg = t
+	if not practice and not _recent_mg.has(t):
+		_recent_mg.append(t)
 	_mg_id += 1
 	var my_mg := _mg_id
 	_mg_out.clear()

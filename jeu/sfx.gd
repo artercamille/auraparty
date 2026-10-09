@@ -104,6 +104,13 @@ func _ready() -> void:
 		music_on = false
 	Net.state_changed.connect(_on_phase)
 	_on_phase.call_deferred(Net.phase)
+	# petit bouton « musique » cliquable, en bas à droite de tous les écrans
+	var layer := CanvasLayer.new()
+	layer.layer = 40
+	add_child(layer)
+	var b := MusicButton.new()
+	b.sfx = self
+	layer.add_child(b)
 
 
 func play(name: String, volume_db := 0.0, pitch_var := 0.08) -> void:
@@ -124,8 +131,11 @@ func voice(name: String, volume_db := 0.0) -> void:
 
 # ------------------------------------------------------------------ musique
 func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventKey and event.pressed and not event.echo and (event as InputEventKey).physical_keycode == KEY_M:
-		toggle_music()
+	# touche M (selon la disposition du clavier : marche en AZERTY comme en QWERTY)
+	if event is InputEventKey and event.pressed and not event.echo:
+		var k := event as InputEventKey
+		if k.keycode == KEY_M or k.key_label == KEY_M:
+			toggle_music()
 
 
 func toggle_music() -> void:
@@ -203,3 +213,41 @@ func _on_phase(ph: String) -> void:
 			music("results", false)
 		"final":
 			music("final")
+
+
+## Bouton rond avec une note de musique (barrée quand la musique est coupée).
+class MusicButton extends Control:
+	var sfx: Node
+	var hover := false
+
+	func _ready() -> void:
+		size = Vector2(44, 44)
+		position = Vector2(1280 - 56, 720 - 56)
+		mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		tooltip_text = "Couper / remettre la musique (M)"
+		mouse_entered.connect(func(): hover = true; queue_redraw())
+		mouse_exited.connect(func(): hover = false; queue_redraw())
+
+	func _gui_input(e: InputEvent) -> void:
+		if e is InputEventMouseButton and e.pressed and (e as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+			sfx.toggle_music()
+			accept_event()
+
+	func _process(_d: float) -> void:
+		queue_redraw()
+
+	func _draw() -> void:
+		var c := size / 2.0
+		var on: bool = sfx.music_on
+		draw_circle(c + Vector2(0, 3), 21.0, Color(0.13, 0.1, 0.25, 0.25))
+		draw_circle(c, 21.0, Color.WHITE)
+		draw_circle(c, 17.0, Color("#8e6cf0") if on else Color("#9aa0b4"))
+		if hover:
+			draw_circle(c, 17.0, Color(1, 1, 1, 0.15))
+		# note de musique
+		var w := Color.WHITE
+		draw_circle(c + Vector2(-5, 7), 5.0, w)
+		draw_line(c + Vector2(-1, 7), c + Vector2(-1, -9), w, 3.0)
+		draw_line(c + Vector2(-1, -9), c + Vector2(8, -5), w, 3.0)
+		if not on:
+			draw_line(c + Vector2(-11, -11), c + Vector2(11, 11), Color("#ff5a5a"), 4.0)

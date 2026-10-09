@@ -519,7 +519,7 @@ static func draw_ready_row(h: CanvasItem, mine: bool, ready: Array, all_ids: Arr
 		var c := Vector2(x0 + i * w + w / 2.0, 650)
 		var ok := ready.has(id)
 		h.draw_circle(c, 22, UI.WHITE)
-		h.draw_circle(c, 18, Net.color_of(id).lerp(Color.WHITE, 0.4) if ok else Color("#b4b8c8"))
+		h.draw_circle(c, 18, Net.color_of(id).darkened(0.1) if ok else Color("#8f93a6"))
 		h.draw_set_transform(c + Vector2(0, 16), 0.0, Vector2(0.14, 0.14))
 		h.draw_texture(UI.char_tex(Net.color_idx(id), "idle"), Vector2(-128, -256), Color(1, 1, 1, 1.0 if ok else 0.45))
 		h.draw_set_transform(Vector2.ZERO)
@@ -551,7 +551,7 @@ static func draw_heads(h: CanvasItem, ids: Array, out: Dictionary) -> void:
 		var o := out.has(id)
 		h.draw_circle(c + Vector2(0, 4), 28, Color(0.13, 0.1, 0.25, 0.2))
 		h.draw_circle(c, 28, UI.WHITE)
-		h.draw_circle(c, 23, Net.color_of(id).lerp(Color.WHITE, 0.35) if not o else Color("#c3c6d4"))
+		h.draw_circle(c, 23, Net.color_of(id).darkened(0.15) if not o else Color("#9a9eb0"))
 		h.draw_texture_rect_region(UI.char_tex(Net.color_idx(id), "front"), Rect2(c - Vector2(21, 22), Vector2(42, 38)), Rect2(66, 104, 124, 96), Color(1, 1, 1, 0.45 if o else 1.0))
 		if o:
 			h.draw_line(c + Vector2(-15, -15), c + Vector2(15, 15), UI.RED, 6.0)

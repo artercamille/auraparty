@@ -220,11 +220,21 @@ class CharIcon extends Control:
 		var bob := absf(sin(t * 3.2))
 		var sq := Vector2(1.0 + (1.0 - bob) * 0.06, 1.0 - (1.0 - bob) * 0.06)
 		var feet := Vector2(size.x / 2.0, size.y - 34.0)
+		# rond de couleur derrière le perso (sinon sa bulle blanche disparaît sur les panneaux blancs)
+		var pc: Color = Net.COLORS[color_idx]
+		var hc := feet + Vector2(0, -132.0 * s - bob * 10.0)
+		draw_circle(hc, 50.0 * s, pc.darkened(0.08))
+		_draw_ellipse(feet + Vector2(0, 2), Vector2(70.0 * s, 16.0 * s), Color(0, 0, 0, 0.12))
 		draw_set_transform(feet - Vector2(0, bob * 10.0), 0.0, sq * s)
 		draw_texture(tex, Vector2(-128, -256))
 		draw_set_transform(Vector2.ZERO)
 		draw_circle(Vector2(size.x / 2.0, size.y - 32.0), 30.0 * s * 2.2 * (0.8 + 0.2 * (1.0 - bob)), Color(0, 0, 0, 0.0))
 		if label != "":
 			UI.text(self, Vector2(size.x / 2.0, size.y - 16.0), label, 20, Net.COLORS[color_idx], 7)
+
+	func _draw_ellipse(c: Vector2, r: Vector2, col: Color) -> void:
+		draw_set_transform(c, 0.0, Vector2(1.0, r.y / r.x))
+		draw_circle(Vector2.ZERO, r.x, col)
+		draw_set_transform(Vector2.ZERO)
 		if sub != "":
 			UI.text(self, Vector2(size.x / 2.0, 10.0), sub, 16, UI.GREY, 0)
