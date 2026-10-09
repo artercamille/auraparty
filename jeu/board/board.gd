@@ -839,27 +839,33 @@ func _btn(r: Rect2, a: String, on := true) -> void:
 	var col := UI.WHITE if on else Color("#d5d8e3")
 	if focus and on:
 		col = Color("#fff4c2")
-	hud.draw_style_box(UI.box(Color(0, 0, 0, 0.25), Color(0, 0, 0, 0), 0, 16), Rect2(r.position + Vector2(0, 6), r.size))
-	hud.draw_style_box(UI.box(col, UI.YELLOW.darkened(0.2) if focus and on else UI.DARK, 6 if focus and on else 4, 16), r)
+	if focus and on:
+		var g := 4.0 + 2.0 * sin(t * 6.0)
+		UI.panel(hud, r.grow(g), Color("#ffe066"), Color("#fff6c9"), 24, 5)
+	else:
+		UI.panel(hud, r, col, Color("#e7e9f6") if on else Color("#c9ccd9"), 22, 5)
 
 
 func _draw_hud() -> void:
 	buttons.clear()
 	var me := Net.my_id()
-	# tour, étoile, banque
-	var r := Rect2(Vector2(20, 16), Vector2(200, 56))
-	hud.draw_style_box(UI.box(UI.WHITE, UI.DARK, 4, 16), r)
-	UI.text(hud, r.get_center(), "Tour %d / %d" % [mini(Net.round_num, Net.total_rounds), Net.total_rounds], 28, UI.DARK, 0)
-	var r2 := Rect2(Vector2(1280 - 250, 16), Vector2(230, 56))
-	hud.draw_style_box(UI.box(UI.WHITE, UI.DARK, 4, 16), r2)
-	hud.draw_set_transform(r2.position + Vector2(34, 28), 0.0, Vector2(0.38, 0.38))
+	# tour, étoile, banque (façon Mario Party)
+	var r := Rect2(Vector2(20, 14), Vector2(190, 64))
+	UI.panel(hud, r, Color("#8e6cf0"), UI.WHITE, 22, 5)
+	UI.text(hud, r.position + Vector2(48, 32), "TOUR", 20, Color("#e6dcff"), 0)
+	UI.text(hud, r.position + Vector2(128, 32), "%d/%d" % [mini(Net.round_num, Net.total_rounds), Net.total_rounds], 32, UI.WHITE, 7)
+	var r2 := Rect2(Vector2(1280 - 240, 14), Vector2(220, 56))
+	UI.panel(hud, r2, Color("#ffc93c"), UI.WHITE, 22, 5)
+	hud.draw_circle(r2.position + Vector2(34, 28), 19.0, UI.WHITE)
+	hud.draw_set_transform(r2.position + Vector2(34, 28), 0.0, Vector2(0.36, 0.36))
 	hud.draw_texture(tex_star, Vector2(-64, -64))
 	hud.draw_set_transform(Vector2.ZERO)
-	hud.draw_string(UI.font(true), r2.position + Vector2(60, 37), "= %d pièces" % Game.STAR_COST, HORIZONTAL_ALIGNMENT_LEFT, -1, 22, UI.DARK)
-	var r3 := Rect2(Vector2(1280 - 250, 80), Vector2(230, 44))
-	hud.draw_style_box(UI.box(Color("#fff4c2"), UI.DARK, 4, 14), r3)
-	hud.draw_string(UI.font(true), r3.position + Vector2(18, 30), "Banque : %d" % Game.bank, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color("#b37a00"))
-	hud.draw_set_transform(r3.position + Vector2(200, 22), 0.0, Vector2(0.26, 0.26))
+	UI.text(hud, r2.position + Vector2(132, 28), "= %d pièces" % Game.STAR_COST, 22, UI.WHITE, 6)
+	var r3 := Rect2(Vector2(1280 - 220, 80), Vector2(200, 44))
+	UI.panel(hud, r3, Color("#4fc3e8"), UI.WHITE, 18, 4)
+	UI.text(hud, r3.position + Vector2(84, 22), "Banque : %d" % Game.bank, 20, UI.WHITE, 6)
+	hud.draw_circle(r3.position + Vector2(176, 22), 13.0, UI.WHITE)
+	hud.draw_set_transform(r3.position + Vector2(176, 22), 0.0, Vector2(0.22, 0.22))
 	hud.draw_texture(tex_coin, Vector2(-64, -64))
 	hud.draw_set_transform(Vector2.ZERO)
 	_draw_cards()
@@ -870,7 +876,7 @@ func _draw_hud() -> void:
 		var s := 34
 		var w := UI.text_width(banner, s) + 60.0
 		var br := Rect2(Vector2(640 - w / 2.0, 110), Vector2(w, 66))
-		hud.draw_style_box(UI.box(UI.WHITE, UI.DARK, 5, 20), br)
+		UI.panel(hud, br, UI.WHITE, banner_col.lightened(0.35), 24, 6)
 		UI.text(hud, br.get_center(), banner, s, banner_col, 8)
 	if not panel.is_empty():
 		_draw_panel()
@@ -924,8 +930,8 @@ func _draw_cards() -> void:
 		var kb := int(disp[b]["stars"]) * 100000 + int(disp[b]["coins"])
 		return ka > kb)
 	var n := ids.size()
-	var cw := 150.0
-	var gap := 8.0
+	var cw := 168.0 if n <= 6 else 148.0
+	var gap := 10.0 if n <= 6 else 6.0
 	var x0 := (1280.0 - (n * cw + (n - 1) * gap)) / 2.0
 	var rank := 0
 	for i in n:
@@ -935,45 +941,45 @@ func _draw_cards() -> void:
 			var kp := int(disp[ids[i - 1]]["stars"]) * 100000 + int(disp[ids[i - 1]]["coins"])
 			if ka != kp:
 				rank = i
-		var cr := Rect2(Vector2(x0 + i * (cw + gap), 720 - 96), Vector2(cw, 84))
+		var cr := Rect2(Vector2(x0 + i * (cw + gap), 720 - 90), Vector2(cw, 80))
 		var active := id == turn_id
 		if active:
-			cr.position.y -= 8.0
+			cr.position.y -= 10.0 + 3.0 * sin(t * 5.0)
 		var col := Net.color_of(id)
-		hud.draw_style_box(UI.box(UI.WHITE, col.darkened(0.25) if active else UI.DARK, 5 if active else 4, 14), cr)
-		var strip := UI.box(col, UI.DARK, 0, 10)
-		strip.corner_radius_top_right = 0
-		strip.corner_radius_bottom_right = 0
-		hud.draw_style_box(strip, Rect2(cr.position + Vector2(4, 4), Vector2(46, cr.size.y - 8)))
-		hud.draw_set_transform(cr.position + Vector2(27, 72), 0.0, Vector2(0.21, 0.21))
-		hud.draw_texture(tex_idle.get(id, UI.char_tex(Net.color_idx(id))), Vector2(-128, -256))
-		hud.draw_set_transform(Vector2.ZERO)
-		var badge := Vector2(cr.position.x + 10, cr.position.y + 4)
-		hud.draw_circle(badge, 13.0, UI.DARK)
-		hud.draw_circle(badge, 10.0, UI.YELLOW if rank == 0 else UI.WHITE)
-		hud.draw_string(UI.font(true), badge + Vector2(-5, 6), str(rank + 1), HORIZONTAL_ALIGNMENT_LEFT, -1, 15, UI.DARK)
+		UI.panel(hud, cr, col.lightened(0.08), Color("#fff6c9") if active else UI.WHITE, 20, 6 if active else 5)
+		# portrait dans un rond blanc
+		var pc := cr.position + Vector2(34, 42)
+		hud.draw_circle(pc, 27.0, UI.WHITE)
+		hud.draw_circle(pc, 23.0, col.lightened(0.55))
+		var face: Texture2D = UI.char_tex(Net.color_idx(id), "front")
+		hud.draw_texture_rect_region(face, Rect2(pc - Vector2(22, 22), Vector2(44, 38)), Rect2(66, 104, 124, 96))
+		# rang
+		var rk_col: Color = [Color("#ffc93c"), Color("#c9d3e3"), Color("#e8a061")][rank] if rank < 3 else Color("#9aa3b8")
+		var badge := cr.position + Vector2(6, 2)
+		hud.draw_circle(badge, 15.0, UI.WHITE)
+		hud.draw_circle(badge, 12.0, rk_col)
+		UI.text(hud, badge + Vector2(0, -1), str(rank + 1), 17, UI.WHITE, 5)
 		var nm := str(disp[id]["name"])
 		if nm.length() > 9:
 			nm = nm.substr(0, 8) + "."
-		hud.draw_string(UI.font(true), cr.position + Vector2(58, 23), nm, HORIZONTAL_ALIGNMENT_LEFT, 88, 17, UI.DARK)
-		hud.draw_set_transform(cr.position + Vector2(68, 43), 0.0, Vector2(0.24, 0.24))
-		hud.draw_texture(tex_star, Vector2(-64, -64))
-		hud.draw_set_transform(Vector2.ZERO)
-		hud.draw_string(UI.font(true), cr.position + Vector2(80, 51), str(int(disp[id]["stars"])), HORIZONTAL_ALIGNMENT_LEFT, -1, 20, UI.DARK)
-		hud.draw_set_transform(cr.position + Vector2(108, 43), 0.0, Vector2(0.24, 0.24))
-		hud.draw_texture(tex_coin, Vector2(-64, -64))
-		hud.draw_set_transform(Vector2.ZERO)
-		hud.draw_string(UI.font(true), cr.position + Vector2(120, 51), str(int(round(float(shown_coins.get(id, 0.0))))), HORIZONTAL_ALIGNMENT_LEFT, -1, 20, UI.DARK)
+		UI.text(hud, cr.position + Vector2(112, 16), nm, 16, UI.WHITE, 5)
+		for ic2 in [[74.0, tex_star, str(int(disp[id]["stars"]))], [cw - 48.0, tex_coin, str(int(round(float(shown_coins.get(id, 0.0)))))]]:
+			var ip := cr.position + Vector2(float(ic2[0]), 41)
+			hud.draw_circle(ip, 11.0, UI.WHITE)
+			hud.draw_set_transform(ip, 0.0, Vector2(0.2, 0.2))
+			hud.draw_texture(ic2[1], Vector2(-64, -64))
+			hud.draw_set_transform(Vector2.ZERO)
+			UI.text(hud, ip + Vector2(24, 0), ic2[2], 22, UI.WHITE, 6)
 		var items: Array = disp[id].get("items", [])
 		for j in Items.MAX_HELD:
-			var ic := cr.position + Vector2(68 + j * 27, 69)
-			hud.draw_circle(ic, 11.0, Color("#e9ecf5"))
+			var ic := cr.position + Vector2(80 + j * 26, 64)
+			hud.draw_circle(ic, 10.0, Color(1, 1, 1, 0.75))
 			if j < items.size():
-				Items.draw_icon(hud, str(items[j]), ic, 0.42)
+				Items.draw_icon(hud, str(items[j]), ic, 0.38)
 		if disp[id].get("poison", false):
 			hud.draw_circle(cr.position + Vector2(cw - 8, 8), 9.0, Color("#a064f0"))
 		if id == Net.my_id():
-			hud.draw_rect(Rect2(cr.position + Vector2(12, -9), Vector2(cw - 24, 5)), col)
+			UI.text(hud, cr.position + Vector2(cw / 2.0, -10), "TOI", 15, UI.YELLOW, 5)
 
 
 func _draw_legend() -> void:
@@ -1042,9 +1048,7 @@ func _draw_panel() -> void:
 
 
 func _title(txt: String, y: float) -> void:
-	var w := UI.text_width(txt, 26) + 50.0
-	hud.draw_style_box(UI.box(UI.DARK, UI.DARK, 0, 16), Rect2(Vector2(640 - w / 2.0, y - 22), Vector2(w, 44)))
-	UI.text(hud, Vector2(640, y), txt, 26, UI.YELLOW, 0)
+	UI.ribbon(hud, Vector2(640, y), txt, 26)
 
 
 func _menu_action() -> void:

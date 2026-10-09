@@ -17,7 +17,7 @@ signal mg_go
 signal mg_msg(from_id: int, data: Dictionary)   # reçu par l'hôte
 signal mg_state(data: Dictionary)               # envoyé par l'hôte à tous
 
-const VERSION := "0.16"
+const VERSION := "0.17"
 const PORT := 7777
 const MAX_PLAYERS := 8
 const COLOR_IDS := ["rouge", "orange", "jaune", "vert", "turquoise", "bleu", "violet", "rose"]
@@ -43,6 +43,8 @@ const MINIGAMES := {
 	"kart": {"name": "Grand Prix Aura !", "path": "res://minigames/kart.gd", "max": 165.0},
 	"triathlon": {"name": "Mini-triathlon !", "path": "res://minigames/triathlon.gd", "max": 110.0},
 	"rocket": {"name": "Fusées en folie !", "path": "res://minigames/rocket.gd", "max": 95.0},
+	"mushroom": {"name": "Champi-couleurs !", "path": "res://minigames/mushroom.gd", "max": 80.0},
+	"bumper": {"name": "Boules-tamponneuses !", "path": "res://minigames/bumper.gd", "max": 80.0},
 }
 
 var my_name := ""
@@ -90,7 +92,7 @@ func _ready() -> void:
 	if "--checkall" in args:
 		for f in ["res://main.gd", "res://ui.gd", "res://screens/menu.gd", "res://screens/lobby.gd",
 				"res://game.gd", "res://board/board.gd", "res://board/map.gd", "res://board/items.gd", "res://board/island.gd", "res://minigames/stage.gd", "res://minigames/blocks.gd",
-				"res://minigames/paint.gd", "res://minigames/keys.gd", "res://minigames/parcours.gd", "res://minigames/rock.gd", "res://minigames/logs.gd", "res://minigames/quiz.gd", "res://minigames/kart.gd", "res://minigames/triathlon.gd", "res://minigames/rocket.gd",
+				"res://minigames/paint.gd", "res://minigames/keys.gd", "res://minigames/parcours.gd", "res://minigames/rock.gd", "res://minigames/logs.gd", "res://minigames/quiz.gd", "res://minigames/kart.gd", "res://minigames/triathlon.gd", "res://minigames/rocket.gd", "res://minigames/mushroom.gd", "res://minigames/bumper.gd",
 				"res://arena/player.gd", "res://arena/fx.gd", "res://screens/backdrop.gd",
 				"res://screens/mg_results.gd", "res://screens/final.gd"]:
 			var s = load(f)

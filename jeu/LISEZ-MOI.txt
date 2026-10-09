@@ -1,4 +1,4 @@
-AURA PARTY - v0.16 (nouvelle direction artistique pastel)
+AURA PARTY - v0.17 (12 mini-jeux, nouvelle interface façon Mario Party)
 ==========================================
 Jusqu'à 8 joueurs, chacun sur son PC.
 Tout le monde doit avoir CETTE version du jeu (sinon la connexion est refusée).
@@ -87,6 +87,12 @@ LES MINI-JEUX
 - Fusées en folie ! : course de fusées jusqu'à la Lune. Q/D (← →) pour
   slalomer entre les astéroïdes et les soucoupes, Z/↑ pour accélérer,
   S/↓ pour freiner. Les étoiles donnent un turbo. Premier arrivé gagne.
+- Champi-couleurs ! (Mushroom Mix-Up) : une couleur s'affiche, saute vite
+  sur le champignon de cette couleur : tous les autres coulent ! On peut
+  pousser les autres à l'eau. Le dernier hors de l'eau gagne.
+- Boules-tamponneuses ! (Bumper Balls) : chacun roule sur une boule dans
+  une arène ronde (flèches ou ZQSD), Maj/X/clic pour un boost. Éjecte les
+  autres ! L'arène rétrécit à la fin. Le dernier dessus gagne.
 
 TESTER UN MINI-JEU : dans le salon, l'hôte clique sur « Tester un mini-jeu
 (sans plateau) » et choisit le jeu. Retour au salon après les résultats.

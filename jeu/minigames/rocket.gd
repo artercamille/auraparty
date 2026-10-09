@@ -745,17 +745,12 @@ func _rocket(c: CanvasItem, id: int) -> void:
 func _draw_hud() -> void:
 	var h := hud
 	if state == "intro":
-		h.draw_rect(Rect2(0, 0, 1280, 720), Color(UI.DARK, 0.45))
-		var r := Rect2(Vector2(220, 110), Vector2(840, 450))
-		h.draw_style_box(UI.box(UI.WHITE, UI.DARK, 6, 30), r)
-		UI.text(h, Vector2(640, 176), "Fusées en folie !", 56, UI.YELLOW, 14)
-		var lines := ["Course jusqu'à la Lune : le premier arrivé gagne !",
+		preload("res://minigames/stage.gd").draw_intro(h, "Fusées en folie !", ["Course jusqu'à la Lune : le premier arrivé gagne !",
 			"← → (ou Q D) : slalome entre les astéroïdes et les soucoupes.",
 			"↑ (ou Z) : accélère.   ↓ (ou S) : freine.",
 			"Attrape les étoiles pour un TURBO !",
-			"Si tu touches un obstacle, ta fusée part en vrille..."]
-		for i in lines.size():
-			h.draw_string(UI.font(), Vector2(220, 250 + i * 38), lines[i], HORIZONTAL_ALIGNMENT_CENTER, 840, 24, UI.DARK)
+			"Si tu touches un obstacle, ta fusée part en vrille..."],
+			"Slalomer : Q D / ← →   ·   Accélérer : Z / ↑   ·   Freiner : S / ↓")
 		preload("res://minigames/stage.gd").draw_ready_row(h, my_ready, ready_ids, ships.keys(), t, not playing)
 		if str(Net.mg_data.get("mode", "")) == "duel":
 			preload("res://minigames/stage.gd").draw_duel_banner(h)

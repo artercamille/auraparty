@@ -673,17 +673,12 @@ func _tex_char(c: CanvasItem, id: int, pose: String, feet: Vector2, sc: float) -
 func _draw_hud() -> void:
 	var h := hud
 	if state == "intro":
-		h.draw_rect(Rect2(0, 0, 1280, 720), Color(UI.DARK, 0.45))
-		var r := Rect2(Vector2(220, 110), Vector2(840, 450))
-		h.draw_style_box(UI.box(UI.WHITE, UI.DARK, 6, 30), r)
-		UI.text(h, Vector2(640, 176), "Mini-triathlon !", 56, UI.YELLOW, 14)
-		var lines := ["Trois épreuves à la suite, le premier arrivé gagne !",
+		preload("res://minigames/stage.gd").draw_intro(h, "Mini-triathlon !", ["Trois épreuves à la suite, le premier arrivé gagne !",
 			"1. PAGAIE : appuie sur Q et D (ou ← →) en alternance.",
 			"2. VÉLO : appuie sur Z et S (ou ↑ ↓) en alternance.",
 			"3. HAIES : tu cours tout seul, ESPACE pour sauter.",
-			"Deux fois la même touche = tu ralentis !"]
-		for i in lines.size():
-			h.draw_string(UI.font(), Vector2(220, 250 + i * 38), lines[i], HORIZONTAL_ALIGNMENT_CENTER, 840, 24, UI.DARK)
+			"Deux fois la même touche = tu ralentis !"],
+			"Pagaie : Q D en alternance   ·   Vélo : Z S en alternance   ·   Haies : Espace")
 		preload("res://minigames/stage.gd").draw_ready_row(h, my_ready, ready_ids, lanes.keys(), t, not playing)
 		if str(Net.mg_data.get("mode", "")) == "duel":
 			preload("res://minigames/stage.gd").draw_duel_banner(h)

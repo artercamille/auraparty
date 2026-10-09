@@ -2,7 +2,7 @@ class_name UI
 extends RefCounted
 ## Direction artistique : couleurs, police, boutons et panneaux façon Kenney.
 
-const DARK := Color("#353541")
+const DARK := Color("#3b3550")
 const SKY := Color("#c5e4ff")
 const WHITE := Color("#ffffff")
 const PAPER := Color("#f4f7ff")
@@ -61,11 +61,11 @@ static func make_theme() -> Theme:
 	t.set_color("caret_color", "LineEdit", DARK)
 	t.set_color("font_color", "Label", DARK)
 	# panneaux
-	var pn := box(WHITE, DARK, 5, 26)
+	var pn := box(WHITE, Color("#ece9fb"), 6, 30)
 	pn.set_content_margin_all(28)
-	pn.shadow_color = Color(0, 0, 0, 0.18)
-	pn.shadow_size = 0
-	pn.shadow_offset = Vector2(0, 8)
+	pn.shadow_color = Color(0.13, 0.1, 0.25, 0.25)
+	pn.shadow_size = 1
+	pn.shadow_offset = Vector2(0, 10)
 	t.set_stylebox("panel", "PanelContainer", pn)
 	return t
 
@@ -77,15 +77,23 @@ static func box(bg: Color, border := DARK, bw := 4, radius := 16) -> StyleBoxFla
 	sb.set_border_width_all(bw)
 	# style pastel : pas de gros contour sombre, une bordure dans la teinte du fond
 	if border == DARK and bg.a > 0.5:
-		border = bg.darkened(0.2) if bg.v > 0.3 else bg.lightened(0.15)
+		border = Color("#e4e2f2") if bg.v > 0.95 and bg.s < 0.1 else bg.lightened(0.45)
 	sb.border_color = border
+	if bg.a > 0.9 and bw > 0:
+		# petite ombre portée douce (style Mario Party)
+		sb.shadow_color = Color(0.13, 0.1, 0.25, 0.2)
+		sb.shadow_offset = Vector2(0, 5)
+		sb.shadow_size = 1
 	sb.anti_aliasing = true
 	return sb
 
 
 static func button_box(col: Color, pressed := false) -> StyleBoxFlat:
-	var sb := box(col, col.darkened(0.25), 0, 16)
-	sb.border_width_bottom = 4 if pressed else 9
+	var sb := box(col, col.darkened(0.22), 0, 24)
+	sb.border_width_bottom = 4 if pressed else 8
+	sb.shadow_color = Color(0.13, 0.1, 0.25, 0.22)
+	sb.shadow_offset = Vector2(0, 4)
+	sb.shadow_size = 1
 	sb.content_margin_left = 26
 	sb.content_margin_right = 26
 	sb.content_margin_top = 12 + (5 if pressed else 0)
@@ -117,6 +125,45 @@ static func btn(text: String, cb: Callable, color := BLUE, size := 26) -> Button
 	b.pressed.connect(func(): Sfx.play("ui_ok", -4.0, 0.03); cb.call())
 	b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	return b
+
+
+## Panneau façon Mario Party : fond coloré, bord blanc épais, ombre portée douce.
+static func panel(ci: CanvasItem, r: Rect2, bg: Color, border := WHITE, radius := 20, bw := 5, shadow := true) -> void:
+	if shadow:
+		var sh := StyleBoxFlat.new()
+		sh.bg_color = Color(0.13, 0.1, 0.25, 0.22 * bg.a)
+		sh.set_corner_radius_all(radius + 2)
+		sh.anti_aliasing = true
+		ci.draw_style_box(sh, Rect2(r.position + Vector2(0, 6), r.size))
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = bg
+	sb.set_corner_radius_all(radius)
+	sb.set_border_width_all(bw)
+	sb.border_color = border
+	sb.anti_aliasing = true
+	ci.draw_style_box(sb, r)
+	# reflet en haut
+	if bg.a > 0.9 and r.size.y > 30:
+		var hl := StyleBoxFlat.new()
+		hl.bg_color = Color(1, 1, 1, 0.22)
+		hl.set_corner_radius_all(maxi(4, radius - bw - 2))
+		hl.anti_aliasing = true
+		ci.draw_style_box(hl, Rect2(r.position + Vector2(bw + 4, bw + 3), Vector2(r.size.x - 2 * bw - 8, minf(14.0, r.size.y * 0.22))))
+
+
+## Bandeau titre (ruban) façon Mario Party.
+static func ribbon(ci: CanvasItem, center: Vector2, s: String, size := 26, col := Color("#8e6cf0"), txt := WHITE) -> void:
+	var w := text_width(s, size) + 70.0
+	var h := size + 26.0
+	var r := Rect2(center - Vector2(w / 2.0, h / 2.0), Vector2(w, h))
+	var dk := col.darkened(0.3)
+	for sd in [-1.0, 1.0]:
+		var ex: float = center.x + sd * (w / 2.0 - 6.0)
+		var pts := PackedVector2Array([Vector2(ex, r.position.y + 10), Vector2(ex + sd * 34, r.position.y + 10),
+			Vector2(ex + sd * 22, r.position.y + 10 + h * 0.5), Vector2(ex + sd * 34, r.end.y + 10), Vector2(ex, r.end.y + 10)])
+		ci.draw_colored_polygon(pts, dk)
+	panel(ci, r, col, WHITE, 14, 4)
+	text(ci, center, s, size, txt, 7)
 
 
 ## Texte centré avec contour, dessiné directement (noms, scores, gros titres).

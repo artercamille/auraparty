@@ -110,10 +110,10 @@ func _draw_award() -> void:
 	var a: Dictionary = awards[k]
 	var local := t - k * AWARD_T
 	ci.draw_rect(Rect2(0, 0, 1280, 720), Color(UI.DARK, 0.35))
-	UI.text(ci, Vector2(640, 90), "ÉTOILES BONUS !", 64, UI.YELLOW, 16)
+	UI.ribbon(ci, Vector2(640, 92), "ÉTOILES BONUS !", 52, Color("#8e6cf0"), UI.YELLOW)
 	var appear := clampf(local * 4.0, 0.0, 1.0)
 	var card := Rect2(Vector2(290, 170 + (1.0 - appear) * 60.0), Vector2(700, 380))
-	ci.draw_style_box(UI.box(Color(1, 1, 1, appear), Color(UI.DARK, appear), 6, 30), card)
+	UI.panel(ci, card, Color(1, 1, 1, appear), Color(Color("#ece9fb"), appear), 30, 6)
 	UI.text(ci, Vector2(640, card.position.y + 60), str(a["title"]), 46, Color(UI.YELLOW, appear), 12)
 	UI.text(ci, Vector2(640, card.position.y + 112), "%s (%d)" % [str(a["desc"]), int(a["value"])], 24, Color(UI.GREY, appear), 0)
 	var who: Array = a["who"]
@@ -175,7 +175,7 @@ func _draw_win(r: Array) -> void:
 		var h: float = float(sl[2]) * minf(1.0, local * 2.0)
 		var col: Color = Net.COLORS[int(p["color"])]
 		var block := Rect2(Vector2(x - 100, base_y - h), Vector2(200, h))
-		ci.draw_style_box(UI.box(col, UI.DARK, 5, 18), block)
+		UI.panel(ci, block, col, UI.WHITE, 18, 6)
 		ci.draw_rect(Rect2(block.position + Vector2(10, 10), Vector2(180, 8)), Color(1, 1, 1, 0.35))
 		if h > 60.0:
 			UI.text(ci, block.get_center(), "%d" % (int(p["rank"]) + 1), 64, UI.WHITE, 12)
@@ -196,7 +196,7 @@ func _draw_win(r: Array) -> void:
 			ci.draw_texture(UI.char_tex(int(p["color"]), "idle"), Vector2(-128, -256))
 			ci.draw_set_transform(Vector2.ZERO)
 		var info := Rect2(Vector2(x - 105, base_y + 12), Vector2(210, 66))
-		ci.draw_style_box(UI.box(UI.WHITE, UI.DARK, 4, 14), info)
+		UI.panel(ci, info, UI.WHITE, col.lightened(0.4), 18, 4)
 		UI.text(ci, info.position + Vector2(105, 21), str(p["name"]), 22, col.darkened(0.15), 0)
 		_icons(ci, info.position + Vector2(105, 47), int(p["stars"]), int(p["coins"]))
 	# le reste du classement

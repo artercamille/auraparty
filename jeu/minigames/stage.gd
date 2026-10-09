@@ -461,45 +461,20 @@ func draw_timer() -> void:
 		return
 	var left := maxi(0, ceili(duration - play_t))
 	var r := Rect2(Vector2(24, 18), Vector2(120, 52))
-	hud.draw_style_box(UI.box(UI.WHITE, UI.DARK, 4, 14), r)
+	UI.panel(hud, r, UI.WHITE, Color("#e4e2f2"), 18, 4)
 	UI.text(hud, r.get_center(), "%d s" % left, 30, UI.RED if left <= 10 else UI.DARK, 0)
 
 
 func _draw_hud() -> void:
 	if show_heads:
-		# têtes des joueurs en haut, barrées quand ils sont éliminés
-		var ids := nodes.keys()
-		ids.sort()
-		var w := 64.0
-		var x0 := 640.0 - ids.size() * w / 2.0
-		for i in ids.size():
-			var id: int = ids[i]
-			var c := Vector2(x0 + i * w + w / 2.0, 44)
-			var out := out_ids.has(id)
-			hud.draw_circle(c, 27, UI.DARK)
-			hud.draw_circle(c, 23, Net.color_of(id).lerp(Color.WHITE, 0.55) if not out else Color("#b9bccb"))
-			hud.draw_set_transform(c + Vector2(0, 20), 0.0, Vector2(0.17, 0.17))
-			hud.draw_texture(UI.char_tex(Net.color_idx(id), "hit" if out else "idle"), Vector2(-128, -256), Color(1, 1, 1, 0.45 if out else 1.0))
-			hud.draw_set_transform(Vector2.ZERO)
-			if out:
-				hud.draw_line(c + Vector2(-16, -16), c + Vector2(16, 16), UI.RED, 6.0)
-				hud.draw_line(c + Vector2(16, -16), c + Vector2(-16, 16), UI.RED, 6.0)
-			if id == Net.my_id():
-				hud.draw_rect(Rect2(c + Vector2(-16, 32), Vector2(32, 5)), Net.color_of(id))
+		var hids := nodes.keys()
+		hids.sort()
+		draw_heads(hud, hids, out_ids)
 	_draw_extra_hud()
 
 	var center := Vector2(640, 360)
 	if state == "intro" or state == "count":
-		hud.draw_rect(Rect2(0, 0, 1280, 720), Color(UI.DARK, 0.45))
-		var r := Rect2(Vector2(240, 130), Vector2(800, 400))
-		hud.draw_style_box(UI.box(UI.WHITE, UI.DARK, 6, 30), r)
-		UI.text(hud, Vector2(640, 196), title, 56, UI.YELLOW, 14)
-		var lines := rules.split("\n")
-		for i in lines.size():
-			hud.draw_string(UI.font(), Vector2(240, 270 + i * 36), lines[i], HORIZONTAL_ALIGNMENT_CENTER, 800, 24, UI.DARK)
-		var cy := 270 + lines.size() * 36 + 24
-		hud.draw_style_box(UI.box(UI.PAPER, UI.DARK, 3, 12), Rect2(Vector2(280, cy - 2), Vector2(720, 40)))
-		hud.draw_string(UI.font(), Vector2(280, cy + 25), controls, HORIZONTAL_ALIGNMENT_CENTER, 720, 17, UI.GREY)
+		draw_intro(hud, title, Array(rules.split("\n")), controls)
 		var pulse := 1.0 + (1.0 - fmod(t, 1.0)) * 0.35
 		if state == "count":
 			UI.text(hud, Vector2(640, 610), str(3 - int(t)), int(80 * pulse), UI.WHITE, 16)
@@ -519,7 +494,7 @@ func _draw_hud() -> void:
 	if my_out and state == "play":
 		var msg := "Éliminé ! Tu as tenu %.1f s" % my_out_time
 		var mw := UI.text_width(msg, 26) + 50.0
-		hud.draw_style_box(UI.box(UI.WHITE, UI.DARK, 4, 16), Rect2(Vector2(640 - mw / 2.0, 640), Vector2(mw, 50)))
+		UI.panel(hud, Rect2(Vector2(640 - mw / 2.0, 640), Vector2(mw, 50)), UI.WHITE, Color("#ffd0d0"), 20, 4)
 		UI.text(hud, Vector2(640, 664), msg, 26, UI.RED, 0)
 	if state == "over":
 		hud.draw_rect(Rect2(0, 0, 1280, 720), Color(UI.DARK, minf(0.4, t)))
@@ -543,13 +518,13 @@ static func draw_ready_row(h: CanvasItem, mine: bool, ready: Array, all_ids: Arr
 		var id: int = ids[i]
 		var c := Vector2(x0 + i * w + w / 2.0, 650)
 		var ok := ready.has(id)
-		h.draw_circle(c, 22, UI.DARK)
-		h.draw_circle(c, 18, Net.color_of(id).lerp(Color.WHITE, 0.5) if ok else Color("#9da2b6"))
+		h.draw_circle(c, 22, UI.WHITE)
+		h.draw_circle(c, 18, Net.color_of(id).lerp(Color.WHITE, 0.4) if ok else Color("#b4b8c8"))
 		h.draw_set_transform(c + Vector2(0, 16), 0.0, Vector2(0.14, 0.14))
 		h.draw_texture(UI.char_tex(Net.color_idx(id), "idle"), Vector2(-128, -256), Color(1, 1, 1, 1.0 if ok else 0.45))
 		h.draw_set_transform(Vector2.ZERO)
 		if ok:
-			h.draw_circle(c + Vector2(15, 14), 10, UI.DARK)
+			h.draw_circle(c + Vector2(15, 14), 10, UI.WHITE)
 			h.draw_circle(c + Vector2(15, 14), 8, UI.GREEN)
 			h.draw_polyline(PackedVector2Array([c + Vector2(10, 14), c + Vector2(14, 18), c + Vector2(20, 10)]), UI.WHITE, 2.5)
 
@@ -562,5 +537,41 @@ static func draw_duel_banner(h: CanvasItem) -> void:
 	var txt := "DUEL : %s contre %s  -  %d pièces en jeu" % [Net.name_of(ids[0]), Net.name_of(ids[1]), int(Net.mg_data.get("stake", 0))]
 	var w := UI.text_width(txt, 26) + 60.0
 	var r := Rect2(Vector2(640 - w / 2.0, 70), Vector2(w, 50))
-	h.draw_style_box(UI.box(Color("#8a4fd8"), UI.DARK, 4, 16), r)
+	UI.panel(h, r, Color("#8a4fd8"), UI.WHITE, 22, 5)
 	UI.text(h, r.get_center(), txt, 26, UI.WHITE, 6)
+
+
+## Têtes des joueurs en haut (barrées quand ils sont éliminés), façon Mario Party.
+static func draw_heads(h: CanvasItem, ids: Array, out: Dictionary) -> void:
+	var w := 64.0
+	var x0 := 640.0 - ids.size() * w / 2.0
+	for i in ids.size():
+		var id: int = ids[i]
+		var c := Vector2(x0 + i * w + w / 2.0, 44)
+		var o := out.has(id)
+		h.draw_circle(c + Vector2(0, 4), 28, Color(0.13, 0.1, 0.25, 0.2))
+		h.draw_circle(c, 28, UI.WHITE)
+		h.draw_circle(c, 23, Net.color_of(id).lerp(Color.WHITE, 0.35) if not o else Color("#c3c6d4"))
+		h.draw_texture_rect_region(UI.char_tex(Net.color_idx(id), "front"), Rect2(c - Vector2(21, 22), Vector2(42, 38)), Rect2(66, 104, 124, 96), Color(1, 1, 1, 0.45 if o else 1.0))
+		if o:
+			h.draw_line(c + Vector2(-15, -15), c + Vector2(15, 15), UI.RED, 6.0)
+			h.draw_line(c + Vector2(15, -15), c + Vector2(-15, 15), UI.RED, 6.0)
+		if id == Net.my_id():
+			UI.text(h, c + Vector2(0, 38), "TOI", 14, UI.YELLOW, 5)
+
+
+## Panneau d'explication avant un mini-jeu (titre en ruban, règles, commandes).
+static func draw_intro(h: CanvasItem, ttl: String, lines: Array, ctrl: String) -> void:
+	h.draw_rect(Rect2(0, 0, 1280, 720), Color(0.16, 0.12, 0.3, 0.45))
+	var n := lines.size()
+	var r := Rect2(Vector2(230, 150), Vector2(820, 150 + n * 36))
+	UI.panel(h, r, UI.WHITE, Color("#ece9fb"), 30, 6)
+	UI.ribbon(h, Vector2(640, 152), ttl, 40, Color("#8e6cf0"), UI.YELLOW)
+	for i in n:
+		h.draw_string(UI.font(), Vector2(230, 232 + i * 36), str(lines[i]), HORIZONTAL_ALIGNMENT_CENTER, 820, 24, UI.DARK)
+	var cy := 232.0 + n * 36 + 10.0
+	var cw := UI.text_width(ctrl, 17, false) + 50.0
+	var cr := Rect2(Vector2(640 - cw / 2.0, cy - 4), Vector2(cw, 38))
+	var sb := UI.box(Color("#f1effc"), Color(0, 0, 0, 0), 0, 19)
+	h.draw_style_box(sb, cr)
+	h.draw_string(UI.font(), Vector2(640 - cw / 2.0, cy + 21), ctrl, HORIZONTAL_ALIGNMENT_CENTER, cw, 17, Color("#7a7394"))

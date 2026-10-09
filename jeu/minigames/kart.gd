@@ -1023,20 +1023,12 @@ func _draw_item(d: CanvasItem, kind: String, p: Vector2, s: float, rot := 0.0) -
 func _draw_hud() -> void:
 	var h := hud
 	if state == "intro":
-		h.draw_rect(Rect2(0, 0, 1280, 720), Color(UI.DARK, 0.45))
-		var r := Rect2(Vector2(220, 120), Vector2(840, 430))
-		h.draw_style_box(UI.box(UI.WHITE, UI.DARK, 6, 30), r)
-		UI.text(h, Vector2(640, 186), "Grand Prix Aura !", 56, UI.YELLOW, 14)
-		var lines := ["3 tours de circuit : le premier arrivé gagne !",
+		preload("res://minigames/stage.gd").draw_intro(h, "Grand Prix Aura !", ["3 tours de circuit : le premier arrivé gagne !",
 			"Roule sur les cubes « ? » pour avoir un objet :",
 			"banane (posée derrière), carapace (lancée devant), champignon (turbo).",
 			"Tourne longtemps à fond : des étincelles chargent un turbo !",
-			"Les flèches jaunes au sol te propulsent."]
-		for i in lines.size():
-			h.draw_string(UI.font(), Vector2(220, 258 + i * 36), lines[i], HORIZONTAL_ALIGNMENT_CENTER, 840, 23, UI.DARK)
-		var cy := 258 + lines.size() * 36 + 18
-		h.draw_style_box(UI.box(UI.PAPER, UI.DARK, 3, 12), Rect2(Vector2(250, cy - 2), Vector2(780, 40)))
-		h.draw_string(UI.font(), Vector2(250, cy + 25), "Accélérer : Z / ↑ / Espace  ·  Freiner : S / ↓  ·  Tourner : Q D  ·  Objet : Maj / X / clic", HORIZONTAL_ALIGNMENT_CENTER, 780, 16, UI.GREY)
+			"Les flèches jaunes au sol te propulsent."],
+			"Accélérer : Z / ↑ / Espace  ·  Freiner : S / ↓  ·  Tourner : Q D  ·  Objet : Maj / X / clic")
 		preload("res://minigames/stage.gd").draw_ready_row(h, my_ready, ready_ids, karts.keys(), t)
 		return
 	# tour
