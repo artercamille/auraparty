@@ -1,4 +1,4 @@
-# Aura PARTY — état du projet (v0.29)
+# Aura PARTY — état du projet (v0.30)
 
 Party game 2D façon Mario Party, Godot 4.3 (GL Compatibility), GDScript, 2 à 8 joueurs en ligne
 (ENet UDP 7777, via Radmin VPN ou ZeroTier si Mac). Export Windows .exe + Mac .app universelle, jouable à la manette. L'utilisateur (Camille) ne code pas : réponses
@@ -55,7 +55,8 @@ Stats suivies dans `players[id]` : coins_won, mg_wins, reds, steps, used.
 Cases r=47 (espacement régulier ~175 px : si on allonge un chemin, rajouter des cases), chemins 150 px avec petites flèches de sens (`_chevron`), pions `TOKEN_SCALE` 0.42 ; carte (Tab) `MAP_ZOOM` 0.152 + `MAP_OFS` (île à droite de la légende, cartouches cachés).
 Étoile gagnée (achat, bloc caché, fantôme) : grande animation plein écran `board.gd star_celebrate()` (rayons, confettis, étoile à yeux qui file vers le compteur du joueur).
 
-## Les 21 mini-jeux (`Net.MINIGAMES`, fichiers dans `minigames/`)
+## Les 23 mini-jeux (`Net.MINIGAMES`, fichiers dans `minigames/`)
+Documentation joueurs (règles, commandes, gains, aperçus) : **`docs/MINI-JEUX.md`** à la racine du dépôt (liée depuis le README) : la tenir à jour.
 | clé | nom | type |
 |---|---|---|
 | blocks | Gare aux blocs ! | élimination (stage.gd) |
@@ -79,11 +80,14 @@ Cases r=47 (espacement régulier ~175 px : si on allonge un chemin, rajouter des
 | penguins | Pingouins perdus ! | **COOP** Penguin Pushers : l'hôte simule les pingouins (fuite), rang S/A/B selon le temps |
 | chrono | Stop chrono ! | idée de Camille : 3 manches, temps à viser (5-11,5 s), chrono visible 3/2/1,2 s puis caché par un volet ; chacun envoie son temps (`mg_to_host`), l'hôte révèle (`ph` target/run/stopped/reveal) ; score = −total des écarts |
 | kitchen | Cuisine en folie ! | **COOP** façon Overcooked (choix de Camille, pas un vrai MP) : grille 14x8, l'hôte gère objets/planches/feux/commandes ; robots = burgers en boucle |
+| doodle | Toujours plus haut ! | v0.30, demande de Camille « comme Doodle Jump » : colonne de 720 px (papier quadrillé), rebond auto, écran qui boucle, plateformes vertes/bleues (bougent)/marron (cassent)/blanches (disparaissent), ressort, hélice, monstres ; chacun grimpe chez lui (mêmes plateformes, autres en transparence) ; tomber = fini ; 60 s, score = hauteur (m) envoyée à l'hôte. Tests : `DOODLE_ALT=altitude` (départ plus haut), `DOODLE_POSE=1` (image figée pour l'aperçu) |
+| maze | Sors du labyrinthe ! | v0.30, demande de Camille : labyrinthe de haies 19x11 (graine, quelques boucles, salle 3x3 au centre), une sortie loin du centre, caméra qui suit, flèche = direction de la sortie, champignons (vitesse) dans les culs-de-sac, on passe à travers les autres ; fin 15 s après le 1er sorti (90 s max), non sortis classés par cases restantes |
 
 **Jeux coop** : `"coop": true` dans `Net.MINIGAMES` ; jamais en duel ; fin avec `Net.mg_end_coop(pièces, texte)` → tout le monde gagne les mêmes pièces (S 10 / A 7 / B 4 / raté 0), pas d'étoile du dernier mini-jeu. Écran de rang commun : `penguins.gd _draw_result()`.
 
 Ajouter un mini-jeu : créer le .gd, l'ajouter à `Net.MINIGAMES` + à la liste `--checkall` dans net.gd,
-gérer les robots (`Net.autotest != ""`), spectateurs/duel, puis faire son aperçu HD dans `assets/previews/`.
+gérer les robots (`Net.autotest != ""`), spectateurs/duel, puis faire son aperçu HD dans `assets/previews/`,
+et l'ajouter à `docs/MINI-JEUX.md` + au tableau du README + au LISEZ-MOI.
 
 ## Performance (v0.28) — IMPORTANT
 - Le décor fixe de l'île (couches `back`, `ground` + `props`) est **cuit en images** au chargement (`island.gd _bake_all/_bake` :
@@ -118,12 +122,16 @@ gérer les robots (`Net.autotest != ""`), spectateurs/duel, puis faire son aper�
 
 ## Dépendances / pièges importants
 - Si le conteneur est neuf : installer Godot 4.3 (zip GitHub godotengine), les modèles d'export Windows
-  (`Godot_v4.3-stable_export_templates.tpz` → `~/.local/share/godot/export_templates/4.3.stable/`),
+  (`Godot_v4.3-stable_export_templates.tpz` → `~/.local/share/godot/export_templates/4.3.stable/` : n'extraire que
+  `version.txt`, `windows_release_x86_64.exe`, `windows_release_x86_64_console.exe`, `macos.zip` avec
+  `python3 -I tools/zip_distant.py URL_du_tpz templates/version.txt,... DOSSIER` (~190 Mo au lieu d'1 Go)),
   `apt-get install wine64 p7zip-full`, rcedit-x64.exe (GitHub electron/rcedit) déclaré dans
   `~/.config/godot/editor_settings-4.3.tres` (`export/windows/rcedit`, `export/windows/wine = /usr/lib/wine/wine64`).
 - Godot 4.3 en local (`godot`), export : `godot --headless --export-release "Windows Desktop" build/AuraParty.exe`
   (rcedit via wine), vérif : `WINEDEBUG=-all /usr/lib/wine/wine64 build/AuraParty.exe --headless -- --checkall`
-  (36 OK attendus), zip : `7z a -tzip -mx=9 -mm=Deflate`.
+  (38 OK attendus), zip : `7z a -tzip -mx=9 -mm=Deflate`.
+- `build/` n'est PAS dans .gitignore : exporter dans le scratchpad (ou supprimer `jeu/build` avant de committer).
+- Si le dépôt est cloné ailleurs que `/home/claude/potes2` : `ln -s <dépôt>/jeu /home/claude/potes2` (rungame.sh s'y place).
 - **Toujours `godot --headless --import` après avoir ajouté des images**, sinon elles sont nulles (`null`).
 - **Textures : les charger AVANT de dessiner** (dans `_ready`), sinon blanches dans les couches dessinées une seule fois.
 - Imports par défaut en compression lossy 0.9 ; les aperçus (`assets/previews/*.import`) sont en
@@ -148,7 +156,8 @@ gérer les robots (`Net.autotest != ""`), spectateurs/duel, puis faire son aper�
   Succès = ligne `AUTOTEST_OK` dans les logs ; chercher `SCRIPT ERROR`. Logs `[mg]` = mini-jeux tirés.
 - Captures du plateau : `godot -- --debug-screen=board` avec `BOARD_CAM="x,y,zoom"`, `BOARD_SHOT`,
   `BOARD_SHOT_T`, `BOARD_EVENT='{json}|{json}'`, `BOARD_MENU`, `BOARD_MAP=1`.
-  Autres écrans : `--debug-screen=final` (`SHOW_STATS=1`), `--debug-screen=lobby` (`SHOW_OPTIONS=1`).
+  Autres écrans : `--debug-screen=final` (`SHOW_STATS=1`), `--debug-screen=lobby` (`SHOW_OPTIONS=1`, `SHOW_PICKER=1` = choix
+  du mini-jeu ; ajouter `NO_BAKE=1`, sinon la cuisson de l'île bloque l'écran sous xvfb).
 - Lancer les commandes depuis `/home/claude/potes2` (sinon pas de captures).
 - `HL=1` = hôte sans écran : à utiliser pour tester la logique, car l'hôte sous xvfb tourne à ~10 i/s
   dans les arènes (le chrono avance au ralenti, les captures sont décalées).

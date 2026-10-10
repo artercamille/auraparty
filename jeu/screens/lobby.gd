@@ -82,6 +82,8 @@ func _ready() -> void:
 	_refresh()
 	if OS.get_environment("SHOW_OPTIONS") != "":
 		_open_options.call_deferred()
+	if OS.get_environment("SHOW_PICKER") != "":
+		_open_picker.call_deferred()
 
 
 func _cycle_rounds() -> void:

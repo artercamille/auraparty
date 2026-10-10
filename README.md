@@ -3,12 +3,12 @@
 # Aura PARTY
 
 Un party game 2D façon Mario Party, jusqu'à **8 joueurs en ligne**, chacun sur son PC Windows.
-Une grande île volante avec des carrefours, des objets, une boutique, des duels, des étoiles à acheter, et 21 mini-jeux pour se trahir (ou s'entraider) entre potes.
+Une grande île volante avec des carrefours, des objets, une boutique, des duels, des étoiles à acheter, et 23 mini-jeux pour se trahir (ou s'entraider) entre potes.
 
 ## ⬇️ Télécharger
 
-### **[Télécharger Aura PARTY v0.29 pour Windows](https://github.com/artercamille/auraparty/raw/main/telecharger/AuraParty.zip)**
-### **[Télécharger Aura PARTY v0.29 pour Mac](https://github.com/artercamille/auraparty/raw/main/telecharger/AuraParty-Mac.zip)**
+### **[Télécharger Aura PARTY v0.30 pour Windows](https://github.com/artercamille/auraparty/raw/main/telecharger/AuraParty.zip)**
+### **[Télécharger Aura PARTY v0.30 pour Mac](https://github.com/artercamille/auraparty/raw/main/telecharger/AuraParty-Mac.zip)**
 
 **Windows** : dézippe le fichier, puis lance `AuraParty.exe`.
 Si Windows affiche « Windows a protégé votre ordinateur » : *Informations complémentaires* → *Exécuter quand même*.
@@ -46,6 +46,8 @@ Dans le salon, l'hôte peut aussi lancer directement un mini-jeu pour le tester,
 
 ## 🕹️ Les mini-jeux
 
+📖 **[Documentation complète des mini-jeux](docs/MINI-JEUX.md)** : règles détaillées, commandes clavier et manette, gains, aperçus.
+
 | Mini-jeu | Principe |
 |---|---|
 | Gare aux blocs ! | Des blocs s'écrasent du ciel : regarde leur ombre. Dernier debout gagne. |
@@ -67,6 +69,8 @@ Dans le salon, l'hôte peut aussi lancer directement un mini-jeu pour le tester,
 | Mémo-boum ! | (Memory Mash) En équipes : frappe le sol sur les cartes pour les retourner, la première équipe à 4 paires gagne. |
 | Le Capitaine a dit ! | (Shy Guy Says) Lève le même drapeau que le capitaine, sinon il coupe ta corde. Gare aux feintes ! |
 | Roulette-marteau ! | (Spin and Bear It) Choisis ta place sur la roue : celui qui s'arrête devant le marteau est écrasé. |
+| Toujours plus haut ! | 🆕 Façon Doodle Jump : rebondis de plateforme en plateforme (ressorts, hélice, monstres). Tombe et c'est fini ; au bout d'1 minute, le plus haut gagne. |
+| Sors du labyrinthe ! | 🆕 Tout le monde part du centre d'un labyrinthe de haies : le premier sorti gagne. Une flèche montre la direction de la sortie, pas le chemin. |
 | Pingouins perdus ! | **COOP** (Penguin Pushers) Rabattez ensemble les bébés pingouins vers leur parent avant la fin du temps. |
 | Cuisine en folie ! | **COOP** Façon Overcooked : coupez, cuisez, servez burgers et salades en équipe. |
 
@@ -75,6 +79,7 @@ Dans le salon, l'hôte peut aussi lancer directement un mini-jeu pour le tester,
 **Clavier** : plateau : Espace pour valider, ← → pour choisir, Tab pour la carte, 1 à 6 pour les émotes · M pour couper la musique · mini-jeux : bouger Q/D ou flèches · sauter Espace (double saut) · pousser Maj/X/E/clic · plein écran F11.
 Kart : Z/↑/Espace pour accélérer, S/↓ pour freiner, Q/D pour tourner, Maj/X/clic pour l'objet.
 Triathlon : Q/D en alternance (pagaie), Z/S en alternance (vélo), Espace (haies). Fusées : Q/D pour slalomer, Z pour accélérer, S pour freiner.
+Toujours plus haut : Q/D pour se diriger (on rebondit tout seul). Labyrinthe : flèches ou ZQSD.
 
 ## 📸 Captures
 

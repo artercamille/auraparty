@@ -1,5 +1,5 @@
-AURA PARTY - v0.29 (nouveau mini-jeu Stop chrono, textes bien alignés partout)
-==========================================
+AURA PARTY - v0.30 (2 nouveaux mini-jeux : Toujours plus haut ! et Sors du labyrinthe !)
+==========================================================================================
 Jusqu'à 8 joueurs, chacun sur son PC.
 Tout le monde doit avoir CETTE version du jeu (sinon la connexion est refusée).
 Dernière version : https://github.com/artercamille/auraparty
@@ -135,6 +135,18 @@ LES MINI-JEUX
   (← → puis Espace). Une flèche désigne le lanceur : il maintient Espace
   puis lâche. Celui qui s'arrête devant le marteau est écrasé. Une place
   de moins par manche, le dernier épargné gagne.
+- Toujours plus haut ! (façon Doodle Jump) : on rebondit tout seul de
+  plateforme en plateforme, Q/D (← →) pour se diriger ; on sort d'un côté
+  de l'écran, on revient de l'autre. Ressort = super saut, hélice = on
+  s'envole. Les plateformes marron cassent, les blanches disparaissent
+  après un saut. On écrase les monstres en leur sautant dessus, sinon on
+  tombe. Tomber en bas de l'écran = fini. Au bout d'1 minute, le plus
+  haut gagne.
+- Sors du labyrinthe ! : tout le monde part du centre d'un labyrinthe de
+  haies (flèches ou ZQSD). Une seule sortie : le premier dehors gagne ! La
+  flèche jaune montre la direction de la sortie, pas le chemin. Les
+  champignons au fond des culs-de-sac font courir plus vite. Après le
+  premier sorti, les autres ont 15 secondes.
 
 JEUX COOP (tout le monde ensemble contre le jeu, tout le monde gagne les mêmes pièces)
 - Pingouins perdus ! (Penguin Pushers) : ramenez les bébés pingouins à leur
