@@ -459,7 +459,8 @@ func _draw_machine(c: CanvasItem, ctr: Vector2, s: float, id: int, live: bool) -
 		c.draw_circle(bc, 24.0 * k, Color("#ffd23f") if active else (Color("#c9c3dc") if stopped else Color("#f04650")))
 		c.draw_circle(bc + Vector2(-7, -8) * k, 7.0 * k, Color(1, 1, 1, 0.5))
 		if active:
-			UI.text(c, bc + Vector2(0, 46), "ESPACE", 18, UI.WHITE, 6)
+			# au-dessus du bouton (en dessous, la plaque du joueur le cachait)
+			UI.text(c, bc + Vector2(0, -44), "ESPACE", 18, UI.WHITE, 6)
 	# levier
 	var pull := 0.0
 	if live and lever_t >= 0.0:
@@ -474,15 +475,14 @@ func _draw_machine(c: CanvasItem, ctr: Vector2, s: float, id: int, live: bool) -
 	# plaque du joueur
 	var plate := Rect2(Vector2(-180, 214), Vector2(360, 64))
 	UI.panel(c, plate, UI.WHITE, col, 32, 6, false)
-	var hc := Vector2(-150, 246)
+	var fyp := UI.face_center(plate).y
 	var happy := live and mphase == "show" and my_lines.size() > 0
-	c.draw_circle(hc, 36.0, UI.WHITE)
-	c.draw_circle(hc, 30.0, col.darkened(0.1))
-	c.draw_texture_rect_region(_tex["%d" % id], Rect2(hc - Vector2(27, 28 + (6.0 * absf(sin(t * 10.0)) if happy else 0.0)), Vector2(54, 48)), Rect2(66, 104, 124, 96))
+	var hc := Vector2(-150, fyp - (6.0 * absf(sin(t * 10.0)) if happy else 0.0))
+	UI.portrait(c, hc, 32.0, Net.color_idx(id))
 	var sc: int = my_score if live else int(pdata[id]["score"]) if pdata.has(id) else 0
 	var nm := "TOI" if live else Net.name_of(id)
-	UI.text(c, Vector2(-40, 246), nm, 26, col.darkened(0.3), 0)
-	UI.text(c, Vector2(100, 246), "%d pts" % sc, 32, UI.DARK, 0)
+	UI.text(c, Vector2(-40, fyp), nm, 26, col.darkened(0.3), 0)
+	UI.text(c, Vector2(100, fyp), "%d pts" % sc, 32, UI.DARK, 0)
 	var sn: int = spin_n if live else int(pdata[id]["spin"]) if pdata.has(id) else 0
 	var tag := "Tirage %d/%d" % [mini(sn + 1, SPINS), SPINS] if sn < SPINS else "Terminé !"
 	UI.text(c, Vector2(0, -196), tag, 20, UI.WHITE, 6)
@@ -555,8 +555,8 @@ func _draw_card(c: CanvasItem, pos: Vector2, id: int) -> void:
 	c.draw_texture(_tex["%d" % id], Vector2(-128, -256))
 	c.draw_set_transform(Vector2.ZERO)
 	UI.text(c, pos + Vector2(70, 22), Net.name_of(id), 18, col.darkened(0.25), 0)
-	UI.text(c, pos + Vector2(56, 82), "%d" % int(d["score"]), 34, UI.DARK, 0)
-	UI.text(c, pos + Vector2(56, 110), "pts", 15, UI.GREY, 0)
+	UI.text(c, pos + Vector2(56, 74), "%d" % int(d["score"]), 34, UI.DARK, 0)
+	UI.text(c, pos + Vector2(56, 100), "pts", 15, UI.GREY, 0)
 	# mini-grille
 	var g: Array = d["grid"]
 	var gp := pos + Vector2(116, 18)
@@ -573,7 +573,7 @@ func _draw_card(c: CanvasItem, pos: Vector2, id: int) -> void:
 			var b := gp + Vector2((int(l[2]) % 3) * 30.0 + 15.0, (int(l[2]) / 3) * 30.0 + 15.0)
 			c.draw_line(a, b, Color(UI.RED, 0.8), 4.0)
 	var sp := int(d["spin"])
-	UI.text(c, pos + Vector2(165, 116), "%d/%d" % [mini(sp, SPINS), SPINS] if sp < SPINS else "fini", 14, UI.GREY, 0)
+	UI.text(c, pos + Vector2(165, 106), "%d/%d" % [mini(sp, SPINS), SPINS] if sp < SPINS else "fini", 14, UI.GREY, 0)
 	if fresh:
 		UI.text(c, pos + Vector2(165, 60 - (play_t - float(d["at"])) * 30.0), "+%d" % int(d["gain"]), 28, UI.YELLOW, 7)
 

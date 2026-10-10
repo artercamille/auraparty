@@ -1137,10 +1137,12 @@ func _draw_hud() -> void:
 	# tour, étoile, banque : mêmes panneaux du kit, même hauteur, icône qui déborde à gauche
 	var r := Rect2(Vector2(20, 14), Vector2(196, 62))
 	UI.panel(hud, r, Color("#ff6f6f") if Game.final_turns() else Color("#8e6cf0"), UI.WHITE, 22, 5)
-	UI.text(hud, r.position + Vector2(50, 29), "TOUR", 19, Color("#efe8ff"), 5)
-	UI.text(hud, r.position + Vector2(134, 29), "%d/%d" % [mini(Net.round_num, Net.total_rounds), Net.total_rounds], 32, UI.WHITE, 7)
-	_info_panel(Rect2(Vector2(1280 - 238, 14), Vector2(218, 62)), Color("#ffc93c"), "ic_star", "Prix d'une étoile", str(Game.STAR_COST))
-	_info_panel(Rect2(Vector2(1280 - 238, 86), Vector2(218, 62)), Color("#4fc3e8"), "ic_bag", "Banque", str(Game.bank))
+	UI.text(hud, Vector2(r.position.x + 50, UI.face_center(r).y), "TOUR", 19, Color("#efe8ff"), 5)
+	UI.text(hud, Vector2(r.position.x + 134, UI.face_center(r).y), "%d/%d" % [mini(Net.round_num, Net.total_rounds), Net.total_rounds], 32, UI.WHITE, 7)
+	var in_shop := menu == "shop" and shop_step == 1
+	if not in_shop:
+		_info_panel(Rect2(Vector2(1280 - 238, 14), Vector2(218, 62)), Color("#ffc93c"), "ic_star", "Prix d'une étoile", str(Game.STAR_COST))
+		_info_panel(Rect2(Vector2(1280 - 238, 86), Vector2(218, 62)), Color("#4fc3e8"), "ic_bag", "Banque", str(Game.bank))
 	if not (menu == "shop" and shop_step == 1) and not map_view:
 		_draw_cards()
 	if map_view:
@@ -1151,7 +1153,7 @@ func _draw_hud() -> void:
 		var w := UI.text_width(banner, s) + 60.0
 		var br := Rect2(Vector2(640 - w / 2.0, 110), Vector2(w, 66))
 		UI.panel(hud, br, UI.WHITE, banner_col.lightened(0.35), 24, 6)
-		UI.text(hud, br.get_center(), banner, s, banner_col, 8)
+		UI.text(hud, UI.face_center(br), banner, s, banner_col, 8)
 	if not panel.is_empty():
 		_draw_panel()
 	# question en cours
@@ -1177,7 +1179,7 @@ func _draw_hud() -> void:
 				"boo":
 					_menu_boo()
 			if left <= 8:
-				UI.text(hud, Vector2(640, 196), "Choix automatique dans %d s" % left, 22, UI.WHITE, 6)
+				_hint(Vector2(640, 198), "Choix automatique dans %d s" % left, Color("#e2483c"))
 		elif who != me and who != 0:
 			var msg := ""
 			match str(ask.get("what", "")):
@@ -1195,9 +1197,11 @@ func _draw_hud() -> void:
 				UI.text(hud, Vector2(640, 577), msg, 22, Net.color_of(who), 5)
 	if sel >= buttons.size():
 		sel = maxi(0, buttons.size() - 1)
-	if not map_view:
-		UI.key_chip(hud, Vector2(24, 100), "Tab", "carte", 16, "Y")
-		UI.key_chip(hud, Vector2(24, 136), "1-6", "émotes", 16, "LB RB")
+	if not map_view and not (menu == "shop" and shop_step == 1):
+		# légendes alignées sur la même colonne, quelle que soit la largeur des touches
+		var kx := 24.0 + maxf(_chip_w("Tab", "Y"), _chip_w("1-6", "LB RB")) + 10.0
+		_chip_row(Vector2(24, 100), "Tab", "Y", "carte", kx)
+		_chip_row(Vector2(24, 136), "1-6", "LB RB", "émotes", kx)
 	_draw_star_cele()
 
 
@@ -1244,14 +1248,23 @@ func _draw_cards() -> void:
 		var nm := str(disp[id]["name"])
 		if nm.length() > 9:
 			nm = nm.substr(0, 8) + "."
-		UI.text(hud, cr.position + Vector2(112, 17), nm, 17, UI.WHITE, 5)
-		for ic2 in [[74.0, UI.gui("ic_star"), str(int(disp[id]["stars"]))], [cw - 48.0, UI.gui("ic_coin"), str(int(round(float(shown_coins.get(id, 0.0)))))]]:
-			var ip := cr.position + Vector2(float(ic2[0]), 41)
-			hud.draw_texture_rect(ic2[1], Rect2(ip - Vector2(14, 14), Vector2(28, 28)), false)
-			UI.text(hud, ip + Vector2(24, 0), ic2[2], 22, UI.WHITE, 6)
+		UI.text(hud, cr.position + Vector2((60.0 + cw) / 2.0, 17), nm, 17, UI.WHITE, 5)
+		# étoiles à gauche, pièces calées à droite : chaque nombre collé à son icône, sans jamais se toucher
+		var sn := str(int(disp[id]["stars"]))
+		var cn := str(int(round(float(shown_coins.get(id, 0.0)))))
+		var nfs := 22
+		while nfs > 15 and 2.0 * 27.0 + UI.text_width(sn, nfs) + UI.text_width(cn, nfs) + 14.0 > cw - 76.0:
+			nfs -= 1
+		var ny := cr.position.y + 41.0
+		var sx0 := cr.position.x + 68.0
+		hud.draw_texture_rect(UI.gui("ic_star"), Rect2(Vector2(sx0, ny - 13), Vector2(26, 26)), false)
+		UI.text_left(hud, Vector2(sx0 + 28.0, ny), sn, nfs, UI.WHITE, 5)
+		var cx1 := cr.end.x - 9.0 - UI.text_width(cn, nfs)
+		UI.text_left(hud, Vector2(cx1, ny), cn, nfs, UI.WHITE, 5)
+		hud.draw_texture_rect(UI.gui("ic_coin"), Rect2(Vector2(cx1 - 28.0, ny - 13), Vector2(26, 26)), false)
 		var items: Array = disp[id].get("items", [])
 		for j in Items.MAX_HELD:
-			var ic := cr.position + Vector2(80 + j * 26, 64)
+			var ic := cr.position + Vector2((60.0 + cw) / 2.0 - 26.0 + j * 26.0, 64)
 			hud.draw_circle(ic, 11.0, col.darkened(0.3))
 			hud.draw_circle(ic + Vector2(0, 1), 9.5, col.darkened(0.12))
 			if j < items.size():
@@ -1263,14 +1276,14 @@ func _draw_cards() -> void:
 
 
 func _draw_legend() -> void:
-	var r := Rect2(Vector2(20, 140), Vector2(296, 34 + LEGEND.size() * 38 + 30))
+	var r := Rect2(Vector2(20, 128), Vector2(316, 44 + LEGEND.size() * 36 + 50))
 	UI.panel(hud, r, UI.PAPER, UI.WHITE, 20, 5)
-	UI.text(hud, r.position + Vector2(148, 24), "Carte de l'île", 22, UI.INK, 0)
+	UI.text(hud, r.position + Vector2(r.size.x / 2.0, 28), "Carte de l'île", 22, UI.INK, 0)
 	for i in LEGEND.size():
-		var y := r.position.y + 58 + i * 38
-		Island.draw_space(hud, Vector2(r.position.x + 30, y), str(LEGEND[i][0]), 14.0, true)
-		hud.draw_string(UI.font(), Vector2(r.position.x + 56, y + 7), str(LEGEND[i][1]), HORIZONTAL_ALIGNMENT_LEFT, -1, 18, UI.DARK)
-	UI.text(hud, Vector2(r.position.x + 148, r.end.y - 22), ("Y : revenir au jeu" if UI.pad_mode else "Tab : revenir au jeu"), 17, UI.GREY, 0)
+		var y := r.position.y + 62 + i * 36
+		Island.draw_space(hud, Vector2(r.position.x + 32, y), str(LEGEND[i][0]), 14.0, true)
+		UI.text_left(hud, Vector2(r.position.x + 58, y), str(LEGEND[i][1]), 18, UI.DARK, 0, false)
+	UI.text(hud, Vector2(r.position.x + r.size.x / 2.0, r.end.y - 30), ("Y : revenir au jeu" if UI.pad_mode else "Tab : revenir au jeu"), 17, UI.GREY, 0)
 
 
 func _draw_panel() -> void:
@@ -1294,11 +1307,11 @@ func _draw_panel() -> void:
 				hud.draw_texture(UI.char_tex(Net.color_idx(lid), "jump" if fmod(k, 0.8) < 0.4 else "idle"), Vector2(-128, -256), Color(1, 1, 1, a))
 				hud.draw_set_transform(Vector2.ZERO)
 				UI.text(hud, r5.position + Vector2(130, 228), Net.name_of(lid), 24, Color(Net.color_of(lid), a), 6)
-				hud.draw_string(UI.font(true), r5.position + Vector2(250, 80), "Coup de pouce pour le dernier :", HORIZONTAL_ALIGNMENT_LEFT, 420, 24, Color(UI.DARK, a))
-				UI.text(hud, r5.position + Vector2(460, 125), "+%d pièces !" % int(panel["bonus"]), 40, Color(Color("#ffc93c"), a), 8)
+				UI.text(hud, r5.position + Vector2(450, 64), "Coup de pouce pour le dernier :", 24, Color(UI.DARK, a), 0)
+				UI.text(hud, r5.position + Vector2(450, 112), "+%d pièces !" % int(panel["bonus"]), 40, Color(Color("#ffc93c"), a), 8)
 			if k > 2.4:
-				hud.draw_string(UI.font(true), r5.position + Vector2(250, 200), "Jusqu'à la fin :", HORIZONTAL_ALIGNMENT_LEFT, 420, 24, Color(UI.DARK, a))
-				hud.draw_string(UI.font(), r5.position + Vector2(250, 240), "cases bleues +6 et cases rouges -6 !", HORIZONTAL_ALIGNMENT_LEFT, 440, 22, Color(UI.DARK, a))
+				UI.text(hud, r5.position + Vector2(450, 186), "Jusqu'à la fin :", 24, Color(UI.DARK, a), 0)
+				UI.text(hud, r5.position + Vector2(450, 226), "cases bleues +6 et cases rouges -6 !", 22, Color(UI.DARK, a), 0, false)
 		"card":
 			var flip := clampf((k - 0.5) * 4.0, 0.0, 1.0)
 			var sx := absf(cos(flip * PI))
@@ -1310,11 +1323,21 @@ func _draw_panel() -> void:
 				if sx > 0.3:
 					UI.text(hud, center, "!", 120, Color(1, 1, 1, a), 14)
 			elif sx > 0.6:
-				UI.text(hud, center + Vector2(0, -130), "CARTE CHANCE", 22, Color(Color("#ff9a2e"), a), 0)
-				UI.text(hud, center + Vector2(0, -80), str(panel["title"]), 34, Color(UI.DARK, a), 0)
-				hud.draw_multiline_string(UI.font(), center + Vector2(-130, -20), str(panel["text"]), HORIZONTAL_ALIGNMENT_CENTER, 260, 22, 4, Color(UI.GREY, a))
-				if k > 1.5:
-					hud.draw_multiline_string(UI.font(true), center + Vector2(-130, 100), str(panel["result"]), HORIZONTAL_ALIGNMENT_CENTER, 260, 28, 3, Color(UI.BLUE, a))
+				# étiquette, titre, texte et résultat empilés puis centrés dans la carte
+				var ctext := str(panel["text"])
+				var cres := str(panel.get("result", ""))
+				var th := UI.block_height(UI.wrap_lines(ctext, 22, 250.0).size(), 22)
+				var rh := UI.block_height(UI.wrap_lines(cres, 28, 250.0, true).size(), 28, 1.2) if cres != "" else 0.0
+				var tot := 22.0 * 0.7 + 22.0 + 34.0 * 0.7 + 26.0 + th + (28.0 + rh if cres != "" else 0.0)
+				var y0 := center.y - tot / 2.0
+				UI.text(hud, Vector2(center.x, y0 + 22.0 * 0.35), "CARTE CHANCE", 22, Color(Color("#ff9a2e"), a), 0)
+				y0 += 22.0 * 0.7 + 22.0
+				UI.text(hud, Vector2(center.x, y0 + 34.0 * 0.35), str(panel["title"]), 34, Color(UI.DARK, a), 0)
+				y0 += 34.0 * 0.7 + 26.0
+				UI.text_block(hud, Vector2(center.x, y0 + th / 2.0), ctext, 22, 250.0, Color(UI.GREY, a))
+				y0 += th + 28.0
+				if k > 1.5 and cres != "":
+					UI.text_block(hud, Vector2(center.x, y0 + rh / 2.0), cres, 28, 250.0, Color(UI.BLUE, a), 0, true, 1.2)
 		"duel":
 			var w := 760.0
 			var rr2 := Rect2(center - Vector2(w / 2.0, 120), Vector2(w, 240))
@@ -1332,27 +1355,36 @@ func _draw_panel() -> void:
 			UI.text(hud, center + Vector2(0, 10), "VS", 64, Color(UI.WHITE, a), 10)
 			UI.text(hud, center + Vector2(0, 80), "%d pièces en jeu" % int(panel["stake"]), 24, Color(UI.WHITE, a), 6)
 		_:
-			var w2 := 600.0
+			# titre + texte centrés ensemble sur la face claire ; l'icône (s'il y en a une) à gauche, au même centre
 			var it := str(panel.get("item", ""))
-			var rr3 := Rect2(center - Vector2(w2 / 2.0, 100), Vector2(w2, 200))
-			UI.panel(hud, rr3, Color(UI.WHITE, a), Color(Color(panel.get("col", UI.BLUE)).lightened(0.45), a), 28, 6)
-			UI.text(hud, center + Vector2(0, -58), str(panel["title"]), 34, Color(panel.get("col", UI.BLUE), a), 0)
-			var tx := center + Vector2(-260, -12)
-			var tw := 520.0
 			var ptex := str(panel.get("tex", ""))
+			var pcol := Color(panel.get("col", UI.BLUE))
+			var has_icon := it != "" or ptex != ""
+			var w2 := 640.0
+			var iw := 150.0 if has_icon else 0.0
+			var tw := w2 - iw - 70.0
+			var body := str(panel["text"])
+			var nl := UI.wrap_lines(body, 24, tw).size() if body != "" else 0
+			var body_h := UI.block_height(nl, 24) if nl > 0 else 0.0
+			var block_h := 34.0 * 0.7 + (22.0 + body_h if nl > 0 else 0.0)
+			var h3 := maxf(190.0, block_h + 100.0)
+			var rr3 := Rect2(center - Vector2(w2 / 2.0, h3 / 2.0), Vector2(w2, h3))
+			UI.panel(hud, rr3, Color(UI.WHITE, a), Color(pcol.lightened(0.45), a), 28, 6)
+			var fc := UI.face_center(rr3)
+			var colx := rr3.position.x + iw + 35.0 + tw / 2.0
+			var top := fc.y - block_h / 2.0
+			UI.text(hud, Vector2(colx, top + 34.0 * 0.35), str(panel["title"]), 34, Color(pcol, a), 0)
+			if nl > 0:
+				UI.text_block(hud, Vector2(colx, top + 34.0 * 0.7 + 22.0 + body_h / 2.0), body, 24, tw, Color(UI.DARK, a))
+			var ic := Vector2(rr3.position.x + 30.0 + iw / 2.0, fc.y)
 			if it != "":
-				Items.draw_icon(hud, it, center + Vector2(-230, 30), 1.6)
-				tx = center + Vector2(-170, -12)
-				tw = 430.0
+				Items.draw_icon(hud, it, ic, 1.6)
 			elif ptex != "":
 				var tt: Texture2D = {"ghost": tex_ghost, "fire": tex_fire, "block": tex_block}.get(ptex)
-				var ic := center + Vector2(-220, 30 + sin(t * 4.0) * 5.0)
-				hud.draw_circle(ic, 52.0, Color(Color(panel.get("col", UI.BLUE)).lightened(0.6), a))
+				var icb := ic + Vector2(0, sin(t * 4.0) * 5.0)
+				hud.draw_circle(icb, 56.0, Color(pcol.lightened(0.6), a))
 				if tt:
-					hud.draw_texture_rect(tt, Rect2(ic - Vector2(42, 42), Vector2(84, 84)), false, Color(1, 1, 1, a) if ptex != "fire" else Color(Color("#b8322a"), a))
-				tx = center + Vector2(-160, -12)
-				tw = 420.0
-			hud.draw_multiline_string(UI.font(), tx, str(panel["text"]), HORIZONTAL_ALIGNMENT_CENTER, tw, 24, 4, Color(UI.DARK, a))
+					hud.draw_texture_rect(tt, Rect2(icb - Vector2(42, 42), Vector2(84, 84)), false, Color(1, 1, 1, a) if ptex != "fire" else Color(Color("#b8322a"), a))
 
 
 ## « Qui commence ? » : un bloc par joueur, les chiffres défilent puis s'arrêtent.
@@ -1392,7 +1424,7 @@ func _draw_order(k: float, a: float) -> void:
 		var br := Rect2(c + Vector2(-42, -110), Vector2(84, 84))
 		var val := int(rolls[id]) if done else 1 + int(t * 18.0 + i * 3) % 10
 		UI.panel(hud, br, Color(Color("#ffc93c") if not done else UI.WHITE, a), Color(1, 1, 1, a), 16, 5)
-		UI.text(hud, br.get_center(), str(val), 44, Color(UI.DARK if done else UI.WHITE, a), 0 if done else 7)
+		UI.text(hud, UI.face_center(br), str(val), 44, Color(UI.DARK if done else UI.WHITE, a), 0 if done else 7)
 		if k > 3.0 + n * 0.45:
 			var rk := order.find(id)
 			if rk >= 0 and k > stop_t + 0.3:
@@ -1402,7 +1434,7 @@ func _draw_order(k: float, a: float) -> void:
 				hud.draw_circle(badge, 18.0, Color(mc, a))
 				UI.text(hud, badge, str(rk + 1), 22, Color(1, 1, 1, a), 5)
 	if not stopped.has(Net.my_id()) and rolls.has(Net.my_id()):
-		UI.text(hud, Vector2(640, 640), "ESPACE : tape ton bloc !", 30, Color(UI.YELLOW, a), 8)
+		UI.text(hud, Vector2(640, 596), "ESPACE : tape ton bloc !", 30, Color(UI.YELLOW, a), 8)
 
 
 func _title(txt: String, y: float) -> void:
@@ -1435,7 +1467,40 @@ func _menu_action() -> void:
 			var ar := c + Vector2(-sz.x / 2.0 - 10.0 + 6.0 * sin(t * 8.0), 8)
 			hud.draw_colored_polygon(PackedVector2Array([ar + Vector2(-20, -18), ar + Vector2(10, 0), ar + Vector2(-20, 18)]), UI.outline_of(UI.YELLOW))
 			hud.draw_colored_polygon(PackedVector2Array([ar + Vector2(-16, -12), ar + Vector2(4, 0), ar + Vector2(-16, 12)]), Color("#ffd23f"))
-	UI.text(hud, Vector2(1010, 560), "ESPACE : valider  ·  ↑ ↓ : choisir", 17, UI.WHITE, 5)
+	_hint(Vector2(1010, 562), "ESPACE : valider  ·  ↑ ↓ : choisir")
+
+
+func _chip_w(key: String, pad: String) -> float:
+	if UI.pad_mode:
+		var w := 0.0
+		for b in pad.split(" "):
+			w += (30.0 if b.length() == 1 else maxf(34.0, UI.text_width(b, 16) + 20.0)) + 5.0
+		return w - 5.0
+	return maxf(30.0, UI.text_width(key, 16) + 18.0)
+
+
+func _chip_row(lm: Vector2, key: String, pad: String, label: String, label_x: float) -> void:
+	if UI.pad_mode:
+		var x := 0.0
+		for b in pad.split(" "):
+			x += UI.pad_chip(hud, lm + Vector2(x, 0), b, 16) + 5.0
+	else:
+		var kw := _chip_w(key, pad)
+		var kr := Rect2(lm - Vector2(0, 15), Vector2(kw, 30))
+		var kb := UI.KitBox.new()
+		kb.col = UI.PAPER
+		kb.radius = 8
+		hud.draw_style_box(kb, kr)
+		UI.text(hud, UI.face_center(kr), key, 16, UI.INK, 0)
+	UI.text_left(hud, Vector2(label_x, lm.y), label, 16, UI.WHITE, 5)
+
+
+## Ligne d'aide (touches) : petite pastille sombre, texte blanc centré, même style partout sur le plateau.
+func _hint(c: Vector2, txt: String, col := Color("#3d4470")) -> void:
+	var w := UI.text_width(txt, 17) + 36.0
+	var r := Rect2(c - Vector2(w / 2.0, 19), Vector2(w, 38))
+	UI.panel(hud, r, col, UI.WHITE, 19, 4)
+	UI.text(hud, UI.face_center(r), txt, 17, UI.WHITE, 4)
 
 
 func _map_icon(c: Vector2) -> void:
@@ -1461,12 +1526,12 @@ func _menu_items() -> void:
 		var k := str(items[i])
 		var r := Rect2(Vector2(x0 + i * (w + 14.0), 388), Vector2(w, 170))
 		_btn(r, "item:" + k)
-		Items.draw_icon(hud, k, r.position + Vector2(w / 2.0, 50), 1.4)
-		UI.text(hud, r.position + Vector2(w / 2.0, 104), Items.item_name(k), 23, UI.DARK, 0)
-		hud.draw_multiline_string(UI.font(), r.position + Vector2(12, 132), Items.desc(k), HORIZONTAL_ALIGNMENT_CENTER, w - 24, 16, 2, UI.GREY)
+		Items.draw_icon(hud, k, r.position + Vector2(w / 2.0, 46), 1.4)
+		UI.text(hud, r.position + Vector2(w / 2.0, 96), Items.item_name(k), 23, UI.DARK, 0)
+		UI.text_block(hud, r.position + Vector2(w / 2.0, 130), Items.desc(k), 16, w - 28.0, UI.GREY, 0, false, 1.25)
 	var rb := Rect2(Vector2(x0 + items.size() * (w + 14.0), 438), Vector2(w * 0.6, 70))
 	_btn(rb, "back")
-	UI.text(hud, rb.get_center(), "Retour", 22, UI.DARK, 0)
+	UI.text(hud, UI.face_center(rb), "Retour", 22, UI.DARK, 0)
 
 
 func _menu_target() -> void:
@@ -1483,10 +1548,10 @@ func _menu_target() -> void:
 		hud.draw_texture(UI.char_tex(Net.color_idx(pid)), Vector2(-128, -256))
 		hud.draw_set_transform(Vector2.ZERO)
 		UI.text(hud, r.position + Vector2(w / 2.0, 100), Net.name_of(pid), 18, Net.color_of(pid).darkened(0.2), 0)
-		hud.draw_string(UI.font(true), r.position + Vector2(w - 50, 22), str(int(disp.get(pid, {}).get("coins", 0))), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, UI.GREY)
+		_coin_tag(r.position + Vector2(w - 12, 20), int(disp.get(pid, {}).get("coins", 0)))
 	var rb := Rect2(Vector2(x0 + others.size() * (w + 10.0), 461), Vector2(w * 0.7, 70))
 	_btn(rb, "back")
-	UI.text(hud, rb.get_center(), "Retour", 20, UI.DARK, 0)
+	UI.text(hud, UI.face_center(rb), "Retour", 20, UI.DARK, 0)
 
 
 func _menu_custom() -> void:
@@ -1494,19 +1559,19 @@ func _menu_custom() -> void:
 	var c := Vector2(640, 492)
 	var rm := Rect2(c + Vector2(-190, -40), Vector2(80, 80))
 	_btn(rm, "minus")
-	UI.text(hud, rm.get_center(), "<", 40, UI.DARK, 0)
+	UI.text(hud, UI.face_center(rm), "<", 40, UI.DARK, 0)
 	hud.draw_style_box(UI.box(Color("#facd2d"), UI.DARK, 5, 18), Rect2(c - Vector2(60, 50), Vector2(120, 100)))
 	UI.text(hud, c, str(custom_val), 64, UI.WHITE, 10)
 	var rp := Rect2(c + Vector2(110, -40), Vector2(80, 80))
 	_btn(rp, "plus")
-	UI.text(hud, rp.get_center(), ">", 40, UI.DARK, 0)
+	UI.text(hud, UI.face_center(rp), ">", 40, UI.DARK, 0)
 	var ro := Rect2(c + Vector2(210, -35), Vector2(130, 70))
 	_btn(ro, "ok")
-	UI.text(hud, ro.get_center(), "Valider", 22, UI.DARK, 0)
+	UI.text(hud, UI.face_center(ro), "Valider", 22, UI.DARK, 0)
 	var rb := Rect2(c + Vector2(-340, -35), Vector2(130, 70))
 	_btn(rb, "back")
-	UI.text(hud, rb.get_center(), "Retour", 22, UI.DARK, 0)
-	UI.text(hud, Vector2(640, 566), "← → : changer  ·  ESPACE : valider", 18, UI.WHITE, 5)
+	UI.text(hud, UI.face_center(rb), "Retour", 22, UI.DARK, 0)
+	_hint(Vector2(640, 570), "← → : changer  ·  ESPACE : valider")
 
 
 func _menu_branch() -> void:
@@ -1520,10 +1585,10 @@ func _menu_branch() -> void:
 		var cost := int(o.get("cost", 0))
 		var r := Rect2(Vector2(x0 + i * (w + 16.0), 504), Vector2(w, 70))
 		_btn(r, "to:%d" % int(o["to"]), cost <= coins)
-		UI.text(hud, r.get_center() + Vector2(0, -10 if cost > 0 else 0), str(o.get("name", "?")), 23, UI.DARK if cost <= coins else UI.GREY, 0)
+		UI.text(hud, UI.face_center(r) + Vector2(0, -10 if cost > 0 else 0), str(o.get("name", "?")), 23, UI.DARK if cost <= coins else UI.GREY, 0)
 		if cost > 0:
-			UI.text(hud, r.get_center() + Vector2(0, 18), ("Rocher piquant : %d pièces" if o.get("rock", false) else "Péage : %d pièces") % cost, 17, UI.RED if cost > coins else Color("#b37a00"), 0)
-	UI.text(hud, Vector2(640, 596), "← → : choisir  ·  ESPACE : valider  ·  %d pas restants" % int(ask.get("left", 0)), 18, UI.WHITE, 5)
+			UI.text(hud, UI.face_center(r) + Vector2(0, 18), ("Rocher piquant : %d pièces" if o.get("rock", false) else "Péage : %d pièces") % cost, 17, UI.RED if cost > coins else Color("#b37a00"), 0)
+	_hint(Vector2(640, 598), "← → : choisir  ·  ESPACE : valider  ·  %d pas restants" % int(ask.get("left", 0)))
 
 
 func _menu_shop() -> void:
@@ -1564,11 +1629,11 @@ func _menu_shop() -> void:
 		hud.draw_circle(ip + Vector2(0, 6), 62.0, Color(0, 0, 0, 0.15))
 		hud.draw_circle(ip, 60.0, Color("#fff1d6"))
 		Items.draw_icon(hud, cur, ip, 2.2)
-		UI.text(hud, Vector2(500, 176), Items.item_name(cur), 38, UI.WHITE, 8)
+		UI.text(hud, Vector2(510, 174), Items.item_name(cur), 38, UI.WHITE, 8)
 		hud.draw_line(Vector2(320, 214), Vector2(700, 214), Color(1, 1, 1, 0.85), 3.0)
-		hud.draw_string(UI.font(), Vector2(320, 250), Items.desc(cur), HORIZONTAL_ALIGNMENT_CENTER, 380, 21, UI.WHITE)
+		UI.text_block(hud, Vector2(510, 262), Items.desc(cur), 21, 380.0, UI.WHITE, 5)
 	else:
-		UI.text(hud, Vector2(500, 196), "Tu repars sans rien ?", 32, UI.WHITE, 8)
+		UI.text(hud, Vector2(510, 196), "Tu repars sans rien ?", 32, UI.WHITE, 8)
 	# l'étagère et les objets
 	var shelf_y := 440.0
 	hud.draw_style_box(UI.box(Color("#d39a62"), Color(0, 0, 0, 0), 0, 8), Rect2(Vector2(wall.position.x + 8, shelf_y + 34), Vector2(wall.size.x - 16, 26)))
@@ -1600,14 +1665,15 @@ func _menu_shop() -> void:
 	# bas : pièces, sac, partir
 	var info := Rect2(Vector2(150, 612), Vector2(330, 48))
 	UI.panel(hud, info, UI.WHITE, Color("#ece9fb"), 22, 4)
-	hud.draw_set_transform(info.position + Vector2(30, 24), 0.0, Vector2(0.24, 0.24))
+	var ifc := UI.face_center(info)
+	hud.draw_set_transform(Vector2(info.position.x + 30, ifc.y), 0.0, Vector2(0.24, 0.24))
 	hud.draw_texture(tex_coin, Vector2(-64, -64))
 	hud.draw_set_transform(Vector2.ZERO)
-	hud.draw_string(UI.font(true), info.position + Vector2(52, 32), "%d pièces   ·   Sac %d/%d" % [coins, _my_items().size(), Items.MAX_HELD], HORIZONTAL_ALIGNMENT_LEFT, -1, 21, UI.RED if full else UI.DARK)
+	UI.text_left(hud, Vector2(info.position.x + 54, ifc.y), "%d pièces   ·   Sac %d/%d" % [coins, _my_items().size(), Items.MAX_HELD], 21, UI.RED if full else UI.DARK, 0)
 	var rl := Rect2(Vector2(1280 - 150 - 220, 610), Vector2(220, 52))
 	_btn(rl, "leave")
-	UI.text(hud, rl.get_center(), "Partir", 24, UI.DARK, 0)
-	UI.text(hud, Vector2(640, 690), "← → : choisir  ·  ESPACE : acheter  ·  Échap : partir", 18, UI.WHITE, 5)
+	UI.text(hud, UI.face_center(rl), "Partir", 24, UI.DARK, 0)
+	_hint(Vector2(640, 690), "← → : choisir  ·  ESPACE : acheter  ·  Échap : partir")
 
 
 ## Bulle de dialogue blanche avec une petite pointe vers celui qui parle.
@@ -1616,7 +1682,7 @@ func _bubble(r: Rect2, txt: String, tail: Vector2) -> void:
 	hud.draw_style_box(UI.box(Color(0.13, 0.1, 0.25, 0.18), Color(0, 0, 0, 0), 0, int(r.size.y / 2.0)), Rect2(r.position + Vector2(0, 6), r.size))
 	hud.draw_colored_polygon(tip, UI.WHITE)
 	hud.draw_style_box(UI.box(UI.WHITE, Color(0, 0, 0, 0), 0, int(r.size.y / 2.0)), r)
-	hud.draw_multiline_string(UI.font(), r.position + Vector2(20, r.size.y / 2.0 - 4), txt, HORIZONTAL_ALIGNMENT_CENTER, r.size.x - 40, 24, 2, UI.DARK)
+	UI.text_block(hud, r.get_center(), txt, 24, r.size.x - 40.0, UI.DARK)
 
 
 ## « Bienvenue à la boutique ! Veux-tu acheter quelque chose ? »  D'accord ! / Non, merci.
@@ -1637,7 +1703,7 @@ func _shop_intro() -> void:
 		if focus:
 			hud.draw_circle(rr.position + Vector2(26, 27), 15.0, UI.DARK)
 			hud.draw_polyline(PackedVector2Array([rr.position + Vector2(22, 19), rr.position + Vector2(30, 27), rr.position + Vector2(22, 35)]), Color("#ffe066"), 4.0)
-		UI.text(hud, rr.get_center() + Vector2(10, 0), opts[i][1], 26, UI.WHITE if focus else UI.DARK, 5 if focus else 0)
+		UI.text(hud, UI.face_center(rr) + Vector2(10, 0), opts[i][1], 26, UI.WHITE if focus else UI.DARK, 5 if focus else 0)
 
 
 ## Le fantôme : « Que veux-tu que je vole ? » puis « À qui ? »
@@ -1656,7 +1722,7 @@ func _menu_boo() -> void:
 			var focus := sel == i
 			var on: bool = opts[i][2]
 			UI.panel(hud, r.grow(3) if focus else r, Color("#8e6cf0") if focus else (UI.WHITE if on else Color("#d5d8e3")), UI.WHITE, 27, 4)
-			UI.text(hud, r.get_center(), opts[i][1], 23, UI.WHITE if focus else (UI.DARK if on else UI.GREY), 5 if focus else 0)
+			UI.text(hud, UI.face_center(r), opts[i][1], 23, UI.WHITE if focus else (UI.DARK if on else UI.GREY), 5 if focus else 0)
 	else:
 		_bubble(Rect2(Vector2(330, 250), Vector2(560, 90)), "À qui je vole %s ?" % ("une étoile" if boo_do == "star" else "des pièces"), Vector2(370, 360))
 		var others: Array = ask.get("options", [])
@@ -1672,7 +1738,7 @@ func _menu_boo() -> void:
 			UI.text(hud, r.position + Vector2(w / 2.0, 104), Net.name_of(pid), 18, Net.color_of(pid).darkened(0.2), 0)
 			var info := "%d étoile(s)" % int(disp.get(pid, {}).get("stars", 0)) if boo_do == "star" else "%d pièces" % int(disp.get(pid, {}).get("coins", 0))
 			UI.text(hud, r.position + Vector2(w / 2.0, 122), info, 15, UI.GREY, 0)
-	UI.text(hud, Vector2(640, 690), "← → : choisir  ·  ESPACE : valider  ·  Échap : retour", 18, UI.WHITE, 5)
+	_hint(Vector2(640, 598), "← → : choisir  ·  ESPACE : valider  ·  Échap : retour")
 
 
 func _menu_duel() -> void:
@@ -1688,7 +1754,16 @@ func _menu_duel() -> void:
 		hud.draw_texture(UI.char_tex(Net.color_idx(pid)), Vector2(-128, -256))
 		hud.draw_set_transform(Vector2.ZERO)
 		UI.text(hud, r.position + Vector2(w / 2.0, 100), Net.name_of(pid), 18, Net.color_of(pid).darkened(0.2), 0)
-		hud.draw_string(UI.font(true), r.position + Vector2(w - 50, 22), str(int(disp.get(pid, {}).get("coins", 0))), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, UI.GREY)
+		_coin_tag(r.position + Vector2(w - 12, 20), int(disp.get(pid, {}).get("coins", 0)))
+	_hint(Vector2(640, 598), "← → : choisir  ·  ESPACE : valider")
+
+
+## Petit compteur de pièces (icône + nombre) calé à droite sur `right_mid`.
+func _coin_tag(right_mid: Vector2, n: int) -> void:
+	var s2 := str(n)
+	var w := UI.text_width(s2, 16)
+	UI.text_left(hud, Vector2(right_mid.x - w, right_mid.y), s2, 16, UI.DARK, 0)
+	hud.draw_texture_rect(UI.gui("ic_coin"), Rect2(Vector2(right_mid.x - w - 24, right_mid.y - 10), Vector2(20, 20)), false)
 
 
 func _save_debug_shot() -> void:

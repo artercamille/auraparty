@@ -462,7 +462,7 @@ func draw_timer() -> void:
 	var left := maxi(0, ceili(duration - play_t))
 	var r := Rect2(Vector2(24, 18), Vector2(120, 52))
 	UI.panel(hud, r, UI.WHITE, Color("#e4e2f2"), 18, 4)
-	UI.text(hud, r.get_center(), "%d s" % left, 30, UI.RED if left <= 10 else UI.DARK, 0)
+	UI.text(hud, UI.face_center(r), "%d s" % left, 30, UI.RED if left <= 10 else UI.DARK, 0)
 
 
 func _draw_hud() -> void:
@@ -550,16 +550,22 @@ static func draw_intro(h: CanvasItem, ttl: String, lines: Array, ctrl: String) -
 		h.draw_style_box(UI.box(Color("#c9e8f7"), Color(0, 0, 0, 0), 0, 16), pr)
 		UI.text(h, pr.get_center(), ttl, 34, UI.WHITE, 8)
 	# explication
-	var y := pr.end.y + 34.0
+	# explication : bloc centré verticalement entre l'aperçu et le bas de la carte
 	var fs := 21 if lines.size() <= 4 else 19
-	var step := (card.end.y - 18.0 - y) / maxf(1.0, float(lines.size()))
-	step = minf(step, 30.0)
+	var top := pr.end.y + 14.0
+	var bottom := UI.face_center(card).y * 2.0 - card.position.y - 14.0
+	var n := maxi(1, lines.size())
+	var step := minf(fs * 1.45, (bottom - top - fs * 0.7) / maxf(1.0, float(n - 1)))
+	var bh := (n - 1) * step + fs * 0.7
+	var y := (top + bottom) / 2.0 - bh / 2.0 + fs * 0.35
 	for i in lines.size():
-		h.draw_string(UI.font(), Vector2(card.position.x + 20, y + i * step + 6), UI.padify(str(lines[i])), HORIZONTAL_ALIGNMENT_CENTER, card.size.x - 40, fs, UI.DARK)
+		UI.text(h, Vector2(card.get_center().x, y + i * step), str(lines[i]), fs, UI.DARK, 0, false)
 	# commandes
 	var cx := 856.0
-	UI.text(h, Vector2(cx + 120, 66), "Commandes", 36, UI.DARK, 0)
-	_pad_icon(h, Vector2(cx + 280, 66))
+	var hw := UI.text_width("Commandes", 36) + 16.0 + 64.0
+	var hx := (cx + 1250.0) / 2.0 - hw / 2.0
+	UI.text_left(h, Vector2(hx, 64), "Commandes", 36, UI.DARK, 0)
+	_pad_icon(h, Vector2(hx + hw - 32.0, 64))
 	h.draw_line(Vector2(cx, 98), Vector2(1250, 98), UI.DARK, 4.0)
 	var yy2 := 132.0
 	for part in ctrl.split("·"):
@@ -634,7 +640,7 @@ static func _keys(h: CanvasItem, at: Vector2, keys: String, maxw: float) -> floa
 			if pk:
 				pw = UI.pad_chip(h, Vector2(x, y), tk, 16) + 7.0
 			else:
-				h.draw_string(UI.font(), Vector2(x, y + 7), tk, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(UI.INK, 0.8))
+				UI.text_left(h, Vector2(x, y), tk, 18, Color(UI.INK, 0.8), 0, false)
 			x += pw
 			continue
 		var is_key := tk in KEY_WORDS or (tk.length() == 1 and tk != "/" and tk != "+" and tk.to_upper() == tk and tk.to_lower() != tk) or tk.is_valid_int()
@@ -649,9 +655,9 @@ static func _keys(h: CanvasItem, at: Vector2, keys: String, maxw: float) -> floa
 			kb.col = UI.PAPER
 			kb.radius = 9
 			h.draw_style_box(kb, kr)
-			UI.text(h, kr.get_center() + Vector2(0, -2), lab, 18, UI.INK, 0)
+			UI.text(h, UI.face_center(kr), lab, 18, UI.INK, 0)
 		else:
-			h.draw_string(UI.font(), Vector2(x, y + 7), tk, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(UI.INK, 0.8))
+			UI.text_left(h, Vector2(x, UI.face_center(Rect2(Vector2(x, y - 17), Vector2(40, 34))).y), tk, 18, Color(UI.INK, 0.8), 0, false)
 		x += w
 	return y - at.y
 
@@ -685,15 +691,15 @@ static func draw_ready_row(h: CanvasItem, mine: bool, ready: Array, all_ids: Arr
 	var r := Rect2(Vector2(860, 610), Vector2(390, 66))
 	if watch:
 		UI.panel(h, r, Color("#9aa0b4"), UI.WHITE, 33, 5)
-		UI.text(h, r.get_center(), "C'est un duel : tu regardes !", 24, UI.WHITE, 6)
+		UI.text(h, UI.face_center(r), "C'est un duel : tu regardes !", 24, UI.WHITE, 6)
 	elif not mine:
 		var k := 1.0 + 0.03 * sin(tt * 6.0)
 		var rr := Rect2(r.get_center() - r.size * k / 2.0, r.size * k)
 		UI.panel(h, rr, Color("#ff7f8f"), UI.WHITE, 33, 5)
-		UI.text(h, rr.get_center(), "ESPACE : Commencer", 30, UI.WHITE, 7)
+		UI.text(h, UI.face_center(rr), "ESPACE : Commencer", 30, UI.WHITE, 7)
 	else:
 		UI.panel(h, r, Color("#7fcf6a"), UI.WHITE, 33, 5)
-		UI.text(h, r.get_center(), "Prêt ! On attend les autres...", 24, UI.WHITE, 6)
+		UI.text(h, UI.face_center(r), "Prêt ! On attend les autres...", 24, UI.WHITE, 6)
 
 
 ## Bandeau « DUEL : A contre B » (colonne de droite).

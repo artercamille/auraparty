@@ -1033,22 +1033,22 @@ func _draw_hud() -> void:
 		return
 	# tour
 	var lr := Rect2(Vector2(24, 18), Vector2(180, 56))
-	h.draw_style_box(UI.box(UI.WHITE, UI.DARK, 4, 16), lr)
-	UI.text(h, lr.get_center(), "Tour %d / %d" % [clampi(lap + 1, 1, LAPS), LAPS], 28, UI.DARK, 0)
+	UI.panel(h, lr, UI.WHITE, UI.WHITE, 16, 4)
+	UI.text(h, UI.face_center(lr), "Tour %d / %d" % [clampi(lap + 1, 1, LAPS), LAPS], 28, UI.DARK, 0)
 	var tr := Rect2(Vector2(24, 82), Vector2(180, 44))
-	h.draw_style_box(UI.box(UI.WHITE, UI.DARK, 4, 14), tr)
+	UI.panel(h, tr, UI.WHITE, UI.WHITE, 14, 4)
 	var shown_t := finish_t if finished else race_t
-	UI.text(h, tr.get_center(), "%d:%04.1f" % [int(shown_t) / 60, fmod(shown_t, 60.0)], 22, UI.DARK, 0)
+	UI.text(h, UI.face_center(tr), "%d:%04.1f" % [int(shown_t) / 60, fmod(shown_t, 60.0)], 22, UI.DARK, 0)
 	# objet
 	var ir := Rect2(Vector2(1280 - 124, 18), Vector2(100, 100))
-	h.draw_style_box(UI.box(UI.WHITE, UI.DARK, 5, 22), ir)
+	UI.panel(h, ir, UI.WHITE, UI.WHITE, 22, 4)
 	if roulette_t > 0.0:
 		_draw_item(h, ITEMS[int(t * 14.0) % 3], ir.get_center(), 1.6)
 	elif item == "":
-		UI.text(h, ir.get_center(), "?", 44, Color("#d6d9e6"), 0)
+		UI.text(h, UI.face_center(ir), "?", 44, Color("#d6d9e6"), 0)
 	elif item != "":
 		_draw_item(h, item, ir.get_center(), 1.8)
-		UI.text(h, ir.get_center() + Vector2(0, 66), "Maj / X / clic", 15, UI.WHITE, 5)
+		UI.text(h, UI.face_center(ir) + Vector2(0, 66), "Maj / X / clic", 15, UI.WHITE, 5)
 	# position
 	var suffix := "er" if my_rank == 1 else "e"
 	var pc: Color = [UI.YELLOW, Color("#c9d0dc"), Color("#e09a5a"), UI.WHITE][mini(my_rank - 1, 3)]

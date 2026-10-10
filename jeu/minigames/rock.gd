@@ -295,14 +295,14 @@ func _draw_extra_hud() -> void:
 	elif dist < 12.0:
 		col = Color("#ff8c28")
 	var r := Rect2(Vector2(24, 80), Vector2(200, 46))
-	hud.draw_style_box(UI.box(UI.WHITE, UI.DARK, 4, 14), r)
+	UI.panel(hud, r, UI.WHITE, UI.WHITE, 14, 4)
 	if my_out:
-		UI.text(hud, r.get_center(), "Éliminé !", 22, UI.RED, 0)
+		UI.text(hud, UI.face_center(r), "Éliminé !", 22, UI.RED, 0)
 	else:
-		UI.text(hud, r.get_center(), "Rocher : %d m" % int(dist), 22, col, 0)
+		UI.text(hud, UI.face_center(r), "Rocher : %d m" % int(dist), 22, col, 0)
 	# niveau de difficulté
 	var lr := Rect2(Vector2(24, 134), Vector2(200, 40))
-	hud.draw_style_box(UI.box(UI.WHITE, UI.DARK, 4, 14), lr)
+	UI.panel(hud, lr, UI.WHITE, UI.WHITE, 14, 4)
 	for i in SPEEDUPS.size() + 1:
 		var on := i <= level
 		var cc := lr.position + Vector2(38 + i * 42, 20)

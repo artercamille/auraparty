@@ -277,8 +277,8 @@ func _draw_extra_hud() -> void:
 			hud.draw_rect(Rect2(p + Vector2(-12, 21), Vector2(24, 4)), Net.color_of(id))
 	# mes portes
 	var pr := Rect2(Vector2(1280 - 190, 18), Vector2(166, 52))
-	hud.draw_style_box(UI.box(UI.WHITE, UI.DARK, 4, 14), pr)
-	UI.text(hud, pr.get_center(), "Portes %d / %d" % [doors_done, ROOMS], 24, UI.DARK, 0)
+	UI.panel(hud, pr, UI.WHITE, UI.WHITE, 14, 4)
+	UI.text(hud, UI.face_center(pr), "Portes %d / %d" % [doors_done, ROOMS], 24, UI.DARK, 0)
 	# arrivées
 	if finishes.size() > 0:
 		var order := finishes.keys()

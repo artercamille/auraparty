@@ -184,7 +184,7 @@ func _draw_win(r: Array) -> void:
 		UI.panel(ci, block, col, UI.WHITE, 18, 6)
 		ci.draw_rect(Rect2(block.position + Vector2(10, 10), Vector2(180, 8)), Color(1, 1, 1, 0.35))
 		if h > 60.0:
-			UI.text(ci, block.get_center(), "%d" % (int(p["rank"]) + 1), 64, UI.WHITE, 12)
+			UI.text(ci, UI.face_center(block), "%d" % (int(p["rank"]) + 1), 64, UI.WHITE, 12)
 		var top := base_y - h
 		if idx == 0:
 			# danse du gagnant : sauts, petits tours sur lui-même, couronne
@@ -203,14 +203,18 @@ func _draw_win(r: Array) -> void:
 			ci.draw_set_transform(Vector2.ZERO)
 		var info := Rect2(Vector2(x - 105, base_y + 12), Vector2(210, 66))
 		UI.panel(ci, info, UI.WHITE, col.lightened(0.4), 18, 4)
-		UI.text(ci, info.position + Vector2(105, 21), str(p["name"]), 22, col.darkened(0.15), 0)
-		_icons(ci, info.position + Vector2(105, 47), int(p["stars"]), int(p["coins"]))
+		UI.text(ci, info.position + Vector2(105, 19), str(p["name"]), 22, col.darkened(0.15), 0)
+		_icons(ci, info.position + Vector2(105, 41), int(p["stars"]), int(p["coins"]))
 	# le reste du classement
 	var others := []
 	for i in range(3, r.size()):
 		others.append("%de %s : %d étoile(s), %d pièces" % [int(r[i]["rank"]) + 1, str(r[i]["name"]), int(r[i]["stars"]), int(r[i]["coins"])])
 	if others.size() > 0:
-		UI.text(ci, Vector2(640, 612), "   ·   ".join(others), 18, UI.WHITE, 6)
+		var otxt := "   ·   ".join(others)
+		var ow := minf(1240.0, UI.text_width(otxt, 18) + 40.0)
+		var orr := Rect2(Vector2(640 - ow / 2.0, 605), Vector2(ow, 32))
+		UI.panel(ci, orr, Color("#3d4470"), UI.WHITE, 16, 4)
+		UI.text(ci, UI.face_center(orr), otxt, 18, UI.WHITE, 4)
 	# feux d'artifice
 	for b in bursts:
 		var k: float = float(b["t"]) / 1.6
@@ -243,14 +247,16 @@ func _crown(ci: Control, c: Vector2, s: float) -> void:
 
 
 func _icons(ci: Control, c: Vector2, stars: int, coins: int) -> void:
-	ci.draw_set_transform(c + Vector2(-56, 0), 0.0, Vector2(0.24, 0.24))
-	ci.draw_texture(tex_star, Vector2(-64, -64))
-	ci.draw_set_transform(Vector2.ZERO)
-	ci.draw_string(UI.font(true), c + Vector2(-42, 8), str(stars), HORIZONTAL_ALIGNMENT_LEFT, -1, 20, UI.DARK)
-	ci.draw_set_transform(c + Vector2(4, 0), 0.0, Vector2(0.24, 0.24))
-	ci.draw_texture(tex_coin, Vector2(-64, -64))
-	ci.draw_set_transform(Vector2.ZERO)
-	ci.draw_string(UI.font(true), c + Vector2(18, 8), str(coins), HORIZONTAL_ALIGNMENT_LEFT, -1, 20, UI.DARK)
+	# étoile + nombre, pièce + nombre : le groupe entier centré sur c
+	var ss := str(stars)
+	var cs := str(coins)
+	var w := 26.0 + 4.0 + UI.text_width(ss, 20) + 18.0 + 26.0 + 4.0 + UI.text_width(cs, 20)
+	var x := c.x - w / 2.0
+	ci.draw_texture_rect(UI.gui("ic_star"), Rect2(Vector2(x, c.y - 13), Vector2(26, 26)), false)
+	x += 30.0
+	x += UI.text_left(ci, Vector2(x, c.y), ss, 20, UI.DARK, 0) + 18.0
+	ci.draw_texture_rect(UI.gui("ic_coin"), Rect2(Vector2(x, c.y - 13), Vector2(26, 26)), false)
+	UI.text_left(ci, Vector2(x + 30.0, c.y), cs, 20, UI.DARK, 0)
 
 
 ## Tableau des stats rigolotes de la partie (le meilleur de chaque colonne est en jaune).

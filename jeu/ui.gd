@@ -106,10 +106,10 @@ static func make_theme() -> Theme:
 	pn.texture_margin_right = 74
 	pn.texture_margin_top = 66
 	pn.texture_margin_bottom = 66
-	pn.content_margin_left = 40
-	pn.content_margin_right = 40
-	pn.content_margin_top = 26
-	pn.content_margin_bottom = 30
+	pn.content_margin_left = 64
+	pn.content_margin_right = 64
+	pn.content_margin_top = 40
+	pn.content_margin_bottom = 48
 	t.set_stylebox("panel", "PanelContainer", pn)
 	return t
 
@@ -147,15 +147,28 @@ static func box(bg: Color, border := DARK, bw := 4, radius := 16) -> StyleBoxFla
 	return sb
 
 
-static func button_box(col: Color, pressed := false) -> StyleBox:
+## `fsize` = taille du texte du bouton : la police Fredoka se place un peu bas dans un bouton Godot et le bas
+## du bouton est plus foncé (effet 3D), donc on remonte le texte pour qu'il soit centré sur la face claire.
+static func button_box(col: Color, pressed := false, fsize := 24) -> StyleBox:
 	var sb := KitBox.new()
 	sb.col = col
 	sb.pressed = pressed
+	var up := roundi(fsize * 0.2)
 	sb.content_margin_left = 26
 	sb.content_margin_right = 26
-	sb.content_margin_top = 12 + (4 if pressed else 0)
-	sb.content_margin_bottom = 12
+	sb.content_margin_top = 12 - up + (3 if pressed else 0)
+	sb.content_margin_bottom = 12 + up
 	return sb
+
+
+## Centre de la face claire d'un panneau KitBox (le bas est une bande plus foncée) : y centrer les textes.
+static func face_center(r: Rect2, pressed := false) -> Vector2:
+	var m := minf(r.size.x, r.size.y)
+	var ow := clampf(m * 0.075, 2.0, 4.5)
+	var lift := 3.0 if pressed else 0.0
+	var inner_h := r.size.y - lift - 2.0 * ow
+	var shade := clampf(inner_h * (0.1 if pressed else 0.16), 2.0, 9.0)
+	return Vector2(r.get_center().x, r.position.y + lift + ow + (inner_h - shade) / 2.0)
 
 
 static func lbl(text: String, size := 24, color := DARK, align := HORIZONTAL_ALIGNMENT_CENTER, outline := 0, bold := false) -> Label:
@@ -176,9 +189,10 @@ static func btn(text: String, cb: Callable, color := BLUE, size := 26) -> Button
 	var b := Button.new()
 	b.text = text
 	b.add_theme_font_size_override("font_size", size)
-	b.add_theme_stylebox_override("normal", button_box(color))
-	b.add_theme_stylebox_override("hover", button_box(color.lightened(0.12)))
-	b.add_theme_stylebox_override("pressed", button_box(color.darkened(0.08), true))
+	b.add_theme_stylebox_override("normal", button_box(color, false, size))
+	b.add_theme_stylebox_override("hover", button_box(color.lightened(0.12), false, size))
+	b.add_theme_stylebox_override("pressed", button_box(color.darkened(0.08), true, size))
+	b.add_theme_constant_override("outline_size", clampi(roundi(size * 0.26), 4, 7))
 	b.pressed.connect(func(): Sfx.play("ui_ok", -4.0, 0.03); cb.call())
 	b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	return b
@@ -232,7 +246,7 @@ static func ribbon(ci: CanvasItem, center: Vector2, s: String, size := 26, col :
 	ci.draw_texture_rect_region(tex, Rect2(r.position, Vector2(tail * k, h)), Rect2(0, 0, tail, sh), mod)
 	ci.draw_texture_rect_region(tex, Rect2(r.position + Vector2(tail * k, 0), Vector2(w - 2.0 * tail * k, h)), Rect2(tail, 0, sw - 2.0 * tail, sh), mod)
 	ci.draw_texture_rect_region(tex, Rect2(r.position + Vector2(w - tail * k, 0), Vector2(tail * k, h)), Rect2(sw - tail, 0, tail, sh), mod)
-	text(ci, center + Vector2(0, -h * 0.06), s, size, txt, 7)
+	text(ci, center + Vector2(0, -h * 0.21), s, size, txt, 7)   # centré sur la bande avant du ruban
 
 
 ## Texte centré avec contour, dessiné directement (noms, scores, gros titres).
@@ -249,7 +263,7 @@ static func text(ci: CanvasItem, center: Vector2, s: String, size := 24, col := 
 	var w := f.get_string_size(s, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
 	var pos := Vector2(center.x - w / 2.0, center.y + size * 0.36)
 	if outline > 0:
-		ci.draw_string_outline(f, pos, s, HORIZONTAL_ALIGNMENT_LEFT, -1, size, outline, INK)
+		ci.draw_string_outline(f, pos, s, HORIZONTAL_ALIGNMENT_LEFT, -1, size, outline, Color(INK, INK.a * col.a))
 	ci.draw_string(f, pos, s, HORIZONTAL_ALIGNMENT_LEFT, -1, size, col)
 
 
@@ -273,7 +287,7 @@ static func key_chip(ci: CanvasItem, left_mid: Vector2, key: String, label: Stri
 	kb.col = PAPER
 	kb.radius = 8
 	ci.draw_style_box(kb, kr)
-	text(ci, kr.get_center() + Vector2(0, -2), key, size, INK, 0)
+	text(ci, UI.face_center(kr), key, size, INK, 0)
 	var lw := text_left(ci, left_mid + Vector2(kw + 8.0, 0), label, size, WHITE, 5)
 	return kw + 8.0 + lw
 
@@ -295,6 +309,40 @@ static func portrait(ci: CanvasItem, c: Vector2, r: float, color_idx: int, ring 
 		pts.append(c + d * (r - 3.0))
 		uvs.append((fc + d * fr) / 256.0)
 	ci.draw_polygon(pts, PackedColorArray([mod]), uvs, face)
+
+
+## Coupe un texte en lignes qui tiennent dans `width` (respecte les \n).
+static func wrap_lines(s: String, size: int, width: float, bold := false) -> PackedStringArray:
+	s = padify(s)
+	var out := PackedStringArray()
+	var f := font(bold)
+	for para in s.split("\n"):
+		var line := ""
+		for w in para.split(" ", false):
+			var tryl := w if line == "" else line + " " + w
+			if line != "" and f.get_string_size(tryl, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x > width:
+				out.append(line)
+				line = w
+			else:
+				line = tryl
+		out.append(line)
+	return out
+
+
+## Hauteur visuelle d'un bloc de texte (du haut des majuscules de la 1re ligne à la ligne de base de la dernière).
+static func block_height(lines: int, size: int, gap := 1.28) -> float:
+	return maxf(0.0, lines - 1) * size * gap + size * 0.7
+
+
+## Bloc de texte sur plusieurs lignes, chaque ligne centrée, le bloc entier centré sur `center`.
+## Renvoie la hauteur visuelle du bloc.
+static func text_block(ci: CanvasItem, center: Vector2, s: String, size := 22, width := 400.0, col := DARK, outline := 0, bold := false, gap := 1.28) -> float:
+	var lines := wrap_lines(s, size, width, bold)
+	var h := block_height(lines.size(), size, gap)
+	var y := center.y - h / 2.0 + size * 0.35
+	for i in lines.size():
+		text(ci, Vector2(center.x, y + i * size * gap), lines[i], size, col, outline, bold)
+	return h
 
 
 static func text_width(s: String, size: int, bold := true) -> float:
@@ -400,7 +448,7 @@ static func pad_chip(ci: CanvasItem, left_mid: Vector2, b: String, size := 16) -
 	kb.col = Color("#5b6488")
 	kb.radius = 15
 	ci.draw_style_box(kb, kr)
-	text(ci, kr.get_center() + Vector2(0, -2), b, size, WHITE, 4)
+	text(ci, UI.face_center(kr), b, size, WHITE, 4)
 	return w
 
 

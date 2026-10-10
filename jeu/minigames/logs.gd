@@ -495,7 +495,7 @@ func _draw_extra_hud() -> void:
 		return
 	# niveau : bûches normales -> piques -> rapide
 	var lr := Rect2(Vector2(24, 80), Vector2(120, 40))
-	hud.draw_style_box(UI.box(UI.WHITE, UI.DARK, 4, 14), lr)
+	UI.panel(hud, lr, UI.WHITE, UI.WHITE, 14, 4)
 	for i in 3:
 		var cc := lr.position + Vector2(24 + i * 36, 20)
 		hud.draw_circle(cc, 12.0, UI.DARK)

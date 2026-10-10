@@ -258,6 +258,8 @@ class MusicButton extends Control:
 			accept_event()
 
 	func _process(_d: float) -> void:
+		# caché pendant les mini-jeux (il recouvrait des infos en bas à droite) ; la touche M marche toujours
+		visible = Net.phase != "minigame"
 		queue_redraw()
 
 	func _draw() -> void:

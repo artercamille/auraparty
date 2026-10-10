@@ -701,9 +701,9 @@ func _draw_hud() -> void:
 		h.draw_circle(Vector2(px, bar.position.y + bar.size.y + 8), 6.0 if id == me_id else 4.0, Net.color_of(id))
 	# chrono
 	var tr := Rect2(Vector2(24, 18), Vector2(150, 44))
-	h.draw_style_box(UI.box(UI.WHITE, UI.DARK, 4, 14), tr)
+	UI.panel(h, tr, UI.WHITE, UI.WHITE, 14, 4)
 	var shown := finish_t if finished else race_t
-	UI.text(h, tr.get_center(), "%d:%04.1f" % [int(shown) / 60, fmod(shown, 60.0)], 22, UI.DARK, 0)
+	UI.text(h, UI.face_center(tr), "%d:%04.1f" % [int(shown) / 60, fmod(shown, 60.0)], 22, UI.DARK, 0)
 	if playing:
 		var suffix := "er" if my_rank == 1 else "e"
 		var pc: Color = [UI.YELLOW, Color("#c9d0dc"), Color("#e09a5a"), UI.WHITE][mini(my_rank - 1, 3)]

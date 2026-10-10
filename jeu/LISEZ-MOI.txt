@@ -1,4 +1,4 @@
-AURA PARTY - v0.28 (plateau fluide même sur petit PC, manette, version Mac)
+AURA PARTY - v0.29 (nouveau mini-jeu Stop chrono, textes bien alignés partout)
 ==========================================
 Jusqu'à 8 joueurs, chacun sur son PC.
 Tout le monde doit avoir CETTE version du jeu (sinon la connexion est refusée).
@@ -115,6 +115,9 @@ LES MINI-JEUX
 - Boules-tamponneuses ! (Bumper Balls) : chacun roule sur une boule dans
   une arène ronde (flèches ou ZQSD), Maj/X/clic pour un boost. Éjecte les
   autres ! L'arène rétrécit à la fin. Le dernier dessus gagne.
+- Stop chrono ! : un temps à viser s'affiche (ex. 7,38 s), le chrono démarre
+  puis se cache. Arrête-le avec Espace pile au bon moment. 3 manches, le chrono
+  se cache de plus en plus tôt ; le plus petit total d'écarts gagne.
 - Jackpot Aura ! (Lucky Lineup) : chacun sa machine à sous, 3 tirages.
   Espace arrête les rouleaux un par un. 3 symboles pareils sur une ligne ou
   une diagonale : 7 = 50, gemme = 20, cœur = 10, pièce = 5. L'étoile est un

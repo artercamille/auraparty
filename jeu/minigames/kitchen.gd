@@ -803,11 +803,11 @@ func _draw_hud() -> void:
 	var left := maxf(0.0, DURATION - play_t)
 	var tr := Rect2(Vector2(20, 16), Vector2(110, 56))
 	UI.panel(h, tr, UI.WHITE, Color("#f6d6c8"), 18, 4)
-	UI.text(h, tr.get_center(), "%d:%02d" % [int(left) / 60, int(left) % 60], 28, UI.RED if left <= 15.0 else UI.DARK, 0)
+	UI.text(h, UI.face_center(tr), "%d:%02d" % [int(left) / 60, int(left) % 60], 28, UI.RED if left <= 15.0 else UI.DARK, 0)
 	# score
 	var sr := Rect2(Vector2(1280 - 170, 16), Vector2(150, 56))
 	UI.panel(h, sr, Color("#ffc93c"), UI.WHITE, 18, 4)
-	UI.text(h, sr.get_center(), "%d pts" % score, 28, UI.WHITE, 6)
+	UI.text(h, UI.face_center(sr), "%d pts" % score, 28, UI.WHITE, 6)
 	# tickets de commande
 	for j in orders.size():
 		var o: Dictionary = orders[j]

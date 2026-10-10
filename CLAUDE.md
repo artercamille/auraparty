@@ -1,4 +1,4 @@
-# Aura PARTY — état du projet (v0.28)
+# Aura PARTY — état du projet (v0.29)
 
 Party game 2D façon Mario Party, Godot 4.3 (GL Compatibility), GDScript, 2 à 8 joueurs en ligne
 (ENet UDP 7777, via Radmin VPN ou ZeroTier si Mac). Export Windows .exe + Mac .app universelle, jouable à la manette. L'utilisateur (Camille) ne code pas : réponses
@@ -55,7 +55,7 @@ Stats suivies dans `players[id]` : coins_won, mg_wins, reds, steps, used.
 Cases r=47 (espacement régulier ~175 px : si on allonge un chemin, rajouter des cases), chemins 150 px avec petites flèches de sens (`_chevron`), pions `TOKEN_SCALE` 0.42 ; carte (Tab) `MAP_ZOOM` 0.152 + `MAP_OFS` (île à droite de la légende, cartouches cachés).
 Étoile gagnée (achat, bloc caché, fantôme) : grande animation plein écran `board.gd star_celebrate()` (rayons, confettis, étoile à yeux qui file vers le compteur du joueur).
 
-## Les 20 mini-jeux (`Net.MINIGAMES`, fichiers dans `minigames/`)
+## Les 21 mini-jeux (`Net.MINIGAMES`, fichiers dans `minigames/`)
 | clé | nom | type |
 |---|---|---|
 | blocks | Gare aux blocs ! | élimination (stage.gd) |
@@ -77,6 +77,7 @@ Cases r=47 (espacement régulier ~175 px : si on allonge un chemin, rajouter des
 | flags | Le Capitaine a dit ! | Shy Guy Says (Superstars) : l'hôte envoie les ordres (feintes), chacun juge sa réponse et `report_out(at de l'ordre)` ; minuteur 30 s à 45 s ⇒ survivants gagnent |
 | roulette | Roulette-marteau ! | Spin and Bear It : phases hôte choose/arrow/spin_wait/spin/smash, l'hôte élimine via `Net._on_out(victime, manche)` |
 | penguins | Pingouins perdus ! | **COOP** Penguin Pushers : l'hôte simule les pingouins (fuite), rang S/A/B selon le temps |
+| chrono | Stop chrono ! | idée de Camille : 3 manches, temps à viser (5-11,5 s), chrono visible 3/2/1,2 s puis caché par un volet ; chacun envoie son temps (`mg_to_host`), l'hôte révèle (`ph` target/run/stopped/reveal) ; score = −total des écarts |
 | kitchen | Cuisine en folie ! | **COOP** façon Overcooked (choix de Camille, pas un vrai MP) : grille 14x8, l'hôte gère objets/planches/feux/commandes ; robots = burgers en boucle |
 
 **Jeux coop** : `"coop": true` dans `Net.MINIGAMES` ; jamais en duel ; fin avec `Net.mg_end_coop(pièces, texte)` → tout le monde gagne les mêmes pièces (S 10 / A 7 / B 4 / raté 0), pas d'étoile du dernier mini-jeu. Écran de rang commun : `penguins.gd _draw_result()`.
@@ -122,7 +123,7 @@ gérer les robots (`Net.autotest != ""`), spectateurs/duel, puis faire son aper�
   `~/.config/godot/editor_settings-4.3.tres` (`export/windows/rcedit`, `export/windows/wine = /usr/lib/wine/wine64`).
 - Godot 4.3 en local (`godot`), export : `godot --headless --export-release "Windows Desktop" build/AuraParty.exe`
   (rcedit via wine), vérif : `WINEDEBUG=-all /usr/lib/wine/wine64 build/AuraParty.exe --headless -- --checkall`
-  (35 OK attendus), zip : `7z a -tzip -mx=9 -mm=Deflate`.
+  (36 OK attendus), zip : `7z a -tzip -mx=9 -mm=Deflate`.
 - **Toujours `godot --headless --import` après avoir ajouté des images**, sinon elles sont nulles (`null`).
 - **Textures : les charger AVANT de dessiner** (dans `_ready`), sinon blanches dans les couches dessinées une seule fois.
 - Imports par défaut en compression lossy 0.9 ; les aperçus (`assets/previews/*.import`) sont en
@@ -167,6 +168,19 @@ gérer les robots (`Net.autotest != ""`), spectateurs/duel, puis faire son aper�
   HUD plateau : `_info_panel` (étoile/banque même taille), touches Tab / 1-6 ; encart Commandes = vraies touches (`stage.gd _keys`).
 - Décor v0.27 : `_grass_patches`, `_ground_details` (touffes, fleurs en prairies), falaises facettées (`_sky_island`),
   volcan (`_lava_rock`, `_lava_cracks`, fumée/braises), rives (`_shore` : galets, nénuphars), reflets d'eau.
+
+## Textes et alignement (v0.29) — à respecter pour tout nouveau texte
+- `UI.text` centre les MAJUSCULES sur le point donné (base = y + 0,36·taille, mesuré juste pour Fredoka).
+- Dans un panneau `UI.panel`/KitBox, centrer sur **`UI.face_center(rect)`** (pas `rect.get_center()`) : le bas du
+  panneau est une bande foncée, la face claire est plus haut.
+- Plusieurs lignes : **`UI.text_block(ci, centre, texte, taille, largeur, couleur)`** (coupe et centre le bloc), `UI.wrap_lines`,
+  `UI.block_height`. Aligné à gauche : `UI.text_left` (renvoie la largeur → coller une icône après).
+- Boutons Godot : `UI.btn(texte, cb, couleur, taille)` remonte le texte selon la taille (`button_box(col, pressed, fsize)`).
+- Rubans : texte sur la bande avant (−0,21·h). Contour des textes transparent avec le texte (fondus propres).
+- Lignes d'aide du plateau : `board.gd _hint(centre, texte)` (pastille sombre) ; pièces d'un joueur : `_coin_tag`.
+- Cadres (PanelContainer) : marges 64/40/64/48. Bouton ♪ caché pendant les mini-jeux (touche M toujours active).
+- Audit complet fait en v0.29 (tous les écrans) ; outils de captures dans le scratchpad : `bshot.sh` (plateau + événements JSON).
+- **Script Python d'édition : toujours vérifier `s.count(old) == 1` avant `replace`** (un `replace("", …)` a déjà corrompu board.gd).
 
 ## À faire / à ne pas oublier
 - Camille veut des mini-jeux **copiés fidèlement** sur les vrais Mario Party (règles, vue, déroulé) : vérifier le vrai jeu avant de l'adapter.

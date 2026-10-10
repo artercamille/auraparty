@@ -471,11 +471,11 @@ func _draw_hud() -> void:
 	var left := maxf(0.0, LIMIT - play_t)
 	var tr := Rect2(Vector2(24, 18), Vector2(130, 56))
 	UI.panel(h, tr, UI.WHITE, Color("#cfeaf8"), 18, 4)
-	UI.text(h, tr.get_center(), "%d s" % ceili(left), 32, UI.RED if left <= 10.0 else UI.DARK, 0)
+	UI.text(h, UI.face_center(tr), "%d s" % ceili(left), 32, UI.RED if left <= 10.0 else UI.DARK, 0)
 	var cnt := Rect2(Vector2(640 - 170, 16), Vector2(340, 60))
 	UI.panel(h, cnt, Color("#4b87f5"), UI.WHITE, 24, 5)
 	h.draw_texture_rect(_tex["penguin"], Rect2(cnt.position + Vector2(14, 8), Vector2(44, 44)), false)
-	UI.text(h, cnt.get_center() + Vector2(24, 0), "Sauvés : %d / %d" % [saved_count(), pens.size()], 26, UI.WHITE, 6)
+	UI.text(h, UI.face_center(cnt) + Vector2(24, 0), "Sauvés : %d / %d" % [saved_count(), pens.size()], 26, UI.WHITE, 6)
 	# rang visé en fonction du temps
 	var target := "raté"
 	for r in RANKS:

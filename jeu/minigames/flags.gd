@@ -456,14 +456,14 @@ func _draw_hud() -> void:
 		var left := maxi(0, ceili(timer_end - play_t))
 		var tr := Rect2(Vector2(24, 18), Vector2(120, 52))
 		UI.panel(h, tr, UI.WHITE, Color("#ffd0d0"), 18, 4)
-		UI.text(h, tr.get_center(), "%d s" % left, 30, UI.RED, 0)
+		UI.text(h, UI.face_center(tr), "%d s" % left, 30, UI.RED, 0)
 	if playing and not my_out and state == "play":
 		# rappel des touches, le drapeau levé s'allume
 		for i in 2:
 			var on := my_flag == i
 			var r := Rect2(Vector2(24 if i == RED else 1280 - 90 - 150, 650), Vector2(150, 54))
 			UI.panel(h, r, (Color("#f04650") if i == RED else Color("#f4f7ff")) if on else Color(1, 1, 1, 0.6), UI.WHITE if i == RED else Color("#c9cde0"), 26, 5)
-			UI.text(h, r.get_center(), "← ROUGE" if i == RED else "BLANC →", 22, UI.WHITE if (on and i == RED) else (UI.RED if i == RED else UI.DARK), 0)
+			UI.text(h, UI.face_center(r), "← ROUGE" if i == RED else "BLANC →", 22, UI.WHITE if (on and i == RED) else (UI.RED if i == RED else UI.DARK), 0)
 	if playing and my_out and state == "play":
 		var msg := "Corde coupée ! Tu regardes la fin..."
 		var mw := UI.text_width(msg, 24) + 50.0

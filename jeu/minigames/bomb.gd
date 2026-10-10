@@ -412,7 +412,7 @@ func _draw_hud() -> void:
 		var k := 1.0 + 0.06 * sin(t * 14.0)
 		var r := Rect2(Vector2(640 - 260 * k, 120), Vector2(520 * k, 64))
 		UI.panel(h, r, Color("#ff6f6f"), UI.WHITE, 30, 5)
-		UI.text(h, r.get_center(), "LANCE-LA !   ← Q   ·   D →", int(30 * k), UI.WHITE, 7)
+		UI.text(h, UI.face_center(r), "LANCE-LA !   ← Q   ·   D →", int(30 * k), UI.WHITE, 7)
 	if playing and not alive.has(me_id) and state == "play":
 		var msg := "BOUM ! Tu es éliminé..."
 		var mw := UI.text_width(msg, 26) + 50.0

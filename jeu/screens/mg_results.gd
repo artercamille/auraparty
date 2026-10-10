@@ -50,30 +50,35 @@ func _draw_results(ci: Control) -> void:
 		UI.panel(ci, row, Color(col.lightened(0.1), appear), Color(1, 1, 1, appear), 20, 5)
 		# médaille
 		var mc: Color = [Color("#ffc93c"), Color("#c9d3e3"), Color("#e8a061")][rank] if rank < 3 else Color("#9aa3b8")
-		var md := row.position + Vector2(34, 27)
+		var fy := UI.face_center(row).y
+		var md := Vector2(row.position.x + 30, fy)
 		if rank < 8:
 			(ci as CanvasItem).texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-			ci.draw_texture_rect(UI.gui("rank%d" % (rank + 1)), Rect2(md - Vector2(30, 36), Vector2(60, 72)), false, Color(1, 1, 1, appear))
+			ci.draw_texture_rect(UI.gui("rank%d" % (rank + 1)), Rect2(md - Vector2(24, 30), Vector2(48, 58)), false, Color(1, 1, 1, appear))
 		else:
 			ci.draw_circle(md, 22.0, Color(1, 1, 1, appear))
 			ci.draw_circle(md, 18.0, Color(mc, appear))
 			UI.text(ci, md, str(rank + 1), 24, Color(1, 1, 1, appear), 6)
 		# portrait
-		var pc := row.position + Vector2(92, 27)
+		var pc := Vector2(row.position.x + 88, fy)
 		UI.portrait(ci, pc, 21.0, int(r["color"]), UI.WHITE, Color(1, 1, 1, appear))
-		UI.text(ci, row.position + Vector2(196, 27), str(r["name"]), 24, Color(1, 1, 1, appear), 6)
+		UI.text_left(ci, Vector2(row.position.x + 122, fy), str(r["name"]), 24, Color(1, 1, 1, appear), 6)
 		if int(r.get("star", 0)) > 0:
-			UI.text(ci, row.position + Vector2(440, 27), "+1 ÉTOILE !", 22, UI.YELLOW, 6)
+			UI.text_left(ci, Vector2(row.position.x + 316, fy), "+1 ÉTOILE !", 22, Color(UI.YELLOW, appear), 6)
 		else:
-			ci.draw_string(UI.font(), row.position + Vector2(330, 36), str(r["label"]), HORIZONTAL_ALIGNMENT_LEFT, 240, 20, Color(1, 1, 1, 0.92 * appear))
-		var pill := Rect2(row.position + Vector2(584, 9), Vector2(104, 36))
+			UI.text_left(ci, Vector2(row.position.x + 316, fy), str(r["label"]), 20, Color(1, 1, 1, 0.92 * appear), 4, false)
+		# pastille des gains : pièce + nombre centrés ensemble
+		var pill := Rect2(Vector2(row.position.x + 584, fy - 18), Vector2(104, 36))
 		ci.draw_style_box(UI.box(Color(1, 1, 1, appear), Color(0, 0, 0, 0), 0, 18), pill)
-		ci.draw_set_transform(pill.position + Vector2(22, 18), 0.0, Vector2(0.24, 0.24))
+		var rw := "%+d" % int(r["reward"])
+		var gw := 26.0 + 6.0 + UI.text_width(rw, 24)
+		var gx := pill.get_center().x - gw / 2.0
+		ci.draw_set_transform(Vector2(gx + 13.0, fy), 0.0, Vector2(0.2, 0.2))
 		ci.draw_texture(tex_coin, Vector2(-64, -64), Color(1, 1, 1, appear))
 		ci.draw_set_transform(Vector2.ZERO)
-		ci.draw_string(UI.font(true), pill.position + Vector2(42, 27), "%+d" % int(r["reward"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 24, Color(UI.RED if int(r["reward"]) < 0 else UI.DARK, appear))
+		UI.text_left(ci, Vector2(gx + 32.0, fy), rw, 24, Color(UI.RED if int(r["reward"]) < 0 else UI.DARK, appear), 0)
 		if int(r.get("star", 0)) > 0:
-			var sp := row.position + Vector2(556, 27)
+			var sp := Vector2(row.position.x + 556, fy)
 			ci.draw_set_transform(sp, sin(t * 4.0) * 0.2, Vector2(0.36, 0.36) * (1.0 + 0.08 * sin(t * 6.0)))
 			ci.draw_texture(tex_star, Vector2(-64, -64))
 			ci.draw_set_transform(Vector2.ZERO)

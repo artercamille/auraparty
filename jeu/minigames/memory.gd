@@ -742,7 +742,7 @@ func _draw_team_panel(h: CanvasItem, tm: int, x: float) -> void:
 		h.draw_style_box(UI.box(Color(1, 1, 1, 0.9) if k < syms.size() else Color(1, 1, 1, 0.35), Color(0, 0, 0, 0), 0, 8), Rect2(sc - Vector2(14, 18), Vector2(28, 36)))
 		if k < syms.size():
 			h.draw_texture_rect(_tex[str(syms[k])], Rect2(sc - Vector2(12, 12), Vector2(24, 24)), false)
-	UI.text(h, r.position + Vector2(232, 100), "%d / %d paires" % [int(pairs[tm]), WIN_PAIRS], 15, UI.WHITE, 4)
+	UI.text(h, r.position + Vector2(224, 94), "%d / %d paires" % [int(pairs[tm]), WIN_PAIRS], 15, UI.WHITE, 4)
 
 
 func _draw_hud() -> void:
@@ -768,7 +768,7 @@ func _draw_hud() -> void:
 	var left := maxi(0, ceili(MAX_T - play_t))
 	var tr := Rect2(Vector2(580, 18), Vector2(120, 52))
 	UI.panel(h, tr, UI.WHITE, Color("#e4e2f2"), 18, 4)
-	UI.text(h, tr.get_center(), "%d:%02d" % [left / 60, left % 60], 28, UI.RED if left <= 15 else UI.DARK, 0)
+	UI.text(h, UI.face_center(tr), "%d:%02d" % [left / 60, left % 60], 28, UI.RED if left <= 15 else UI.DARK, 0)
 	if banner_t > 0.0:
 		var a := minf(1.0, banner_t * 3.0)
 		UI.text(h, Vector2(640, 104), banner, 30, Color(banner_col.lightened(0.15), a), 8)
@@ -779,7 +779,7 @@ func _draw_hud() -> void:
 		var rr := Rect2(Vector2(640 - mw / 2.0, 662), Vector2(mw, 48))
 		UI.panel(h, rr, UI.WHITE, TEAM_COLS[my_team], 22, 5)
 		h.draw_texture_rect(_tex[str(card_sym[int(team_first[my_team])])], Rect2(rr.position + Vector2(14, 6), Vector2(36, 36)), false)
-		UI.text(h, rr.get_center() + Vector2(24, 0), msg, 22, UI.DARK, 0)
+		UI.text(h, UI.face_center(rr) + Vector2(24, 0), msg, 22, UI.DARK, 0)
 	if not playing and state == "play":
 		var msg2 := "Tu es l'arbitre : gagné d'office !" if me_id == referee else "Tu regardes le duel !"
 		var mw2 := UI.text_width(msg2, 22) + 50.0

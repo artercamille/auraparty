@@ -118,8 +118,11 @@ func _refresh() -> void:
 			var kb := UI.btn("Exclure", func(): Net.kick_player(pid), UI.RED, 14)
 			kb.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 			box.add_child(kb)
+			box.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 			grid.add_child(box)
 		else:
+			# même hauteur que les autres (qui ont un bouton « Exclure » dessous) : persos alignés
+			icon.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 			grid.add_child(icon)
 	count_lbl.text = "%d / %d joueurs" % [Net.players.size(), Net.MAX_PLAYERS]
 	if Net.players.has(Net.my_id()):
@@ -185,20 +188,20 @@ func _open_options() -> void:
 	pc.custom_minimum_size = Vector2(900, 0)
 	center.add_child(pc)
 	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 8)
+	v.add_theme_constant_override("separation", 5)
 	pc.add_child(v)
-	v.add_child(UI.lbl("Options", 40, UI.YELLOW, HORIZONTAL_ALIGNMENT_CENTER, 12, true))
+	v.add_child(UI.lbl("Options", 36, UI.YELLOW, HORIZONTAL_ALIGNMENT_CENTER, 12, true))
 	# son (chacun pour soi)
-	v.add_child(UI.lbl("Son", 26, UI.DARK, HORIZONTAL_ALIGNMENT_LEFT, 0, true))
+	v.add_child(UI.lbl("Son", 22, UI.DARK, HORIZONTAL_ALIGNMENT_LEFT, 0, true))
 	v.add_child(_vol_row("Musique", func(): return Sfx.music_vol, func(x): Sfx.set_volumes(x, Sfx.sfx_vol)))
 	v.add_child(_vol_row("Bruitages", func(): return Sfx.sfx_vol, func(x): Sfx.set_volumes(Sfx.music_vol, x); Sfx.play("coin")))
 	if Net.is_host():
-		v.add_child(UI.lbl("Partie (réglée par l'hôte)", 26, UI.DARK, HORIZONTAL_ALIGNMENT_LEFT, 0, true))
+		v.add_child(UI.lbl("Partie (réglée par l'hôte)", 22, UI.DARK, HORIZONTAL_ALIGNMENT_LEFT, 0, true))
 		var bonus_btn := UI.btn("", func(): pass, UI.GREEN, 20)
 		var upd := func():
 			bonus_btn.text = "Étoiles bonus à la fin : %s" % ("OUI" if Net.opt_bonus else "NON")
 			for st in ["normal", "hover", "pressed"]:
-				bonus_btn.add_theme_stylebox_override(st, UI.button_box(UI.GREEN if Net.opt_bonus else UI.GREY, st == "pressed"))
+				bonus_btn.add_theme_stylebox_override(st, UI.button_box(UI.GREEN if Net.opt_bonus else UI.GREY, st == "pressed", 20))
 		bonus_btn.pressed.connect(func(): Net.opt_bonus = not Net.opt_bonus; Net.save_party_options(); upd.call())
 		upd.call()
 		bonus_btn.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
@@ -207,17 +210,17 @@ func _open_options() -> void:
 		var grid2 := GridContainer.new()
 		grid2.columns = 4
 		grid2.add_theme_constant_override("h_separation", 10)
-		grid2.add_theme_constant_override("v_separation", 4)
+		grid2.add_theme_constant_override("v_separation", 3)
 		v.add_child(grid2)
 		for key in Net.MINIGAMES:
 			var k: String = key
 			var b := UI.btn("", func(): pass, UI.BLUE, 15)
-			b.custom_minimum_size = Vector2(212, 34)
+			b.custom_minimum_size = Vector2(212, 30)
 			var refresh := func():
 				var on := not Net.opt_excluded.has(k)
 				b.text = str(Net.MINIGAMES[k]["name"])
 				for st in ["normal", "hover", "pressed"]:
-					b.add_theme_stylebox_override(st, UI.button_box(Color("#7fcf6a") if on else Color("#b4b8c8"), st == "pressed"))
+					b.add_theme_stylebox_override(st, UI.button_box(Color("#7fcf6a") if on else Color("#b4b8c8"), st == "pressed", 15))
 			b.pressed.connect(func():
 				if Net.opt_excluded.has(k):
 					Net.opt_excluded.erase(k)
@@ -242,7 +245,7 @@ func _vol_row(label: String, getv: Callable, setv: Callable) -> HBoxContainer:
 	row.add_child(l)
 	var bar := VolBar.new()
 	bar.getv = getv
-	row.add_child(UI.btn("-", func(): setv.call(maxf(0.0, float(getv.call()) - 0.1)); bar.queue_redraw(), UI.GREY, 22))
+	row.add_child(UI.btn("−", func(): setv.call(maxf(0.0, float(getv.call()) - 0.1)); bar.queue_redraw(), UI.GREY, 22))
 	row.add_child(bar)
 	row.add_child(UI.btn("+", func(): setv.call(minf(1.0, float(getv.call()) + 0.1)); bar.queue_redraw(), UI.GREY, 22))
 	return row

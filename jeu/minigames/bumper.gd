@@ -398,7 +398,7 @@ func _draw_hud() -> void:
 	var left := maxi(0, ceili(MAX_T - play_t))
 	var tr := Rect2(Vector2(24, 18), Vector2(120, 52))
 	UI.panel(h, tr, UI.WHITE, Color("#e4e2f2"), 18, 4)
-	UI.text(h, tr.get_center(), "%d s" % left, 30, UI.RED if left <= 10 else UI.DARK, 0)
+	UI.text(h, UI.face_center(tr), "%d s" % left, 30, UI.RED if left <= 10 else UI.DARK, 0)
 	if playing and not my_out and state == "play":
 		# jauge du boost
 		var br := Rect2(Vector2(1280 - 190, 24), Vector2(166, 40))
@@ -406,7 +406,7 @@ func _draw_hud() -> void:
 		var k := 1.0 - dash_cd / DASH_CD
 		h.draw_style_box(UI.box(Color(1, 1, 1, 0.35), Color(0, 0, 0, 0), 0, 8), Rect2(br.position + Vector2(10, 26), Vector2(146, 8)))
 		h.draw_style_box(UI.box(UI.YELLOW, Color(0, 0, 0, 0), 0, 8), Rect2(br.position + Vector2(10, 26), Vector2(146 * k, 8)))
-		UI.text(h, br.position + Vector2(83, 14), "BOOST" if k >= 1.0 else "...", 16, UI.WHITE, 4)
+		UI.text(h, br.position + Vector2(83, 14), "BOOST" if k >= 1.0 else "recharge", 16, UI.WHITE, 4)
 	if play_t > 22.0 and play_t < 27.0 and state == "play":
 		UI.ribbon(h, Vector2(640, 130), "L'arène rétrécit !", 28, Color("#ff7b6b"))
 	if state == "count":

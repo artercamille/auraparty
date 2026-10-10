@@ -583,7 +583,7 @@ func _draw_hud() -> void:
 		"spin":
 			msg = "Ça tourne..."
 	if msg != "":
-		UI.ribbon(h, Vector2(640, 118), msg, 24, Color("#8e6cf0"))
+		UI.ribbon(h, Vector2(640, 150), msg, 24, Color("#8e6cf0"))
 	if ph == "choose" or ph == "wait" or ph == "arrow":
 		UI.text(h, Vector2(1180, 104), "Manche %d" % maxi(1, round_n), 22, UI.WHITE, 6)
 	# jauge du lanceur
@@ -592,7 +592,7 @@ func _draw_hud() -> void:
 		var r := Rect2(Vector2(440, 650), Vector2(400, 40))
 		UI.panel(h, r, UI.WHITE, UI.DARK, 18, 4)
 		h.draw_style_box(UI.box(UI.YELLOW.lerp(UI.RED, power), Color(0, 0, 0, 0), 0, 12), Rect2(r.position + Vector2(6, 6), Vector2((r.size.x - 12) * power, r.size.y - 12)))
-		UI.text(h, r.get_center(), "FORCE", 20, UI.DARK, 0)
+		UI.text(h, UI.face_center(r), "FORCE", 20, UI.DARK, 0)
 	if state == "count":
 		UI.text(h, Vector2(640, 380), str(3 - int(t)), int(110 * (1.0 + (1.0 - fmod(t, 1.0)) * 0.3)), UI.WHITE, 16)
 	elif state == "play" and t < 1.0:

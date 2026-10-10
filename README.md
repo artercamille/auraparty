@@ -3,12 +3,12 @@
 # Aura PARTY
 
 Un party game 2D façon Mario Party, jusqu'à **8 joueurs en ligne**, chacun sur son PC Windows.
-Une grande île volante avec des carrefours, des objets, une boutique, des duels, des étoiles à acheter, et 20 mini-jeux pour se trahir (ou s'entraider) entre potes.
+Une grande île volante avec des carrefours, des objets, une boutique, des duels, des étoiles à acheter, et 21 mini-jeux pour se trahir (ou s'entraider) entre potes.
 
 ## ⬇️ Télécharger
 
-### **[Télécharger Aura PARTY v0.28 pour Windows](https://github.com/artercamille/auraparty/raw/main/telecharger/AuraParty.zip)**
-### **[Télécharger Aura PARTY v0.28 pour Mac](https://github.com/artercamille/auraparty/raw/main/telecharger/AuraParty-Mac.zip)**
+### **[Télécharger Aura PARTY v0.29 pour Windows](https://github.com/artercamille/auraparty/raw/main/telecharger/AuraParty.zip)**
+### **[Télécharger Aura PARTY v0.29 pour Mac](https://github.com/artercamille/auraparty/raw/main/telecharger/AuraParty-Mac.zip)**
 
 **Windows** : dézippe le fichier, puis lance `AuraParty.exe`.
 Si Windows affiche « Windows a protégé votre ordinateur » : *Informations complémentaires* → *Exécuter quand même*.
@@ -62,6 +62,7 @@ Dans le salon, l'hôte peut aussi lancer directement un mini-jeu pour le tester,
 | Bombe chaude ! | (Hot Bob-omb) On se passe la bombe en cercle : celui qui l'a quand elle explose est éliminé. |
 | Tir à la corde ! | (Tug o' War) En équipes jusqu'à 4 contre 4 : martèle Espace pour tirer l'autre équipe dans la boue. |
 | Boules-tamponneuses ! | (Bumper Balls) Sur une boule dans une arène ronde : éjecte les autres. |
+| Stop chrono ! | Un temps à viser, un chrono qui se cache : arrête-le pile au bon moment. 3 manches, le plus petit total d'écarts gagne. |
 | Jackpot Aura ! | (Lucky Lineup) Chacun sa machine à sous : arrête les rouleaux pile au bon moment pour aligner les 7. |
 | Mémo-boum ! | (Memory Mash) En équipes : frappe le sol sur les cartes pour les retourner, la première équipe à 4 paires gagne. |
 | Le Capitaine a dit ! | (Shy Guy Says) Lève le même drapeau que le capitaine, sinon il coupe ta corde. Gare aux feintes ! |

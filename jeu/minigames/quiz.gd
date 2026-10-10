@@ -128,7 +128,8 @@ func _gen_rounds() -> void:
 				q["items"] = items
 				q["answers"] = opts.map(func(v): return str(v))
 				q["correct"] = opts.find(c)
-				q["question"] = "Combien de %s ?" % THINGS[target][1]
+				var tn: String = THINGS[target][1]
+				q["question"] = ("Combien d'%s ?" if "AEIOUÉÈ".contains(tn.substr(0, 1)) else "Combien de %s ?") % tn
 				q["icon"] = target
 				q["show"] = lerpf(3.0, 2.2, d)
 			"most":
@@ -660,15 +661,15 @@ func _draw_extra_hud() -> void:
 		hud.draw_texture(UI.char_tex(Net.color_idx(id), "idle"), Vector2(-128, -256))
 		hud.draw_set_transform(Vector2.ZERO)
 		var sr := Rect2(c + Vector2(-26, 24), Vector2(52, 28))
-		hud.draw_style_box(UI.box(UI.WHITE, UI.DARK, 3, 10), sr)
-		UI.text(hud, sr.get_center(), str(int(totals.get(id, 0))), 20, UI.DARK, 0)
+		UI.panel(hud, sr, UI.WHITE, UI.WHITE, 10, 4)
+		UI.text(hud, UI.face_center(sr), str(int(totals.get(id, 0))), 20, UI.DARK, 0)
 		if id == Net.my_id():
 			hud.draw_rect(Rect2(c + Vector2(-16, 56), Vector2(32, 5)), Net.color_of(id))
 	if state == "intro" or round_i < 0:
 		return
 	var rr := Rect2(Vector2(24, 18), Vector2(178, 46))
-	hud.draw_style_box(UI.box(UI.WHITE, UI.DARK, 4, 14), rr)
-	UI.text(hud, rr.get_center(), "Question %d / %d" % [round_i + 1, ROUNDS], 22, UI.DARK, 0)
+	UI.panel(hud, rr, UI.WHITE, UI.WHITE, 14, 4)
+	UI.text(hud, UI.face_center(rr), "Question %d / %d" % [round_i + 1, ROUNDS], 22, UI.DARK, 0)
 	var q: Dictionary = rounds[mini(round_i, ROUNDS - 1)]
 	if phase == "show" and phase_t < 1.2:
 		var s := 1.0 + maxf(0.0, 0.4 - phase_t) * 1.2
@@ -679,10 +680,10 @@ func _draw_extra_hud() -> void:
 		var iw := 58.0 if q.has("icon") else 0.0
 		var bw := tw + iw + 56.0
 		var br := Rect2(Vector2(640 - bw / 2.0, 112), Vector2(bw, 66))
-		hud.draw_style_box(UI.box(UI.WHITE, UI.DARK, 5, 20), br)
-		UI.text(hud, Vector2(br.position.x + 28.0 + tw / 2.0, 143), qtxt, 34, UI.DARK, 0)
+		UI.panel(hud, br, UI.WHITE, UI.WHITE, 20, 4)
+		UI.text(hud, Vector2(br.position.x + 28.0 + tw / 2.0, UI.face_center(br).y), qtxt, 34, UI.DARK, 0)
 		if q.has("icon"):
-			_draw_item(hud, str(q["icon"]), Vector2(br.position.x + 28.0 + tw + 12.0 + 23.0, 143), 46.0)
+			_draw_item(hud, str(q["icon"]), Vector2(br.position.x + 28.0 + tw + 12.0 + 23.0, UI.face_center(br).y), 46.0)
 		if phase == "ask":
 			var left := clampf(1.0 - phase_t / ASK, 0.0, 1.0)
 			var bar := Rect2(Vector2(br.position.x + 14.0, br.end.y - 12.0), Vector2((br.size.x - 28.0), 7.0))

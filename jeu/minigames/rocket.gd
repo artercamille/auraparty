@@ -597,16 +597,30 @@ func _draw_view() -> void:
 	for p in pops:
 		var q: float = float(p["t"])
 		UI.text(c, Vector2(float(p["x"]), _sy(float(p["a"])) - q * 50.0), p["txt"], 34, Color(p["c"], 1.0 - q * q), 8)
-	# repères des fusées hors de l'écran
+	# repères des fusées hors de l'écran (écartés pour que les distances ne se chevauchent pas)
+	var marks: Array = []
 	for id in ids:
 		if not ships.has(id) or (id == me_id and playing):
 			continue
-		var s: Dictionary = ships[id]
-		var sy := _sy(float(s["a"]))
-		if sy > -70.0 and sy < VIEW_H + 60.0:
+		var s0: Dictionary = ships[id]
+		var sy0 := _sy(float(s0["a"]))
+		if sy0 > -70.0 and sy0 < VIEW_H + 60.0:
 			continue
-		var top := sy <= -70.0
-		var px := clampf(float(s["x"]), 60.0, W - 140.0)
+		marks.append([id, clampf(float(s0["x"]), 60.0, W - 140.0), sy0 <= -70.0])
+	for side in [true, false]:
+		var grp: Array = marks.filter(func(m): return m[2] == side)
+		grp.sort_custom(func(a, b): return float(a[1]) < float(b[1]))
+		for i in range(1, grp.size()):
+			grp[i][1] = maxf(float(grp[i][1]), float(grp[i - 1][1]) + 76.0)
+		var over := float(grp[-1][1]) - (W - 60.0) if grp.size() > 0 else 0.0
+		if over > 0.0:
+			for m in grp:
+				m[1] = float(m[1]) - over
+	for m in marks:
+		var id: int = m[0]
+		var s: Dictionary = ships[id]
+		var top: bool = m[2]
+		var px: float = m[1]
 		var py := 120.0 if top else VIEW_H - 50.0
 		var tri := PackedVector2Array([Vector2(px, py + (-30.0 if top else 30.0)), Vector2(px - 16, py + (-12.0 if top else 12.0)), Vector2(px + 16, py + (-12.0 if top else 12.0))])
 		c.draw_colored_polygon(tri, UI.DARK)
@@ -771,9 +785,9 @@ func _draw_hud() -> void:
 		h.draw_circle(Vector2(1237, py), 8.0 if big else 6.0, Net.color_of(id))
 	# chrono
 	var tr := Rect2(Vector2(24, 18), Vector2(150, 44))
-	h.draw_style_box(UI.box(UI.WHITE, UI.DARK, 4, 14), tr)
+	UI.panel(h, tr, UI.WHITE, UI.WHITE, 14, 4)
 	var shown := finish_t if finished else race_t
-	UI.text(h, tr.get_center(), "%d:%04.1f" % [int(shown) / 60, fmod(shown, 60.0)], 22, UI.DARK, 0)
+	UI.text(h, UI.face_center(tr), "%d:%04.1f" % [int(shown) / 60, fmod(shown, 60.0)], 22, UI.DARK, 0)
 	if playing:
 		var suffix := "er" if my_rank == 1 else "e"
 		var pc: Color = [UI.YELLOW, Color("#c9d0dc"), Color("#e09a5a"), UI.WHITE][mini(my_rank - 1, 3)]

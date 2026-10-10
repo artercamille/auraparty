@@ -236,11 +236,11 @@ func _draw_extra_hud() -> void:
 		names.append(COLS[s][0])
 	var txt := " ou ".join(names) + " !"
 	var pop := 1.0 + maxf(0.0, 0.3 - since) * 1.2
-	var w := UI.text_width(txt, int(46 * pop)) + 120.0
+	var w := UI.text_width(txt, int(46 * pop)) + 180.0
 	var box := Rect2(Vector2(640 - w / 2.0, 92), Vector2(w, 74))
 	var main_col: Color = COLS[safe[0]][1]
 	UI.panel(hud, box, main_col, UI.WHITE, 26, 6)
-	UI.text(hud, box.get_center(), txt, int(46 * pop), UI.WHITE, 9)
+	UI.text(hud, UI.face_center(box), txt, int(46 * pop), UI.WHITE, 9)
 	# petits champignons de la couleur de chaque côté
 	for sd in [-1.0, 1.0]:
 		var c := Vector2(640 + sd * (w / 2.0 - 34.0), 129)

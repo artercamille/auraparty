@@ -1,4 +1,4 @@
-AURA PARTY - version Mac (v0.28)
+AURA PARTY - version Mac (v0.29)
 ================================
 Marche sur tous les Mac récents (puces Apple M1/M2/M3/M4 et Mac Intel).
 

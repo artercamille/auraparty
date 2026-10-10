@@ -343,7 +343,7 @@ func _draw_hud() -> void:
 	UI.text(h, bar.end + Vector2(56, -20), "DROITE", 18, Color("#4b87f5"), 5)
 	var tr := Rect2(Vector2(24, 18), Vector2(120, 52))
 	UI.panel(h, tr, UI.WHITE, Color("#e4e2f2"), 18, 4)
-	UI.text(h, tr.get_center(), "%d s" % maxi(0, ceili(MAX_T - play_t)), 30, UI.DARK, 0)
+	UI.text(h, UI.face_center(tr), "%d s" % maxi(0, ceili(MAX_T - play_t)), 30, UI.DARK, 0)
 	if state == "count":
 		UI.text(h, Vector2(640, 300), str(3 - int(t)), int(110 * (1.0 + (1.0 - fmod(t, 1.0)) * 0.3)), UI.WHITE, 16)
 	elif state == "play" and winner == 0:
@@ -353,7 +353,7 @@ func _draw_hud() -> void:
 			var k := 1.0 + 0.05 * sin(t * 16.0)
 			var r := Rect2(Vector2(640 - 210 * k, 640), Vector2(420 * k, 56))
 			UI.panel(h, r, Color("#ff7f8f"), UI.WHITE, 28, 5)
-			UI.text(h, r.get_center(), "TAPE ESPACE !!!", int(30 * k), UI.WHITE, 7)
+			UI.text(h, UI.face_center(r), "TAPE ESPACE !!!", int(30 * k), UI.WHITE, 7)
 		elif me_id == referee:
 			UI.text(h, Vector2(640, 660), "Tu es l'arbitre : tu as gagné d'office !", 26, UI.WHITE, 7)
 	if winner != 0:
