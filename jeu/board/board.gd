@@ -79,6 +79,8 @@ var _ptex := {}
 var emotes: Dictionary = {}       # id -> [nom, début]
 var _emote_cd := 0.0
 const EMOTE_KEYS := {KEY_1: "faceHappy", KEY_2: "laugh", KEY_3: "faceAngry", KEY_4: "faceSad", KEY_5: "heart", KEY_6: "idea"}
+## à la manette : gâchettes hautes et clics des sticks
+const EMOTE_PAD := {JOY_BUTTON_LEFT_SHOULDER: "faceHappy", JOY_BUTTON_RIGHT_SHOULDER: "laugh", JOY_BUTTON_LEFT_STICK: "faceAngry", JOY_BUTTON_RIGHT_STICK: "heart"}
 
 
 func _ready() -> void:
@@ -947,7 +949,12 @@ func _input(event: InputEvent) -> void:
 			_emote_cd = 1.0
 			Game.send_emote(EMOTE_KEYS[(event as InputEventKey).physical_keycode])
 		return
-	if event is InputEventKey and event.pressed and not event.echo and (event as InputEventKey).physical_keycode == KEY_TAB:
+	if event is InputEventJoypadButton and event.pressed and EMOTE_PAD.has((event as InputEventJoypadButton).button_index):
+		if _emote_cd <= 0.0 and Net.players.has(Net.my_id()):
+			_emote_cd = 1.0
+			Game.send_emote(EMOTE_PAD[(event as InputEventJoypadButton).button_index])
+		return
+	if event.is_action_pressed("map") and not (event is InputEventKey and event.echo):
 		map_view = not map_view
 		get_viewport().set_input_as_handled()
 		return
@@ -1009,6 +1016,13 @@ func _input(event: InputEvent) -> void:
 			return
 	elif event is InputEventJoypadButton and event.pressed:
 		go = (event as InputEventJoypadButton).button_index == JOY_BUTTON_A
+		if (event as InputEventJoypadButton).button_index == JOY_BUTTON_B:
+			if menu in ["boo", "items", "target", "custom"]:
+				_activate("back")
+			elif menu == "shop":
+				_activate("leave")
+			get_viewport().set_input_as_handled()
+			return
 	if go:
 		if menu == "custom":
 			_activate("ok")
@@ -1029,9 +1043,20 @@ func _btn_at(p: Vector2) -> int:
 
 
 # ------------------------------------------------------------------ boucle
+var _perf_t := 0.0
+var _perf_n := 0
+
+
 func _process(delta: float) -> void:
 	t += delta
 	_emote_cd -= delta
+	if OS.get_environment("PERF") != "":
+		_perf_t += delta
+		_perf_n += 1
+		if _perf_t >= 2.0:
+			print("[perf] fps=%.1f draw_calls=%d prims=%d" % [_perf_n / _perf_t, RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME), RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME)])
+			_perf_t = 0.0
+			_perf_n = 0
 	if phase == "dice":
 		while dice_hits < dice_vals.size() and t >= dice_t0 + 0.25 + 0.35 * dice_hits:
 			dice_hits += 1
@@ -1171,8 +1196,8 @@ func _draw_hud() -> void:
 	if sel >= buttons.size():
 		sel = maxi(0, buttons.size() - 1)
 	if not map_view:
-		UI.key_chip(hud, Vector2(24, 100), "Tab", "carte")
-		UI.key_chip(hud, Vector2(24, 136), "1-6", "émotes")
+		UI.key_chip(hud, Vector2(24, 100), "Tab", "carte", 16, "Y")
+		UI.key_chip(hud, Vector2(24, 136), "1-6", "émotes", 16, "LB RB")
 	_draw_star_cele()
 
 
@@ -1245,7 +1270,7 @@ func _draw_legend() -> void:
 		var y := r.position.y + 58 + i * 38
 		Island.draw_space(hud, Vector2(r.position.x + 30, y), str(LEGEND[i][0]), 14.0, true)
 		hud.draw_string(UI.font(), Vector2(r.position.x + 56, y + 7), str(LEGEND[i][1]), HORIZONTAL_ALIGNMENT_LEFT, -1, 18, UI.DARK)
-	UI.text(hud, Vector2(r.position.x + 148, r.end.y - 22), "Tab : revenir au jeu", 17, UI.GREY, 0)
+	UI.text(hud, Vector2(r.position.x + 148, r.end.y - 22), ("Y : revenir au jeu" if UI.pad_mode else "Tab : revenir au jeu"), 17, UI.GREY, 0)
 
 
 func _draw_panel() -> void:

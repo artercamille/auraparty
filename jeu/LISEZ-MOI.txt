@@ -1,4 +1,4 @@
-AURA PARTY - v0.27 (plateau peaufiné : sol, zones, falaises, chemin et interface)
+AURA PARTY - v0.28 (plateau fluide même sur petit PC, manette, version Mac)
 ==========================================
 Jusqu'à 8 joueurs, chacun sur son PC.
 Tout le monde doit avoir CETTE version du jeu (sinon la connexion est refusée).
@@ -7,6 +7,9 @@ Dernière version : https://github.com/artercamille/auraparty
 AVANT DE JOUER (une seule fois)
 1. Installez tous Radmin VPN (gratuit) : https://www.radmin-vpn.com/fr/
 2. Une personne crée un réseau dans Radmin VPN, les autres le rejoignent.
+   S'il y a un pote sur Mac : Radmin n'existe pas sur Mac, utilisez TOUS
+   ZeroTier à la place (gratuit, Windows et Mac) : https://www.zerotier.com
+   ou bien l'hôte ouvre le port UDP 7777 de sa box et donne son IP publique.
 
 POUR JOUER
 1. Lancez AuraParty.exe.
@@ -151,6 +154,15 @@ SUR LE PLATEAU
 - Espace : valider · ← → : choisir · Tab : carte de l'île
 - Touches 1 à 6 : envoyer une émote à tes potes (content, mort de rire,
   énervé, triste, cœur, idée)
+
+À LA MANETTE (Xbox, PlayStation, Switch Pro... branchée avant de lancer)
+- Tout se joue à la manette : dès que tu touches la manette, les aides à
+  l'écran affichent ses boutons au lieu des touches du clavier.
+- Croix ou stick gauche : choisir / bouger · A : valider / sauter
+- B : retour (boutique, objets, fenêtres) · X ou B : pousser
+- Y (ou Select) : carte de l'île · Start : menu
+- LB / RB / clic des sticks : émotes
+- Seuls le pseudo et l'IP se tapent au clavier.
 
 COMMANDES (clavier ou manette)
 - Bouger : Q / D ou flèches (stick ou croix)

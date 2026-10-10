@@ -13,6 +13,8 @@ var rounds_idx := 1
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(PRESET_FULL_RECT)
+	# prépare le décor de l'île pendant qu'on attend les potes (le plateau s'affiche ensuite sans attente)
+	preload("res://board/island.gd").prebake(get_tree())
 	add_child(Backdrop.new("hills"))
 	var center := CenterContainer.new()
 	center.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
@@ -37,7 +39,7 @@ func _ready() -> void:
 			row.add_child(UI.btn("Copier", func(): DisplayServer.clipboard_set(str(radmin[0])); Net.toast.emit("IP copiée ! Colle-la sur Discord."), UI.GREY, 18))
 		else:
 			var other: Array = ips["other"]
-			var warn := UI.lbl("Radmin VPN n'est pas détecté : lance-le et rejoins le réseau de tes potes.\nTes adresses : %s" % ", ".join(other), 18, UI.RED)
+			var warn := UI.lbl("Aucun VPN détecté (Radmin VPN, ou ZeroTier s'il y a des Mac) : lance-le et rejoins le réseau de tes potes.\nTes adresses : %s" % ", ".join(other), 18, UI.RED)
 			warn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			warn.custom_minimum_size.x = 900
 			row.add_child(warn)
@@ -164,6 +166,7 @@ func _open_picker() -> void:
 	close_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	close_row.add_child(UI.btn("Fermer", func(): over.queue_free(), UI.GREY, 20))
 	v.add_child(close_row)
+	UI.open_modal(over, func(): over.queue_free())
 
 
 # ------------------------------------------------------------------ options
@@ -228,6 +231,7 @@ func _open_options() -> void:
 	close_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	close_row.add_child(UI.btn("Fermer", func(): over.queue_free(), UI.GREY, 22))
 	v.add_child(close_row)
+	UI.open_modal(over, func(): over.queue_free())
 
 
 func _vol_row(label: String, getv: Callable, setv: Callable) -> HBoxContainer:

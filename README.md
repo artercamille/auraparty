@@ -7,10 +7,16 @@ Une grande île volante avec des carrefours, des objets, une boutique, des duels
 
 ## ⬇️ Télécharger
 
-### **[Télécharger Aura PARTY v0.27 pour Windows](https://github.com/artercamille/auraparty/raw/main/telecharger/AuraParty.zip)**
+### **[Télécharger Aura PARTY v0.28 pour Windows](https://github.com/artercamille/auraparty/raw/main/telecharger/AuraParty.zip)**
+### **[Télécharger Aura PARTY v0.28 pour Mac](https://github.com/artercamille/auraparty/raw/main/telecharger/AuraParty-Mac.zip)**
 
-Dézippe le fichier, puis lance `AuraParty.exe`.
+**Windows** : dézippe le fichier, puis lance `AuraParty.exe`.
 Si Windows affiche « Windows a protégé votre ordinateur » : *Informations complémentaires* → *Exécuter quand même*.
+
+**Mac** (puces Apple et Intel) : dézippe, glisse *Aura PARTY* dans Applications, puis **clic droit → Ouvrir** la première fois.
+Sur macOS 15 et plus : *Réglages Système* → *Confidentialité et sécurité* → *Ouvrir quand même*. Tout est expliqué dans le LISEZ-MOI du zip.
+
+🎮 **Jouable à la manette** (Xbox, PlayStation, Switch Pro) : les aides à l'écran affichent les boutons de la manette dès qu'on y touche.
 
 Tout le monde doit avoir **la même version**. Le jeu affiche un bouton sur l'écran d'accueil quand une nouvelle version sort ici.
 
@@ -20,7 +26,8 @@ Tout le monde doit avoir **la même version**. Le jeu affiche un bouton sur l'é
 2. Les autres collent cette IP et cliquent sur **Rejoindre**.
 
 Pour se connecter, au choix :
-- **Radmin VPN** (gratuit, le plus simple) : tout le monde rejoint le même réseau, l'IP commence par `26.`
+- **Radmin VPN** (gratuit, le plus simple, Windows seulement) : tout le monde rejoint le même réseau, l'IP commence par `26.`
+- **ZeroTier** (gratuit, Windows **et Mac**) : à utiliser par toute la bande s'il y a un pote sur Mac.
 - **Ouvrir le port** sur la box de l'hôte : **UDP 7777** vers son PC, puis donner son IP publique.
 
 Dans le salon, l'hôte peut aussi lancer directement un mini-jeu pour le tester, sans passer par le plateau.
@@ -62,7 +69,9 @@ Dans le salon, l'hôte peut aussi lancer directement un mini-jeu pour le tester,
 | Pingouins perdus ! | **COOP** (Penguin Pushers) Rabattez ensemble les bébés pingouins vers leur parent avant la fin du temps. |
 | Cuisine en folie ! | **COOP** Façon Overcooked : coupez, cuisez, servez burgers et salades en équipe. |
 
-**Commandes** : plateau : Espace pour valider, ← → pour choisir, Tab pour la carte, 1 à 6 pour les émotes · M pour couper la musique · mini-jeux : bouger Q/D ou flèches · sauter Espace (double saut) · pousser Maj/X/E/clic · plein écran F11.
+**Manette** : croix/stick pour choisir et bouger · A pour valider/sauter · B retour · X/B pousser · Y carte · LB/RB émotes.
+
+**Clavier** : plateau : Espace pour valider, ← → pour choisir, Tab pour la carte, 1 à 6 pour les émotes · M pour couper la musique · mini-jeux : bouger Q/D ou flèches · sauter Espace (double saut) · pousser Maj/X/E/clic · plein écran F11.
 Kart : Z/↑/Espace pour accélérer, S/↓ pour freiner, Q/D pour tourner, Maj/X/clic pour l'objet.
 Triathlon : Q/D en alternance (pagaie), Z/S en alternance (vélo), Espace (haies). Fusées : Q/D pour slalomer, Z pour accélérer, S pour freiner.
 

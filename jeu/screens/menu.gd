@@ -188,6 +188,7 @@ func _ask_name(can_close: bool) -> void:
 	row.add_child(UI.btn("C'est parti !" if not can_close else "Valider", ok, UI.GREEN, 28))
 	edit.grab_focus.call_deferred()
 	edit.caret_column = edit.text.length()
+	UI.open_modal(name_over, (func(): name_over.queue_free(); name_over = null) if can_close else Callable())
 
 
 func _player_name() -> String:

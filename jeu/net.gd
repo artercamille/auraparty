@@ -17,7 +17,7 @@ signal mg_go
 signal mg_msg(from_id: int, data: Dictionary)   # reçu par l'hôte
 signal mg_state(data: Dictionary)               # envoyé par l'hôte à tous
 
-const VERSION := "0.27"
+const VERSION := "0.28"
 const PORT := 7777
 const MAX_PLAYERS := 8
 const COLOR_IDS := ["rouge", "orange", "jaune", "vert", "turquoise", "bleu", "violet", "rose"]
@@ -95,6 +95,16 @@ var mg_parts: Array = []   # joueurs qui participent au mini-jeu en cours (tous,
 func _ready() -> void:
 	randomize()
 	_setup_inputs()
+	get_viewport().gui_focus_changed.connect(_on_focus_changed)
+	if OS.get_environment("FORCE_PAD") != "":
+		UI.pad_mode = true   # captures de test « manette »
+		get_tree().create_timer(2.5).timeout.connect(func():
+			for b in [JOY_BUTTON_DPAD_DOWN, JOY_BUTTON_DPAD_RIGHT]:
+				var e := InputEventJoypadButton.new()
+				e.button_index = b
+				e.pressed = true
+				Input.parse_input_event(e)
+				await get_tree().create_timer(0.3).timeout)
 	load_party_options()
 	multiplayer.connected_to_server.connect(_on_connected_ok)
 	multiplayer.connection_failed.connect(_on_connection_failed)
@@ -178,6 +188,8 @@ func _setup_inputs() -> void:
 	_add("jump", [KEY_SPACE, KEY_W, KEY_UP], [JOY_BUTTON_A], -1, 0.0)
 	_add("push", [KEY_SHIFT, KEY_X, KEY_E, KEY_J], [JOY_BUTTON_X, JOY_BUTTON_B], -1, 0.0)
 	_add("menu", [KEY_ESCAPE], [JOY_BUTTON_START], -1, 0.0)
+	_add("map", [KEY_TAB], [JOY_BUTTON_Y, JOY_BUTTON_BACK], -1, 0.0)
+	_add("back", [KEY_ESCAPE, KEY_BACKSPACE], [JOY_BUTTON_B], -1, 0.0)
 	_add("fullscreen", [KEY_F11], [], -1, 0.0)
 	var mb := InputEventMouseButton.new()
 	mb.button_index = MOUSE_BUTTON_LEFT
@@ -208,6 +220,42 @@ func _unhandled_input(event: InputEvent) -> void:
 		toggle_fullscreen()
 
 
+## Manette ou clavier/souris ? (change les textes d'aide et affiche l'anneau de sélection)
+func _input(event: InputEvent) -> void:
+	var pad := UI.pad_mode
+	if (event is InputEventJoypadButton and event.pressed) or (event is InputEventJoypadMotion and absf((event as InputEventJoypadMotion).axis_value) > 0.6):
+		pad = true
+	elif (event is InputEventKey and event.pressed) or (event is InputEventMouseButton and event.pressed) \
+			or (event is InputEventMouseMotion and (event as InputEventMouseMotion).relative.length() > 6.0):
+		pad = false
+	if pad != UI.pad_mode:
+		UI.pad_mode = pad
+		var fo := get_viewport().gui_get_focus_owner()
+		if fo:
+			fo.queue_redraw()
+	var has_modal := UI.modal != null and is_instance_valid(UI.modal) and UI.modal.is_inside_tree()
+	if has_modal and UI.modal_close.is_valid() and event.is_action_pressed("back") and event is InputEventJoypadButton:
+		UI.modal_close.call()
+		get_viewport().set_input_as_handled()
+		return
+	if pad and phase in ["menu", "lobby", "final"] and (event is InputEventJoypadButton or event is InputEventJoypadMotion) \
+			and get_viewport().gui_get_focus_owner() == null:
+		var b := UI.first_button(UI.modal if has_modal else get_tree().root)
+		if b:
+			b.grab_focus()
+			get_viewport().set_input_as_handled()
+
+
+## la sélection manette ne sort pas d'une fenêtre ouverte par-dessus
+func _on_focus_changed(c: Control) -> void:
+	if UI.modal == null or not is_instance_valid(UI.modal) or not UI.modal.is_inside_tree():
+		return
+	if c and not UI.modal.is_ancestor_of(c):
+		var b := UI.first_button(UI.modal)
+		if b:
+			b.grab_focus.call_deferred()
+
+
 func toggle_fullscreen() -> void:
 	var w := get_window()
 	w.mode = Window.MODE_WINDOWED if w.mode == Window.MODE_FULLSCREEN else Window.MODE_FULLSCREEN
@@ -234,13 +282,24 @@ func name_of(id: int) -> String:
 	return str(players[id]["name"]) if players.has(id) else "?"
 
 
+## Adresses de ce PC. « radmin » = adresses d'un réseau VPN entre potes : Radmin (26.x, Windows),
+## Hamachi (25.x), Tailscale (100.64-127.x) ou ZeroTier (reconnu par le nom de la carte réseau) : ces
+## deux derniers marchent aussi sur Mac.
 func local_ips() -> Dictionary:
 	var radmin := []
 	var other := []
+	var vpn_names := {}
+	for itf in IP.get_local_interfaces():
+		var nm := (str(itf.get("name", "")) + " " + str(itf.get("friendly", ""))).to_lower()
+		if "zerotier" in nm or nm.begins_with("zt") or "tailscale" in nm or "hamachi" in nm or "radmin" in nm:
+			for a in itf.get("addresses", []):
+				vpn_names[str(a)] = true
 	for a in IP.get_local_addresses():
 		if ":" in a or a.begins_with("127.") or a.begins_with("169.254."):
 			continue
-		if a.begins_with("26."):
+		var parts := a.split(".")
+		var cgnat := parts.size() == 4 and parts[0] == "100" and int(parts[1]) >= 64 and int(parts[1]) <= 127
+		if a.begins_with("26.") or a.begins_with("25.") or cgnat or vpn_names.has(a):
 			radmin.append(a)
 		else:
 			other.append(a)
@@ -308,7 +367,7 @@ func _on_connected_ok() -> void:
 
 func _on_connection_failed() -> void:
 	leave()
-	toast.emit("Connexion impossible. Vérifie l'IP de l'hôte et que vous êtes tous sur le même réseau Radmin VPN.")
+	toast.emit("Connexion impossible. Vérifie l'IP de l'hôte et que vous êtes tous sur le même réseau VPN (Radmin, ZeroTier...).")
 
 
 func _on_server_disconnected() -> void:

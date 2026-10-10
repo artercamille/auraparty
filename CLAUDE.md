@@ -1,13 +1,13 @@
-# Aura PARTY — état du projet (v0.27)
+# Aura PARTY — état du projet (v0.28)
 
 Party game 2D façon Mario Party, Godot 4.3 (GL Compatibility), GDScript, 2 à 8 joueurs en ligne
-(ENet UDP 7777, via Radmin VPN). Export Windows .exe. L'utilisateur (Camille) ne code pas : réponses
+(ENet UDP 7777, via Radmin VPN ou ZeroTier si Mac). Export Windows .exe + Mac .app universelle, jouable à la manette. L'utilisateur (Camille) ne code pas : réponses
 en français, concises ; il préfère qu'on décide par défaut et qu'on montre des captures.
 
 ## Où sont les choses
 - **Projet Godot de travail : `/home/claude/potes2`** (c'est là qu'on modifie).
 - **Dépôt GitHub `artercamille/auraparty` : `/home/claude/auraparty`** = README.md, version.txt,
-  `telecharger/AuraParty.zip` (exe + LISEZ-MOI), `docs/*.png` (captures du README), `jeu/` (copie du projet).
+  `telecharger/AuraParty.zip` (exe + LISEZ-MOI), `telecharger/AuraParty-Mac.zip` (.app + « LISEZ-MOI (Mac).txt »), `docs/*.png` (captures du README), `jeu/` (copie du projet).
 - Si le conteneur a été réinitialisé, `potes2` n'existe plus : recopier `auraparty/jeu/` vers `potes2`
   puis `godot --headless --import`.
 
@@ -84,6 +84,37 @@ Cases r=47 (espacement régulier ~175 px : si on allonge un chemin, rajouter des
 Ajouter un mini-jeu : créer le .gd, l'ajouter à `Net.MINIGAMES` + à la liste `--checkall` dans net.gd,
 gérer les robots (`Net.autotest != ""`), spectateurs/duel, puis faire son aperçu HD dans `assets/previews/`.
 
+## Performance (v0.28) — IMPORTANT
+- Le décor fixe de l'île (couches `back`, `ground` + `props`) est **cuit en images** au chargement (`island.gd _bake_all/_bake` :
+  SubViewport, tuiles 1024 px avec 16 px de recouvrement, échelle 0.9 pour l'île / 0.4 pour le ciel, mipmaps, matériau
+  PREMULT_ALPHA). Sans ça : ~15 600 appels de dessin et 840 000 triangles par image (lag). Avec : ~520 appels.
+- Cuisson une seule fois par session (`static var _baked_cache`), lancée en arrière-plan dès le salon (`Island.prebake()` dans
+  `lobby.gd`) ; écran « Préparation de l'île... » sur le plateau si pas encore fini (`board.gd _draw_loading`). Ignorée en headless.
+- `NO_BAKE=1` = dessin direct (utile pour les captures sous xvfb : sans carte graphique la cuisson prend ~17 s ;
+  sur un vrai PC ~1-2 s). `PERF=1` affiche fps / appels de dessin ; `HIDE_LAYERS=ground,props` pour mesurer.
+- Tout décor ajouté dans `_draw_ground/_draw_props/_draw_back` est automatiquement cuit. Ce qui bouge va dans
+  `water`, `clouds` ou `top` (redessinés à chaque image : y rester léger).
+
+## Manette (v0.28)
+- Actions dans `net.gd _setup_inputs` (clavier + manette) : left/right/up/down (croix + stick), jump (A), push (X, B), menu (Start),
+  map (Y, Select), back (B). Plateau : B = retour, LB/RB/clics de stick = émotes (`EMOTE_PAD`).
+- `UI.pad_mode` passe à true dès qu'on touche la manette (`Net._input`) : `UI.padify()` remplace ESPACE→A, Échap→B dans `UI.text` ;
+  encart Commandes converti (`stage.gd _pad_tokens`, puces `UI.pad_chip`) ; touches du HUD (`UI.key_chip(..., pad)`).
+- Menus Godot (menu, salon, fin) : anneau jaune `UI.FocusRing` visible seulement en mode manette ; focus auto sur le bouton
+  principal (`UI.first_button`, évite « Exclure ») ; fenêtres par-dessus via `UI.open_modal(over, fermer)` (focus piégé, B ferme).
+- `FORCE_PAD=1` = captures en mode manette (simule 2 appuis sur la croix au bout de 2,5 s). `LOBBY_DELAYS` = moments des captures du salon.
+
+## Mac (v0.28)
+- Preset « macOS » (universel x86_64+arm64, signature ad-hoc intégrée, pas de notarisation) ; il faut
+  `textures/vram_compression/import_etc2_astc=true` (fait) et le modèle `macos.zip` dans les export templates
+  (extrait du .tpz 4.3 : le .tpz fait 1 Go, n'extraire que `templates/macos.zip`).
+- Export : `godot --headless --export-release "macOS" build/mac/AuraParty-Mac.zip`, puis rezipper avec `zip -9 -r -y` (garde le
+  bit exécutable ; PAS 7z) en ajoutant « LISEZ-MOI (Mac).txt ». Jamais testé sur un vrai Mac (pas de Mac ici).
+- Radmin VPN n'existe pas sur Mac → ZeroTier conseillé ; `Net.local_ips()` reconnaît Radmin (26.), Hamachi (25.),
+  Tailscale (100.64-127.) et ZeroTier (nom de la carte réseau).
+- `gh` n'est pas authentifié ici (pas de GitHub Releases) : les zips sont dans le dépôt (Mac ~82 Mo, Windows ~59 Mo,
+  limite GitHub 100 Mo par fichier ; l'historique git grossit à chaque version).
+
 ## Dépendances / pièges importants
 - Si le conteneur est neuf : installer Godot 4.3 (zip GitHub godotengine), les modèles d'export Windows
   (`Godot_v4.3-stable_export_templates.tpz` → `~/.local/share/godot/export_templates/4.3.stable/`),
@@ -139,7 +170,7 @@ gérer les robots (`Net.autotest != ""`), spectateurs/duel, puis faire son aper�
 
 ## À faire / à ne pas oublier
 - Camille veut des mini-jeux **copiés fidèlement** sur les vrais Mario Party (règles, vue, déroulé) : vérifier le vrai jeu avant de l'adapter.
-- Le zip fait ~54 Mo : GitHub refuse au-delà de 100 Mo → prévoir GitHub Releases si ça grossit.
+- Zips : Mac ~82 Mo, Windows ~59 Mo ; GitHub refuse au-delà de 100 Mo → passer à GitHub Releases si ça grossit.
 - Pas encore fait : mini-jeux 2v2 / 1v3 selon la couleur des cases (proposé, pas choisi) ;
   alliés (Jamboree) ; mode « mini-jeux seulement » ; 2e plateau.
 - Idées de mini-jeux en attente : Bowser's Big Blast, Hot Rope Jump, « jeu des marches 10 8 5 3 »,

@@ -48,6 +48,8 @@ func _on_state(s: String) -> void:
 	var shots := OS.get_environment("SHOTS")
 	if shots != "":
 		var delays := [2.0]
+		if s == "lobby" and OS.get_environment("LOBBY_DELAYS") != "":
+			delays = Array(OS.get_environment("LOBBY_DELAYS").split(",")).map(func(x): return float(x))
 		if s == "board":
 			delays = [1.0, 6.0, 12.0]
 			if OS.get_environment("BOARD_DELAYS") != "":

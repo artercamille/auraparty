@@ -555,7 +555,7 @@ static func draw_intro(h: CanvasItem, ttl: String, lines: Array, ctrl: String) -
 	var step := (card.end.y - 18.0 - y) / maxf(1.0, float(lines.size()))
 	step = minf(step, 30.0)
 	for i in lines.size():
-		h.draw_string(UI.font(), Vector2(card.position.x + 20, y + i * step + 6), str(lines[i]), HORIZONTAL_ALIGNMENT_CENTER, card.size.x - 40, fs, UI.DARK)
+		h.draw_string(UI.font(), Vector2(card.position.x + 20, y + i * step + 6), UI.padify(str(lines[i])), HORIZONTAL_ALIGNMENT_CENTER, card.size.x - 40, fs, UI.DARK)
 	# commandes
 	var cx := 856.0
 	UI.text(h, Vector2(cx + 120, 66), "Commandes", 36, UI.DARK, 0)
@@ -587,11 +587,56 @@ static func draw_intro(h: CanvasItem, ttl: String, lines: Array, ctrl: String) -
 ## (« ou », « en l'air »...) restent en texte simple. Renvoie la hauteur en plus si ça passe à la ligne.
 const KEY_WORDS := ["Espace", "Entrée", "Tab", "Maj", "Ctrl", "Échap", "flèches", "←", "→", "↑", "↓", "Clic"]
 
+const PAD_MAP := {"Q": "←", "D": "→", "Z": "↑", "W": "↑", "S": "↓", "flèches": "Stick", "Espace": "A", "Entrée": "A",
+	"Maj": "X", "X": "X", "E": "X", "J": "X", "clic": "X", "Clic": "X", "Tab": "Y", "Échap": "Start"}
+
+
+## Version manette d'une liste de touches : « Q D / ← → » devient « ← → », « Maj / X / clic » devient « X ».
+static func _pad_tokens(keys: String) -> Array:
+	var groups: Array = [[]]
+	for tok in keys.split(" ", false):
+		var tk := str(tok)
+		if tk == "/" or tk == "ou":
+			groups.append([])
+			continue
+		(groups[-1] as Array).append(PAD_MAP.get(tk, tk))
+	var out: Array = []
+	var seen: Array = []
+	for g in groups:
+		var arr: Array = g
+		var dirs := 0
+		for d in ["←", "→", "↑", "↓"]:
+			if d in arr:
+				dirs += 1
+		if dirs >= 3:
+			arr = ["Stick"]
+		if arr.is_empty() or str(arr) in seen:
+			continue
+		seen.append(str(arr))
+		if not out.is_empty():
+			out.append("/")
+		out.append_array(arr)
+	return out
+
+
 static func _keys(h: CanvasItem, at: Vector2, keys: String, maxw: float) -> float:
 	var x := at.x
 	var y := at.y
-	for tok in keys.split(" ", false):
+	var toks: Array = _pad_tokens(keys) if UI.pad_mode else Array(keys.split(" ", false))
+	for tok in toks:
 		var tk := str(tok)
+		if UI.pad_mode:
+			var pk := tk in ["A", "B", "X", "Y", "Stick", "Start", "←", "→", "↑", "↓"]
+			var pw := (maxf(34.0, UI.text_width(tk, 16) + 20.0) if pk else UI.text_width(tk, 18, false)) + 7.0
+			if x + pw > at.x + maxw:
+				x = at.x
+				y += 42.0
+			if pk:
+				pw = UI.pad_chip(h, Vector2(x, y), tk, 16) + 7.0
+			else:
+				h.draw_string(UI.font(), Vector2(x, y + 7), tk, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(UI.INK, 0.8))
+			x += pw
+			continue
 		var is_key := tk in KEY_WORDS or (tk.length() == 1 and tk != "/" and tk != "+" and tk.to_upper() == tk and tk.to_lower() != tk) or tk.is_valid_int()
 		var lab := "← ↑ ↓ →" if tk == "flèches" else tk
 		var w := (maxf(34.0, UI.text_width(lab, 18) + 20.0) if is_key else UI.text_width(tk, 18, false)) + 7.0

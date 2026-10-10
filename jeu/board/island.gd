@@ -71,12 +71,23 @@ func _ready() -> void:
 		add_child(l)
 		layers[n] = l
 	(layers["ground"] as Node2D).texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
-	(layers["back"] as Node2D).draw.connect(_draw_back)
 	(layers["clouds"] as Node2D).draw.connect(_draw_clouds)
-	(layers["ground"] as Node2D).draw.connect(_draw_ground)
 	(layers["water"] as Node2D).draw.connect(_draw_water)
-	(layers["props"] as Node2D).draw.connect(_draw_props)
 	(layers["top"] as Node2D).draw.connect(_draw_top)
+	# décor fixe (ciel, sol, objets) : dessiné une seule fois dans des images (voir _bake),
+	# sinon le jeu renvoie ~15 000 dessins à la carte graphique à chaque image (lag sur petits PC)
+	var raw := OS.get_environment("NO_BAKE") != ""
+	for n in ["back", "ground", "props"]:
+		var l: Node2D = layers[n]
+		l.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+		if raw:
+			l.draw.connect({"back": _draw_back, "ground": _draw_ground, "props": _draw_props}[n])
+		else:
+			l.draw.connect(_draw_baked.bind(n))
+			# les images cuites sont en « alpha prémultiplié » (sinon les bords transparents grisent)
+			var mat := CanvasItemMaterial.new()
+			mat.blend_mode = CanvasItemMaterial.BLEND_MODE_PREMULT_ALPHA
+			l.material = mat
 	ash = _clip(_blob(Vector2(3170, 760) * K, Vector2(720, 600) * K, 22, 0.08))
 	sand = _clip(_blob(Vector2(3260, 1980) * K, Vector2(780, 640) * K, 22, 0.08))
 	forest = _clip(_blob(Vector2(720, 1880) * K, Vector2(600, 560) * K, 22, 0.1))
@@ -93,10 +104,14 @@ func _ready() -> void:
 		streams.append(BoardMap.smooth(s, 10))
 	isles = [[Vector2(-520, 600), 200.0], [Vector2(5650, 900), 220.0], [Vector2(5600, 2950), 160.0], [Vector2(-470, 2600), 170.0], [Vector2(3300, -760), 150.0],
 		[Vector2(5350, 1650), 110.0], [Vector2(-300, 1650), 100.0]]
+	for hn in OS.get_environment("HIDE_LAYERS").split(",", false):
+		(layers[hn] as Node2D).visible = false
 	_preload_textures()
 	_add_statue_sprite()
 	_build_grid()
 	_place_props()
+	if not raw:
+		_bake_all()
 
 
 func _process(delta: float) -> void:
@@ -104,6 +119,126 @@ func _process(delta: float) -> void:
 	(layers["clouds"] as Node2D).queue_redraw()
 	(layers["water"] as Node2D).queue_redraw()
 	(layers["top"] as Node2D).queue_redraw()
+
+
+# ------------------------------------------------------------------ cuisson du décor fixe
+const BAKE_TILE := 1024
+const BAKE_PAD := 16     # recouvrement entre tuiles (évite les coutures quand on dézoome)
+const BAKE_PAR := 4      # tuiles dessinées en même temps
+static var _baked_cache := {}   # gardé pour toute la session : on ne cuit qu'une fois
+static var _bake_running := false
+var prebake_only := false       # île invisible créée dans le salon juste pour préparer les images
+var baked := {}          # couche -> [[texture, rect dans le monde, rect source], ...]
+var bake_done := false
+signal baked_ready
+
+
+## À appeler depuis le salon : prépare les images de l'île en arrière-plan (rien à l'écran).
+static func prebake(tree: SceneTree) -> void:
+	if not _baked_cache.is_empty() or _bake_running or DisplayServer.get_name() == "headless" or OS.get_environment("NO_BAKE") != "":
+		return
+	var isl: Node2D = load("res://board/island.gd").new()
+	isl.prebake_only = true
+	isl.visible = false
+	tree.root.add_child.call_deferred(isl)
+
+
+func _bake_all() -> void:
+	if DisplayServer.get_name() == "headless":
+		_finish_bake()
+		return
+	while _bake_running:
+		await get_tree().process_frame
+	if not _baked_cache.is_empty():
+		baked = _baked_cache
+		_finish_bake()
+		return
+	_bake_running = true
+	await get_tree().process_frame
+	var t0 := Time.get_ticks_msec()
+	var cb := Rect2(coast[0], Vector2.ZERO)
+	for q in coast:
+		cb = cb.expand(q)
+	var island_r := Rect2(cb.position - Vector2(160, 260), cb.size + Vector2(320, 260 + 1100))
+	# sol + objets dans la même image (moitié moins de mémoire)
+	await _bake("ground", ["ground", "props"], func(): _draw_ground(); _draw_props(), island_r, 0.9)
+	var sky := Rect2(Vector2(-2000, -1300), BoardMap.SIZE + Vector2(4000, 2900))
+	await _bake("back", ["back"], _draw_back, sky, 0.4)
+	print("[bake] %d ms, tuiles : sol %d, ciel %d" % [Time.get_ticks_msec() - t0, baked["ground"].size(), baked["back"].size()])
+	_baked_cache = baked
+	_bake_running = false
+	if prebake_only:
+		queue_free()
+		return
+	_finish_bake()
+
+
+func _finish_bake() -> void:
+	bake_done = true
+	for n in ["back", "ground", "props"]:
+		(layers[n] as Node2D).queue_redraw()
+	baked_ready.emit()
+
+
+## Dessine les couches `names` (via `fn`) dans des SubViewports, tuile par tuile (1024 px, BAKE_PAD px de
+## recouvrement pour éviter les coutures), et garde les images non vides dans baked[n].
+func _bake(n: String, names: Array, fn: Callable, area: Rect2, sc: float) -> void:
+	var vps: Array = []
+	for i in BAKE_PAR:
+		var vp := SubViewport.new()
+		vp.size = Vector2i(BAKE_TILE, BAKE_TILE)
+		vp.transparent_bg = true
+		vp.disable_3d = true
+		vp.render_target_update_mode = SubViewport.UPDATE_DISABLED
+		var holder := Node2D.new()
+		holder.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
+		holder.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		holder.draw.connect(func():
+			var real := {}
+			for k in names:
+				real[k] = layers[k]
+				layers[k] = holder
+			fn.call()
+			for k in names:
+				layers[k] = real[k])
+		vp.add_child(holder)
+		add_child(vp)
+		vps.append(vp)
+	var step := float(BAKE_TILE - 2 * BAKE_PAD) / sc
+	var cells: Array = []
+	var y := area.position.y
+	while y < area.end.y:
+		var x := area.position.x
+		while x < area.end.x:
+			cells.append(Vector2(x, y))
+			x += step
+		y += step
+	var out: Array = []
+	var i0 := 0
+	while i0 < cells.size():
+		var batch := cells.slice(i0, i0 + BAKE_PAR)
+		for j in batch.size():
+			var vp: SubViewport = vps[j]
+			var org: Vector2 = batch[j] - Vector2.ONE * BAKE_PAD / sc
+			vp.canvas_transform = Transform2D(0.0, Vector2(sc, sc), 0.0, -org * sc)
+			vp.render_target_update_mode = SubViewport.UPDATE_ONCE
+		await RenderingServer.frame_post_draw
+		for j in batch.size():
+			var img := (vps[j] as SubViewport).get_texture().get_image()
+			if img and not img.is_invisible():
+				img.generate_mipmaps()
+				out.append([ImageTexture.create_from_image(img), Rect2(batch[j], Vector2(step, step)),
+					Rect2(BAKE_PAD, BAKE_PAD, BAKE_TILE - 2 * BAKE_PAD, BAKE_TILE - 2 * BAKE_PAD)])
+		i0 += BAKE_PAR
+	baked[n] = out
+	for vp in vps:
+		(vp as Node).queue_free()
+
+
+func _draw_baked(n: String) -> void:
+	var ci: Node2D = layers[n]
+	for tl in baked.get(n, []):
+		ci.draw_texture_rect_region(tl[0], tl[1], tl[2])
 
 
 # ------------------------------------------------------------------ outils

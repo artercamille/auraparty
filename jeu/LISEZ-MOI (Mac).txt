@@ -1,0 +1,27 @@
+AURA PARTY - version Mac (v0.28)
+================================
+Marche sur tous les Mac récents (puces Apple M1/M2/M3/M4 et Mac Intel).
+
+OUVRIR LE JEU LA PREMIÈRE FOIS
+Le jeu n'est pas signé par Apple (c'est un jeu fait entre potes), donc macOS
+le bloque au premier lancement. C'est normal, voilà comment l'ouvrir :
+1. Double-clique sur le zip, puis glisse « Aura PARTY » dans Applications.
+2. Fais un clic droit (ou ctrl + clic) sur « Aura PARTY » > Ouvrir > Ouvrir.
+3. Si macOS dit encore non (macOS 15 Sequoia et plus) : ouvre Réglages Système
+   > Confidentialité et sécurité, descends tout en bas et clique sur
+   « Ouvrir quand même » à côté de « Aura PARTY », puis confirme.
+Ensuite le jeu s'ouvre normalement par double-clic.
+
+Si macOS affiche « endommagé » : ouvre le Terminal et tape
+   xattr -cr "/Applications/Aura PARTY.app"
+puis relance le jeu.
+
+JOUER AVEC DES POTES SUR PC
+Radmin VPN n'existe pas sur Mac. Toute la bande utilise ZeroTier à la place
+(gratuit, Windows et Mac) : https://www.zerotier.com
+L'hôte crée un réseau, les autres le rejoignent, puis on fait comme d'habitude :
+« Créer une partie » chez l'hôte, les autres collent son IP et « Rejoindre ».
+Autre solution : l'hôte ouvre le port UDP 7777 de sa box et donne son IP publique.
+
+Toutes les règles et les commandes sont dans LISEZ-MOI.txt (même jeu que sur PC).
+La manette marche aussi sur Mac (manette Xbox, PlayStation, Switch Pro).

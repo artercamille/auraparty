@@ -16,6 +16,43 @@ const INK := Color("#2b3150")
 
 static var _font: Font
 static var _font_bold: Font
+## true quand le joueur utilise une manette (les textes « ESPACE » deviennent « A », anneau de sélection visible)
+static var pad_mode := false
+## fenêtre par-dessus (options, choix du mini-jeu...) : la sélection manette reste dedans, B la ferme
+static var modal: Control
+static var modal_close: Callable
+
+
+static func open_modal(over: Control, close := Callable()) -> void:
+	modal = over
+	modal_close = close
+	if pad_mode:
+		over.get_tree().create_timer(0.01).timeout.connect(func():
+			if is_instance_valid(over):
+				var b := first_button(over)
+				if b:
+					b.grab_focus())
+
+
+## Bouton choisi quand on prend la manette : le bouton principal de l'écran plutôt qu'un « Exclure ».
+static func first_button(n: Node) -> Control:
+	var all: Array = []
+	_buttons_in(n, all)
+	for want in ["Lancer", "Créer", "C'est parti", "Rejouer", "Valider", "Fermer"]:
+		for b in all:
+			if str((b as Button).text).begins_with(want):
+				return b
+	for b in all:
+		if not str((b as Button).text).begins_with("Exclure"):
+			return b
+	return all[0] if not all.is_empty() else null
+
+
+static func _buttons_in(n: Node, out: Array) -> void:
+	for c in n.get_children():
+		if c is Button and (c as Button).is_visible_in_tree() and not (c as Button).disabled and (c as Button).focus_mode != Control.FOCUS_NONE:
+			out.append(c)
+		_buttons_in(c, out)
 
 
 static func font(bold := false) -> Font:
@@ -41,7 +78,7 @@ static func make_theme() -> Theme:
 	t.set_stylebox("hover", "Button", button_box(BLUE.lightened(0.12)))
 	t.set_stylebox("pressed", "Button", button_box(BLUE.darkened(0.08), true))
 	t.set_stylebox("disabled", "Button", button_box(GREY))
-	t.set_stylebox("focus", "Button", StyleBoxEmpty.new())
+	t.set_stylebox("focus", "Button", FocusRing.new())
 	for c in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color", "font_hover_pressed_color"]:
 		t.set_color(c, "Button", WHITE)
 	t.set_color("font_disabled_color", "Button", Color(1, 1, 1, 0.7))
@@ -199,7 +236,15 @@ static func ribbon(ci: CanvasItem, center: Vector2, s: String, size := 26, col :
 
 
 ## Texte centré avec contour, dessiné directement (noms, scores, gros titres).
+## À la manette : les noms de touches clavier deviennent les boutons de la manette.
+static func padify(s: String) -> String:
+	if not pad_mode:
+		return s
+	return s.replace("ESPACE", "A").replace("Espace", "A").replace("Échap", "B").replace("Entrée", "A")
+
+
 static func text(ci: CanvasItem, center: Vector2, s: String, size := 24, col := WHITE, outline := 8, bold := true) -> void:
+	s = padify(s)
 	var f := font(bold)
 	var w := f.get_string_size(s, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
 	var pos := Vector2(center.x - w / 2.0, center.y + size * 0.36)
@@ -216,7 +261,12 @@ static func text_left(ci: CanvasItem, left_mid: Vector2, s: String, size := 24, 
 
 
 ## Touche du clavier (petite touche blanche du kit) suivie de sa légende. Renvoie la largeur totale.
-static func key_chip(ci: CanvasItem, left_mid: Vector2, key: String, label: String, size := 16) -> float:
+static func key_chip(ci: CanvasItem, left_mid: Vector2, key: String, label: String, size := 16, pad := "") -> float:
+	if pad_mode and pad != "":
+		var x := 0.0
+		for b in pad.split(" "):
+			x += pad_chip(ci, left_mid + Vector2(x, 0), b, size) + 5.0
+		return x + 3.0 + text_left(ci, left_mid + Vector2(x + 3.0, 0), label, size, WHITE, 5)
 	var kw := maxf(30.0, text_width(key, size) + 18.0)
 	var kr := Rect2(left_mid - Vector2(0, 15), Vector2(kw, 30))
 	var kb := KitBox.new()
@@ -248,6 +298,7 @@ static func portrait(ci: CanvasItem, c: Vector2, r: float, color_idx: int, ring 
 
 
 static func text_width(s: String, size: int, bold := true) -> float:
+	s = padify(s)
 	return font(bold).get_string_size(s, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
 
 
@@ -312,6 +363,45 @@ class KitBox extends StyleBox:
 		if inner.size.y > 26.0 and inner.size.x > 40.0:
 			var d := clampf(inner.size.y * 0.12, 3.0, 7.0)
 			_flat(Color(1, 1, 1, 0.75), d).draw(ci, Rect2(inner.position + Vector2(irad * 0.55 + 3.0, 4.0), Vector2(d * 1.6, d)))
+
+
+## Anneau jaune autour du bouton sélectionné, seulement quand on joue à la manette.
+class FocusRing extends StyleBox:
+	static var _sb: StyleBoxFlat
+
+	func _draw(ci: RID, r: Rect2) -> void:
+		if not UI.pad_mode:
+			return
+		if _sb == null:
+			_sb = StyleBoxFlat.new()
+			_sb.draw_center = false
+			_sb.set_border_width_all(5)
+			_sb.set_corner_radius_all(22)
+			_sb.border_color = Color("#ffe066")
+			_sb.anti_aliasing = true
+		_sb.draw(ci, r.grow(6.0))
+
+
+## Bouton de manette rond (A vert, B rouge, X bleu, Y jaune) ou touche plate (LB, RB, Start, Stick).
+static func pad_chip(ci: CanvasItem, left_mid: Vector2, b: String, size := 16) -> float:
+	var cols := {"A": Color("#4cc35a"), "B": Color("#ef5350"), "X": Color("#3f8cf2"), "Y": Color("#f5c53a")}
+	if cols.has(b):
+		var r := 15.0
+		var c := left_mid + Vector2(r, 0)
+		ci.draw_circle(c + Vector2(0, 3), r + 2.0, Color(0.12, 0.1, 0.25, 0.25))
+		ci.draw_circle(c, r + 2.5, INK)
+		ci.draw_circle(c, r, cols[b])
+		ci.draw_circle(c + Vector2(-4, -5), r * 0.35, Color(1, 1, 1, 0.35))
+		text(ci, c + Vector2(0, -1), b, size, WHITE, 4)
+		return 2.0 * r
+	var w := maxf(34.0, text_width(b, size) + 20.0)
+	var kr := Rect2(left_mid - Vector2(0, 15), Vector2(w, 30))
+	var kb := KitBox.new()
+	kb.col = Color("#5b6488")
+	kb.radius = 15
+	ci.draw_style_box(kb, kr)
+	text(ci, kr.get_center() + Vector2(0, -2), b, size, WHITE, 4)
+	return w
 
 
 ## Petit perso qui se dandine, utilisé dans le menu et le salon.
